@@ -7,27 +7,38 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import numpy as np
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "raw", "pdf")
 BRAND = "GreenMart Việt Nam"
-styles = getSampleStyleSheet()
 random.seed(7)
+
+# Helvetica (reportlab mac dinh) khong co dau tieng Viet -> dang ky font Arial that de
+# render dung Unicode cho cac PDF dang text (catalogue).
+_FONT_DIR = "/System/Library/Fonts/Supplemental"
+pdfmetrics.registerFont(TTFont("Arial-VN", os.path.join(_FONT_DIR, "Arial.ttf")))
+pdfmetrics.registerFont(TTFont("Arial-VN-Bold", os.path.join(_FONT_DIR, "Arial Bold.ttf")))
+pdfmetrics.registerFontFamily("Arial-VN", normal="Arial-VN", bold="Arial-VN-Bold")
+
+styles = getSampleStyleSheet()
+styles.add(ParagraphStyle("NormalVN", parent=styles["Normal"], fontName="Arial-VN"))
 
 
 def catalogue_pdf(filename, title, subtitle, table_header, rows):
     doc = SimpleDocTemplate(os.path.join(OUT_DIR, filename), pagesize=A4,
                              topMargin=2 * cm, bottomMargin=2 * cm, leftMargin=1.8 * cm, rightMargin=1.8 * cm)
     story = []
-    title_style = ParagraphStyle("TitleVN", parent=styles["Title"], textColor=colors.HexColor("#1F6F43"))
+    title_style = ParagraphStyle("TitleVN", parent=styles["Title"], fontName="Arial-VN-Bold", textColor=colors.HexColor("#1F6F43"))
     story.append(Paragraph(title, title_style))
-    story.append(Paragraph(subtitle, styles["Normal"]))
+    story.append(Paragraph(subtitle, styles["NormalVN"]))
     story.append(Spacer(1, 0.6 * cm))
     story.append(Paragraph(
         f"{BRAND} — Catalogue tham khảo dành cho nhân viên tư vấn tại quầy. Giá có thể thay đổi theo chương trình "
         "khuyến mãi từng thời điểm, vui lòng đối chiếu bảng giá SKU cập nhật trên hệ thống POS.",
-        styles["Normal"]))
+        styles["NormalVN"]))
     story.append(Spacer(1, 0.8 * cm))
 
     data = [table_header] + rows
@@ -35,6 +46,8 @@ def catalogue_pdf(filename, title, subtitle, table_header, rows):
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1F6F43")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Arial-VN-Bold"),
+        ("FONTNAME", (0, 1), (-1, -1), "Arial-VN"),
         ("FONTSIZE", (0, 0), (-1, -1), 8.5),
         ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F2F7F4")]),
