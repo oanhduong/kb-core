@@ -6,7 +6,15 @@ và đo đạc pipeline ingestion → knowledge base ở Phase 1 trở đi. Thư
 
 Sinh bằng script trong `../../scripts/` (`gen_docx.py`, `gen_xlsx.py`, `gen_pdf.py`, `gen_images.py`,
 `gen_audio_video.sh`). Audio dùng giọng đọc tiếng Việt thật (macOS `say`, giọng "Linh"); video dựng bằng
-`ffmpeg` từ audio + caption. Chạy lại: `source .venv/bin/activate && python3 scripts/gen_xxx.py`.
+`ffmpeg` từ audio + caption.
+
+Chạy lại từ đầu:
+```
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python3 scripts/gen_docx.py && python3 scripts/gen_xlsx.py && python3 scripts/gen_pdf.py && python3 scripts/gen_images.py
+bash scripts/gen_audio_video.sh   # cần macOS (lệnh `say`) và ffmpeg cài qua Homebrew
+```
 
 | Thư mục   | Số file | Nội dung |
 |-----------|---------|----------|
