@@ -1,0 +1,216 @@
+{
+  "data/raw/docx/01_chinh_sach_doi_tra_hang_hoa.docx": {
+    "type": "docx",
+    "characters": 7992,
+    "pages": 4,
+    "pages_method": "rendered via mammoth(docx->html)+weasyprint(html->pdf, A4, Arial 11pt) then counted with pypdf — proxy for MS Word pagination (no Word/LibreOffice available in this environment), not exact Word page count"
+  },
+  "data/raw/docx/02_chinh_sach_bao_hanh_san_pham.docx": {
+    "type": "docx",
+    "characters": 6315,
+    "pages": 3,
+    "pages_method": "rendered via mammoth(docx->html)+weasyprint(html->pdf, A4, Arial 11pt) then counted with pypdf — proxy for MS Word pagination (no Word/LibreOffice available in this environment), not exact Word page count"
+  },
+  "data/raw/docx/03_quy_trinh_xu_ly_khieu_nai.docx": {
+    "type": "docx",
+    "characters": 5633,
+    "pages": 3,
+    "pages_method": "rendered via mammoth(docx->html)+weasyprint(html->pdf, A4, Arial 11pt) then counted with pypdf — proxy for MS Word pagination (no Word/LibreOffice available in this environment), not exact Word page count"
+  },
+  "data/raw/docx/04_noi_quy_nhan_vien_ban_hang.docx": {
+    "type": "docx",
+    "characters": 5701,
+    "pages": 3,
+    "pages_method": "rendered via mammoth(docx->html)+weasyprint(html->pdf, A4, Arial 11pt) then counted with pypdf — proxy for MS Word pagination (no Word/LibreOffice available in this environment), not exact Word page count"
+  },
+  "data/raw/docx/05_chinh_sach_giao_hang.docx": {
+    "type": "docx",
+    "characters": 5703,
+    "pages": 3,
+    "pages_method": "rendered via mammoth(docx->html)+weasyprint(html->pdf, A4, Arial 11pt) then counted with pypdf — proxy for MS Word pagination (no Word/LibreOffice available in this environment), not exact Word page count"
+  },
+  "data/raw/xlsx/01_bang_gia_sku.xlsx": {
+    "type": "xlsx",
+    "sheet_count": 1,
+    "sheet_names": [
+      "BangGiaSKU"
+    ],
+    "rows_per_sheet": {
+      "BangGiaSKU": 301
+    },
+    "total_rows_incl_header": 301,
+    "characters_in_string_cells": 14411
+  },
+  "data/raw/xlsx/02_ton_kho_theo_store.xlsx": {
+    "type": "xlsx",
+    "sheet_count": 8,
+    "sheet_names": [
+      "GM-HN01",
+      "GM-HN02",
+      "GM-HP01",
+      "GM-HCM01",
+      "GM-HCM02",
+      "GM-CT01",
+      "GM-DN01",
+      "GM-BD01"
+    ],
+    "rows_per_sheet": {
+      "GM-HN01": 12,
+      "GM-HN02": 12,
+      "GM-HP01": 12,
+      "GM-HCM01": 12,
+      "GM-HCM02": 12,
+      "GM-CT01": 12,
+      "GM-DN01": 12,
+      "GM-BD01": 12
+    },
+    "total_rows_incl_header": 96,
+    "characters_in_string_cells": 6473
+  },
+  "data/raw/xlsx/03_lich_khuyen_mai.xlsx": {
+    "type": "xlsx",
+    "sheet_count": 1,
+    "sheet_names": [
+      "LichKhuyenMai_Q3_2026"
+    ],
+    "rows_per_sheet": {
+      "LichKhuyenMai_Q3_2026": 8
+    },
+    "total_rows_incl_header": 8,
+    "characters_in_string_cells": 845
+  },
+  "data/raw/xlsx/04_bang_chiet_khau_theo_bac.xlsx": {
+    "type": "xlsx",
+    "sheet_count": 1,
+    "sheet_names": [
+      "ChietKhauTheoBac"
+    ],
+    "rows_per_sheet": {
+      "ChietKhauTheoBac": 12
+    },
+    "total_rows_incl_header": 12,
+    "characters_in_string_cells": 912
+  },
+  "data/raw/xlsx/05_danh_muc_nha_cung_cap.xlsx": {
+    "type": "xlsx",
+    "sheet_count": 1,
+    "sheet_names": [
+      "DanhMucNhaCungCap"
+    ],
+    "rows_per_sheet": {
+      "DanhMucNhaCungCap": 9
+    },
+    "total_rows_incl_header": 9,
+    "characters_in_string_cells": 1241
+  },
+  "data/raw/pdf/01_catalogue_do_gia_dung.pdf": {
+    "type": "pdf",
+    "pages": 1,
+    "has_text_layer": true,
+    "characters_extracted": 900
+  },
+  "data/raw/pdf/02_catalogue_dien_tu_tieu_dung.pdf": {
+    "type": "pdf",
+    "pages": 1,
+    "has_text_layer": true,
+    "characters_extracted": 823
+  },
+  "data/raw/pdf/03_hop_dong_nha_cung_cap_dien_may.pdf": {
+    "type": "pdf",
+    "pages": 1,
+    "has_text_layer": true,
+    "characters_extracted": 1785
+  },
+  "data/raw/pdf/04_hop_dong_nha_cung_cap_thuc_pham.pdf": {
+    "type": "pdf",
+    "pages": 1,
+    "has_text_layer": true,
+    "characters_extracted": 1586
+  },
+  "data/raw/pdf/05_scan_bien_ban_ban_giao_hang_hoa.pdf": {
+    "type": "pdf",
+    "pages": 1,
+    "has_text_layer": false,
+    "characters_extracted": 0
+  },
+  "data/raw/image/01_poster_khuyen_mai.png": {
+    "type": "png",
+    "width_px": 1200,
+    "height_px": 1500,
+    "has_text_layer": false,
+    "reference_text": "GREENMART VIỆT NAM. KHAI TRƯƠNG CHI NHÁNH THỦ ĐỨC. GIẢM ĐẾN 30% TOÀN BỘ NGÀNH HÀNG. Từ 01/07 đến 07/07/2026. 268 Trần Duy Hưng, TP. Thủ Đức — Hotline: 1900 1234",
+    "reference_text_source": "known ground truth: exact text drawn onto the image by scripts/gen_images.py (no OCR was run — this is the true source text, not an OCR hypothesis)",
+    "reference_text_characters": 160
+  },
+  "data/raw/image/02_bang_gia_viet_tay.png": {
+    "type": "png",
+    "width_px": 1142,
+    "height_px": 1432,
+    "has_text_layer": false,
+    "reference_text": "QUẦY RAU CỦ TƯƠI - GIÁ HÔM NAY\nRau muống bó 8.000đ\nCà chua (kg) 22.000đ\nKhoai tây (kg) 18.000đ\nBí đỏ (kg) 15.000đ\nDưa leo (kg) 16.000đ\nCải ngọt bó 9.000đ\nHành lá bó 6.000đ\nỚt sừng (kg) 35.000đ\nGiá có thể thay đổi trong ngày — vui lòng hỏi nhân viên quầy",
+    "reference_text_source": "known ground truth: exact text drawn onto the image by scripts/gen_images.py (no OCR was run — this is the true source text, not an OCR hypothesis)",
+    "reference_text_characters": 253
+  },
+  "data/raw/image/03_anh_chup_man_hinh_pos.png": {
+    "type": "png",
+    "width_px": 1000,
+    "height_px": 1400,
+    "has_text_layer": false,
+    "reference_text": "GreenMart POS — Quầy 03\nMã hóa đơn: HD20260817-0342\nThu ngân: Nguyễn Thị Hoa\nNồi chiên không dầu 6L x1 1.590.000đ = 1.590.000đ\nGạo thơm đặc sản 5kg x2 129.000đ = 258.000đ\nSữa tươi tiệt trùng lốc 4 hộp x3 35.000đ = 105.000đ\nNước rửa chén 750ml x1 37.000đ = 37.000đ\nTai nghe bluetooth chống ồn x1 779.000đ = 779.000đ\nTạm tính: 2.769.000đ\nGiảm giá (thẻ TV): -83.070đ\nTỔNG CỘNG: 2.685.930đ\nHình thức thanh toán: Thẻ ngân hàng — VISA ****4821\nTHANH TOÁN\nIN HÓA ĐƠN\nHỦY GIAO DỊCH",
+    "reference_text_source": "known ground truth: exact text drawn onto the image by scripts/gen_images.py (no OCR was run — this is the true source text, not an OCR hypothesis)",
+    "reference_text_characters": 473
+  },
+  "data/raw/image/04_bien_hieu_quay.png": {
+    "type": "png",
+    "width_px": 1228,
+    "height_px": 748,
+    "has_text_layer": false,
+    "reference_text": "GREENMART VIỆT NAM. QUẦY CHĂM SÓC KHÁCH HÀNG. Đổi trả — Bảo hành — Khiếu nại — Tư vấn. Giờ phục vụ: 08:00 - 22:00 hằng ngày",
+    "reference_text_source": "known ground truth: exact text drawn onto the image by scripts/gen_images.py (no OCR was run — this is the true source text, not an OCR hypothesis)",
+    "reference_text_characters": 123
+  },
+  "data/raw/image/05_phieu_bao_hanh.png": {
+    "type": "png",
+    "width_px": 1210,
+    "height_px": 816,
+    "has_text_layer": false,
+    "reference_text": "PHIẾU BẢO HÀNH SẢN PHẨM — GreenMart Việt Nam\nSố phiếu bảo hành: BH-2026-081745\nTên sản phẩm: Tủ lạnh Inverter 300L - CoolMax\nSố serial: CM300-VN-2026-77821\nNgày mua: 05/08/2026\nCửa hàng mua: GM-HN01 — Cầu Giấy, Hà Nội\nThời hạn bảo hành: 24 tháng (đến hết ngày 05/08/2028)\nKhách hàng: Phạm Văn Đức — SĐT: 0987654321\nVui lòng giữ phiếu này để được hỗ trợ bảo hành. Mất phiếu vẫn có thể tra cứu qua số serial trên hệ thống.",
+    "reference_text_source": "known ground truth: exact text drawn onto the image by scripts/gen_images.py (no OCR was run — this is the true source text, not an OCR hypothesis)",
+    "reference_text_characters": 420
+  },
+  "data/raw/audio/01_training_chao_don_khach_hang.mp3": {
+    "type": "audio",
+    "duration_seconds": 114.31,
+    "reference_transcript": "Xin chào các bạn nhân viên mới của GreenMart Việt Nam. Bài đào tạo hôm nay là quy trình chào đón khách hàng tại cửa hàng, một trong những kỹ năng quan trọng nhất mà mọi nhân viên bán hàng cần nắm vững. Bước một, khi khách hàng bước vào cửa, nhân viên đứng gần khu vực cửa ra vào cần chủ động mỉm cười và nói xin chào quý khách, rất vui được đón tiếp quý khách tại GreenMart. Lời chào cần được nói rõ ràng, thân thiện, không quá lớn tiếng nhưng đủ để khách hàng nghe thấy. Bước hai, quan sát nhu cầu của khách hàng. Nếu khách hàng có vẻ đang tìm kiếm một sản phẩm cụ thể, hãy chủ động lại gần và hỏi thăm quý khách cần tìm sản phẩm gì để em hỗ trợ ạ. Nếu khách hàng chỉ đang tham quan, nhân viên không nên bám theo quá sát mà chỉ cần đứng ở khoảng cách vừa phải, sẵn sàng hỗ trợ khi được yêu cầu. Bước ba, trong suốt quá trình khách hàng mua sắm, nhân viên luôn giữ thái độ niềm nở, kiên nhẫn trả lời mọi câu hỏi về sản phẩm, giá cả hoặc chương trình khuyến mãi đang áp dụng. Tuyệt đối không được tỏ ra khó chịu ngay cả khi cửa hàng đông khách hoặc khách hàng hỏi nhiều lần về cùng một vấn đề. Bước bốn, khi khách hàng tiến đến quầy thanh toán, nhân viên thu ngân tiếp tục duy trì thái độ niềm nở, thao tác nhanh gọn và chính xác. Bước năm, khi khách hàng rời đi, dù có mua hàng hay không, nhân viên đều cần cảm ơn và chào tạm biệt, hẹn gặp lại quý khách lần sau. Đây là quy trình bắt buộc áp dụng cho tất cả nhân viên bán hàng tại toàn bộ hệ thống cửa hàng, được xem là một tiêu chí quan trọng trong đánh giá chất lượng phục vụ hằng tháng.",
+    "reference_transcript_source": "known ground truth: exact script text fed to the TTS engine (gTTS/pyttsx3) by scripts/gen_audio_video.py — not an ASR transcript",
+    "reference_transcript_characters": 1539
+  },
+  "data/raw/audio/02_training_xu_ly_doi_tra_tai_quay.mp3": {
+    "type": "audio",
+    "duration_seconds": 116.4,
+    "reference_transcript": "Bài đào tạo hôm nay là xử lý tình huống đổi trả hàng hóa tại quầy thu ngân, một tình huống mà hầu như ngày nào cửa hàng cũng gặp phải. Khi khách hàng mang sản phẩm đến quầy yêu cầu đổi trả, nhân viên cần thực hiện tuần tự các bước sau đây. Bước một, kiểm tra hóa đơn mua hàng hoặc tra cứu mã đơn hàng trên hệ thống, đồng thời kiểm tra tình trạng thực tế của sản phẩm, xem còn nguyên tem nhãn, bao bì gốc và chưa qua sử dụng hay không. Bước hai, đối chiếu với chính sách đổi trả theo từng ngành hàng. Ví dụ, hàng điện máy được đổi mới trong vòng ba mươi ngày nếu là lỗi nhà sản xuất, trong khi hàng tiêu dùng nhanh chỉ có bảy ngày. Nhân viên cần nhớ chính xác các mốc thời gian này để tránh xử lý sai. Bước ba, nếu sản phẩm đủ điều kiện, nhân viên lập phiếu đổi trả trên hệ thống point of sale, chọn đúng lý do đổi trả tương ứng, sau đó tiến hành hoàn tiền theo hình thức thanh toán ban đầu hoặc đổi sang sản phẩm khác theo yêu cầu của khách hàng. Bước bốn, nếu sản phẩm không đủ điều kiện đổi trả, nhân viên cần giải thích rõ ràng, lịch sự lý do từ chối, dựa trên chính sách cụ thể, không được nói chung chung kiểu công ty không cho phép. Bước năm, nếu khách hàng không đồng ý với quyết định và tỏ ra bức xúc, nhân viên tuyệt đối không tranh cãi trực tiếp mà cần mời quản lý ca trực ra hỗ trợ ngay lập tức. Quản lý ca trực có thẩm quyền xem xét các trường hợp ngoại lệ nằm ngoài quy định thông thường. Cuối cùng, xin nhắc lại nguyên tắc quan trọng nhất: thái độ nhã nhặn, kiên nhẫn và tôn trọng khách hàng luôn phải được đặt lên hàng đầu, ngay cả trong những tình huống căng thẳng nhất.",
+    "reference_transcript_source": "known ground truth: exact script text fed to the TTS engine (gTTS/pyttsx3) by scripts/gen_audio_video.py — not an ASR transcript",
+    "reference_transcript_characters": 1586
+  },
+  "data/raw/audio/03_callcenter_hoi_bao_hanh_san_pham.mp3": {
+    "type": "audio",
+    "duration_seconds": 128.26,
+    "reference_transcript": "Tổng đài viên: Xin chào, tổng đài chăm sóc khách hàng GreenMart Việt Nam xin nghe ạ, em có thể hỗ trợ gì cho anh chị ạ. Khách hàng: Chào bạn, tôi mua cái tủ lạnh ở chi nhánh Cầu Giấy được ba tháng rồi mà bây giờ nó kêu to quá, tôi muốn hỏi về bảo hành. Tổng đài viên: Dạ em hiểu rồi ạ, anh chị vui lòng cho em xin số điện thoại hoặc số hóa đơn mua hàng để em kiểm tra thông tin bảo hành ạ. Khách hàng: Số điện thoại của tôi là không chín không, một hai ba, bốn năm sáu bảy. Tổng đài viên: Dạ em xin phép kiểm tra trên hệ thống một chút ạ... Dạ em đã kiểm tra thấy sản phẩm là tủ lạnh Inverter ba trăm lít, mua ngày mười lăm tháng năm, còn trong thời hạn bảo hành hai mươi bốn tháng ạ. Anh chị mô tả kỹ hơn giúp em là tiếng kêu phát ra từ vị trí nào và kêu liên tục hay chỉ kêu vào một số thời điểm trong ngày ạ. Khách hàng: Nó kêu ở phía sau lưng tủ, kêu liên tục cả ngày, hơi ồn, ảnh hưởng đến sinh hoạt gia đình. Tổng đài viên: Dạ em ghi nhận thông tin rồi ạ. Đây có thể là lỗi liên quan đến quạt gió hoặc máy nén, cần kỹ thuật viên đến kiểm tra trực tiếp ạ. Em sẽ tạo phiếu tiếp nhận bảo hành ngay bây giờ, kỹ thuật viên sẽ liên hệ anh chị trong vòng hai mươi bốn giờ để hẹn lịch kiểm tra tại nhà ạ. Khách hàng: Vậy có mất phí gì không bạn. Tổng đài viên: Dạ sản phẩm còn trong thời hạn bảo hành và lỗi được xác định là lỗi kỹ thuật thông thường thì hoàn toàn miễn phí kiểm tra và sửa chữa ạ, trừ trường hợp phát hiện lỗi do tác động bên ngoài thì sẽ báo giá trước khi sửa. Khách hàng: Vậy cảm ơn bạn nhiều nhé. Tổng đài viên: Dạ không có gì ạ, cảm ơn anh chị đã tin tưởng và sử dụng sản phẩm của GreenMart, chúc anh chị một ngày tốt lành ạ, tạm biệt anh chị.",
+    "reference_transcript_source": "known ground truth: exact script text fed to the TTS engine (gTTS/pyttsx3) by scripts/gen_audio_video.py — not an ASR transcript",
+    "reference_transcript_characters": 1662
+  },
+  "data/raw/video/01_video_quy_trinh_thanh_toan_quay_thu_ngan.mp4": {
+    "type": "video",
+    "duration_seconds": 193.85,
+    "reference_transcript": "Video hướng dẫn nội bộ: quy trình thanh toán tại quầy thu ngân, dành cho nhân viên mới tại hệ thống GreenMart Việt Nam. Đây là quy trình bắt buộc, áp dụng thống nhất tại tất cả các chi nhánh. Bước một, chào đón khách hàng. Khi khách hàng đặt sản phẩm lên quầy, nhân viên thu ngân chào khách hàng bằng nụ cười và một câu chào thân thiện trước khi bắt đầu thao tác. Bước hai, quét mã vạch từng sản phẩm. Nhân viên quét lần lượt từng sản phẩm, kiểm tra kỹ số lượng và tên sản phẩm hiển thị trên màn hình có khớp với hàng thực tế hay không, tránh quét nhầm hoặc quét thiếu. Bước ba, thông báo tổng số tiền. Sau khi quét xong toàn bộ sản phẩm, nhân viên đọc rõ tổng số tiền cho khách hàng nghe trước khi tiến hành thanh toán, đồng thời hỏi khách hàng có sử dụng thẻ thành viên hoặc mã giảm giá hay không. Bước bốn, lựa chọn hình thức thanh toán. Khách hàng có thể thanh toán bằng tiền mặt, thẻ ngân hàng hoặc ví điện tử. Với thanh toán tiền mặt, nhân viên phải đếm tiền thối lại trước mặt khách hàng để tránh nhầm lẫn. Với thanh toán thẻ, chờ máy quẹt thẻ báo giao dịch thành công mới được giao hàng cho khách. Bước năm, in hóa đơn và tích điểm. Nhân viên in hóa đơn, quét mã tích điểm nếu khách hàng có thẻ thành viên, sau đó gửi hóa đơn kèm lời cảm ơn cho khách hàng. Bước sáu, kết thúc giao dịch. Nhân viên chào tạm biệt khách hàng, sắp xếp lại khu vực quầy gọn gàng để sẵn sàng phục vụ khách hàng tiếp theo. Lưu ý quan trọng: trong suốt quá trình thanh toán, nhân viên tuyệt đối không được rời khỏi quầy khi giao dịch chưa hoàn tất, và luôn giữ thái độ chuyên nghiệp, nhanh nhẹn để giảm thời gian chờ đợi cho khách hàng phía sau. Một số tình huống thường gặp cần lưu ý thêm. Thứ nhất, nếu khách hàng thanh toán bằng tiền mặt với mệnh giá lớn, nhân viên nên kiểm tra tiền giả bằng đèn chiếu chuyên dụng trước khi cất vào ngăn kéo, đặc biệt với các tờ tiền mệnh giá từ năm trăm nghìn đồng trở lên. Thứ hai, nếu khách hàng có nhiều mã giảm giá cùng lúc, nhân viên cần kiểm tra kỹ điều kiện áp dụng của từng mã trên hệ thống, tránh áp dụng chồng chéo sai quy định gây thất thoát cho cửa hàng. Thứ ba, nếu khách hàng mua số lượng lớn hàng hóa cồng kềnh, nhân viên nên chủ động gọi hỗ trợ từ nhân viên đóng gói hoặc nhân viên kho để hỗ trợ đóng gói và vận chuyển ra xe cho khách hàng. Cuối cùng, vào những khung giờ cao điểm khi quầy thu ngân đông khách xếp hàng, quản lý ca trực có trách nhiệm điều phối mở thêm quầy dự phòng để giảm thời gian chờ đợi, bảo đảm trải nghiệm mua sắm tốt nhất cho khách hàng. Toàn bộ quy trình này sẽ được kiểm tra định kỳ hằng tháng thông qua hình thức khách hàng bí mật để đánh giá chất lượng phục vụ của từng cửa hàng trong hệ thống.",
+    "reference_transcript_source": "known ground truth: exact script text fed to the TTS engine (gTTS/pyttsx3) by scripts/gen_audio_video.py — not an ASR transcript",
+    "reference_transcript_characters": 2660
+  },
+  "data/raw/video/02_video_xu_ly_loi_pos_hoan_tien.mp4": {
+    "type": "video",
+    "duration_seconds": 198.1,
+    "reference_transcript": "Video hướng dẫn nội bộ: xử lý lỗi máy POS và quy trình hoàn tiền tại quầy thu ngân, dành cho nhân viên thu ngân hệ thống GreenMart Việt Nam. Phần một, xử lý khi máy POS báo lỗi giao dịch. Nếu máy POS báo lỗi ngay sau khi quẹt thẻ hoặc chuyển khoản, nhân viên tuyệt đối không được tính tiền lần thứ hai ngay lập tức. Trước tiên, kiểm tra lại trạng thái giao dịch trên hệ thống quản lý để xác định giao dịch đã thành công hay chưa, tránh trường hợp khách hàng bị trừ tiền hai lần. Nếu không chắc chắn, gọi ngay cho bộ phận kỹ thuật hỗ trợ qua số nội bộ một không không để được xác nhận trước khi thực hiện lại giao dịch. Phần hai, quy trình hoàn tiền khi khách hàng đổi trả hàng. Khi khách hàng mang hàng đến đổi trả và cần hoàn tiền, nhân viên chọn chức năng hoàn tiền trên hệ thống, nhập chính xác mã hóa đơn gốc, sau đó chọn lý do hoàn tiền tương ứng, ví dụ hàng lỗi nhà sản xuất hoặc khách hàng đổi ý trong thời hạn cho phép. Phần ba, xác nhận số tiền hoàn lại. Trước khi bấm xác nhận hoàn tiền, nhân viên phải đọc to số tiền sẽ hoàn lại cho khách hàng nghe và xác nhận lại một lần nữa, đặc biệt với hình thức hoàn tiền qua thẻ ngân hàng cần thông báo rõ thời gian tiền về tài khoản có thể mất từ ba đến năm ngày làm việc. Phần bốn, xử lý khi hệ thống gặp sự cố kéo dài. Nếu máy POS hoặc hệ thống mạng gặp sự cố kéo dài hơn mười lăm phút, nhân viên thông báo ngay cho quản lý ca trực, đồng thời hướng dẫn khách hàng chuyển sang quầy khác đang hoạt động bình thường nếu cửa hàng có nhiều quầy thu ngân. Ghi nhớ nguyên tắc cuối cùng: mọi sai sót liên quan đến tiền bạc đều phải được ghi chép lại đầy đủ vào sổ theo dõi sự cố cuối ca, làm cơ sở đối chiếu và báo cáo cho quản lý cửa hàng. Ngoài các tình huống trên, nhân viên cần lưu ý thêm một số trường hợp đặc biệt. Nếu khách hàng yêu cầu hoàn tiền cho đơn hàng thanh toán bằng ví điện tử, nhân viên cần thao tác hoàn tiền ngay trên chính kênh thanh toán gốc đó, không được quy đổi sang tiền mặt trừ khi có sự phê duyệt đặc biệt từ quản lý khu vực. Nếu hệ thống báo lỗi không thể xác định được giao dịch gốc do sự cố đồng bộ dữ liệu, nhân viên tuyệt đối không tự ý ước lượng số tiền hoàn lại mà phải yêu cầu khách hàng cung cấp thêm bằng chứng như tin nhắn xác nhận giao dịch hoặc sao kê ngân hàng để đối chiếu chính xác trước khi xử lý. Đối với các giao dịch có giá trị hoàn tiền lớn, cụ thể là từ năm triệu đồng trở lên, quy trình bắt buộc phải có xác nhận bằng chữ ký của quản lý ca trực trên phiếu hoàn tiền trước khi giao dịch được xử lý trên hệ thống, nhằm hạn chế tối đa rủi ro gian lận nội bộ. Toàn bộ quy trình xử lý lỗi và hoàn tiền này sẽ được đào tạo lại định kỳ mỗi quý để cập nhật theo những thay đổi mới nhất của hệ thống point of sale và chính sách công ty.",
+    "reference_transcript_source": "known ground truth: exact script text fed to the TTS engine (gTTS/pyttsx3) by scripts/gen_audio_video.py — not an ASR transcript",
+    "reference_transcript_characters": 2724
+  }
+}

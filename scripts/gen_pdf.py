@@ -1,5 +1,8 @@
-"""Sinh 5 file .pdf: 3 catalogue san pham co bang (text-PDF that), 2 hop dong nha cung cap dang 'ban scan'
-(render thanh anh co nhieu/nghieng roi luu PDF, de test OCR trong pipeline ingestion)."""
+"""Sinh 5 file .pdf cho test corpus ingest nganh retail Viet Nam:
+- 2 catalogue san pham co bang (text-PDF that, co text layer)
+- 2 hop dong nha cung cap dang text that (reportlab, co text layer, chon duoc chu)
+- 1 file mo phong ban scan (render text thanh anh roi nhung vao PDF, KHONG co text layer -> test OCR)
+"""
 import os
 import random
 from reportlab.lib import colors
@@ -17,16 +20,21 @@ BRAND = "GreenMart Việt Nam"
 random.seed(7)
 
 # Helvetica (reportlab mac dinh) khong co dau tieng Viet -> dang ky font Arial that de
-# render dung Unicode cho cac PDF dang text (catalogue).
+# render dung Unicode cho cac PDF dang text.
 _FONT_DIR = "/System/Library/Fonts/Supplemental"
 pdfmetrics.registerFont(TTFont("Arial-VN", os.path.join(_FONT_DIR, "Arial.ttf")))
 pdfmetrics.registerFont(TTFont("Arial-VN-Bold", os.path.join(_FONT_DIR, "Arial Bold.ttf")))
-pdfmetrics.registerFontFamily("Arial-VN", normal="Arial-VN", bold="Arial-VN-Bold")
+pdfmetrics.registerFont(TTFont("Arial-VN-Italic", os.path.join(_FONT_DIR, "Arial Italic.ttf")))
+pdfmetrics.registerFontFamily("Arial-VN", normal="Arial-VN", bold="Arial-VN-Bold", italic="Arial-VN-Italic")
 
 styles = getSampleStyleSheet()
-styles.add(ParagraphStyle("NormalVN", parent=styles["Normal"], fontName="Arial-VN"))
+styles.add(ParagraphStyle("NormalVN", parent=styles["Normal"], fontName="Arial-VN", leading=14))
+styles.add(ParagraphStyle("ArticleHeadVN", parent=styles["Normal"], fontName="Arial-VN-Bold", fontSize=11, spaceBefore=10, spaceAfter=4))
 
 
+# =====================================================================================
+# 1-2) CATALOGUE SAN PHAM CO BANG (2 file, co text layer)
+# =====================================================================================
 def catalogue_pdf(filename, title, subtitle, table_header, rows):
     doc = SimpleDocTemplate(os.path.join(OUT_DIR, filename), pagesize=A4,
                              topMargin=2 * cm, bottomMargin=2 * cm, leftMargin=1.8 * cm, rightMargin=1.8 * cm)
@@ -88,21 +96,106 @@ def catalogue_electronics():
                   "Cập nhật Quý 3/2026 — Ngành hàng Điện tử phụ kiện", header, rows)
 
 
-def catalogue_food():
-    header = ["Mã SP", "Tên sản phẩm", "Quy cách", "Hạn sử dụng", "Giá tham khảo"]
-    rows = [
-        ["TP-001", "Snack khoai tây vị phô mai", "Gói 150g", "6 tháng", "25.000đ"],
-        ["TP-002", "Nước ép trái cây hộp giấy", "Lốc 6 hộp x 200ml", "9 tháng", "45.000đ"],
-        ["TP-003", "Xúc xích tiệt trùng", "Gói 500g", "6 tháng", "59.000đ"],
-        ["TP-004", "Mật ong nguyên chất", "Chai 500ml", "24 tháng", "129.000đ"],
-        ["TP-005", "Trà túi lọc hoa cúc", "Hộp 25 túi", "18 tháng", "39.000đ"],
-        ["TP-006", "Sốt me chua ngọt", "Chai 300ml", "12 tháng", "32.000đ"],
-        ["TP-007", "Ngũ cốc ăn sáng dinh dưỡng", "Hộp 400g", "12 tháng", "89.000đ"],
+# =====================================================================================
+# 3-4) HOP DONG NHA CUNG CAP - DANG TEXT THAT (co text layer, chon duoc chu)
+# =====================================================================================
+def contract_pdf(filename, supplier_name, contract_no, category, articles):
+    doc = SimpleDocTemplate(os.path.join(OUT_DIR, filename), pagesize=A4,
+                             topMargin=2.2 * cm, bottomMargin=2 * cm, leftMargin=2 * cm, rightMargin=2 * cm)
+    story = []
+    title_style = ParagraphStyle("ContractTitleVN", parent=styles["Title"], fontName="Arial-VN-Bold", fontSize=15,
+                                  textColor=colors.HexColor("#1F6F43"))
+    center = ParagraphStyle("CenterVN", parent=styles["NormalVN"], alignment=1)
+
+    story.append(Paragraph("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", center))
+    story.append(Paragraph("Độc lập - Tự do - Hạnh phúc", ParagraphStyle("ItalicCenter", parent=center, fontName="Arial-VN-Italic")))
+    story.append(Spacer(1, 0.5 * cm))
+    story.append(Paragraph("HỢP ĐỒNG NGUYÊN TẮC CUNG CẤP HÀNG HÓA", title_style))
+    story.append(Paragraph(f"Số: {contract_no}", center))
+    story.append(Spacer(1, 0.5 * cm))
+
+    story.append(Paragraph(
+        f"<b>Bên A (Bên mua):</b> {BRAND} — Địa chỉ: 268 Trần Duy Hưng, Cầu Giấy, Hà Nội — "
+        "Đại diện: Bà Nguyễn Thị Thu Hương, chức vụ: Giám đốc Thu mua.", styles["NormalVN"]))
+    story.append(Paragraph(
+        f"<b>Bên B (Bên bán):</b> {supplier_name} — Ngành hàng cung cấp: {category}.", styles["NormalVN"]))
+    story.append(Spacer(1, 0.3 * cm))
+    story.append(Paragraph(
+        "Sau khi thỏa thuận, hai bên thống nhất ký kết hợp đồng nguyên tắc cung cấp hàng hóa với các điều "
+        "khoản như sau:", styles["NormalVN"]))
+
+    for i, (art_title, body) in enumerate(articles, start=1):
+        story.append(Paragraph(f"Điều {i}. {art_title}", styles["ArticleHeadVN"]))
+        story.append(Paragraph(body, styles["NormalVN"]))
+
+    story.append(Spacer(1, 1 * cm))
+    sig_table = Table([["ĐẠI DIỆN BÊN A", "ĐẠI DIỆN BÊN B"], ["(Đã ký, đóng dấu)", "(Đã ký, đóng dấu)"]],
+                       colWidths=[8 * cm, 8 * cm])
+    sig_table.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, 0), "Arial-VN-Bold"),
+        ("FONTNAME", (0, 1), (-1, 1), "Arial-VN-Italic"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("TOPPADDING", (0, 1), (-1, 1), 60),
+    ]))
+    story.append(sig_table)
+    doc.build(story)
+
+
+def contract_electronics():
+    articles = [
+        ("Đối tượng hợp đồng",
+         "Bên B cung cấp cho Bên A các mặt hàng điện máy - gia dụng theo đơn đặt hàng phát sinh từng đợt, "
+         "chi tiết SKU và đơn giá theo Phụ lục bảng giá đính kèm hợp đồng này."),
+        ("Thời hạn hợp đồng",
+         "Hợp đồng có thời hạn 24 tháng kể từ ngày ký, tự động gia hạn thêm 12 tháng nếu không bên nào có ý "
+         "kiến chấm dứt bằng văn bản trước 30 ngày kể từ ngày hết hạn."),
+        ("Phương thức giao nhận",
+         "Bên B giao hàng tận kho tổng của Bên A trong vòng 5-7 ngày làm việc kể từ khi nhận đơn đặt hàng "
+         "chính thức qua email hoặc hệ thống đặt hàng điện tử."),
+        ("Thanh toán",
+         "Bên A thanh toán cho Bên B theo hình thức công nợ 30 ngày kể từ ngày nhận hàng và xuất hóa đơn giá "
+         "trị gia tăng hợp lệ, chuyển khoản qua tài khoản ngân hàng đã đăng ký."),
+        ("Chính sách đổi trả hàng lỗi nhà sản xuất",
+         "Bên B nhận đổi trả sản phẩm lỗi nhà sản xuất trong vòng 15 ngày kể từ ngày Bên A phát hiện lỗi, chi "
+         "phí vận chuyển đổi trả do Bên B chi trả toàn bộ."),
+        ("Điều khoản chung",
+         "Hai bên cam kết thực hiện đúng các điều khoản đã thỏa thuận trong hợp đồng này. Mọi tranh chấp phát "
+         "sinh được giải quyết trên tinh thần thương lượng, hòa giải; trường hợp không đạt được thỏa thuận sẽ "
+         "đưa ra Tòa án có thẩm quyền giải quyết theo quy định pháp luật."),
     ]
-    catalogue_pdf("03_catalogue_thuc_pham_dong_goi.pdf", "CATALOGUE SẢN PHẨM — THỰC PHẨM ĐÓNG GÓI",
-                  "Cập nhật Quý 3/2026 — Ngành hàng Thực phẩm khô", header, rows)
+    contract_pdf("03_hop_dong_nha_cung_cap_dien_may.pdf", "Công ty TNHH Thương mại Kỹ nghệ Phương Nam",
+                 "HĐNT-2026/DM-018", "Điện máy - Gia dụng", articles)
 
 
+def contract_food():
+    articles = [
+        ("Đối tượng hợp đồng",
+         "Bên B cung cấp cho Bên A các mặt hàng thực phẩm khô đóng gói theo danh mục SKU đính kèm Phụ lục 01, "
+         "số lượng đặt hàng theo nhu cầu thực tế của từng chi nhánh."),
+        ("Thời hạn hợp đồng",
+         "Hợp đồng có thời hạn 12 tháng kể từ ngày ký, có thể gia hạn theo thỏa thuận bằng văn bản của hai bên "
+         "trước khi hợp đồng hết hạn."),
+        ("Tiêu chuẩn chất lượng",
+         "Hàng hóa phải có giấy chứng nhận an toàn thực phẩm còn hiệu lực, hạn sử dụng còn tối thiểu hai phần "
+         "ba thời hạn tại thời điểm giao hàng cho Bên A."),
+        ("Phương thức giao nhận",
+         "Bên B giao hàng trực tiếp đến từng cửa hàng theo lịch phân bổ hàng tuần do Bên A cung cấp, có phiếu "
+         "giao nhận xác nhận số lượng thực tế tại từng điểm giao."),
+        ("Thanh toán",
+         "Bên A thanh toán công nợ trong vòng 15 ngày kể từ ngày nhận hàng, được chiết khấu thêm 2% nếu thanh "
+         "toán trong vòng 5 ngày kể từ ngày nhận hàng."),
+        ("Xử lý hàng cận hạn sử dụng",
+         "Bên B hỗ trợ đổi trả hàng cận hạn sử dụng dưới 30 ngày theo chính sách thu hồi hàng chậm luân chuyển "
+         "đã thống nhất giữa hai bên."),
+    ]
+    contract_pdf("04_hop_dong_nha_cung_cap_thuc_pham.pdf", "Công ty Cổ phần Thực phẩm Sạch Miền Tây",
+                 "HĐNT-2026/TP-042", "Thực phẩm khô đóng gói", articles)
+
+
+# =====================================================================================
+# 5) MO PHONG BAN SCAN - KHONG CO TEXT LAYER (render text thanh anh, nhung vao PDF)
+# =====================================================================================
 def _add_scan_noise(img):
     arr = np.array(img).astype(np.int16)
     noise = np.random.randint(-12, 12, arr.shape[:2])
@@ -114,94 +207,76 @@ def _add_scan_noise(img):
     return img
 
 
-def _font(size):
-    for path in ["/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial Unicode.ttf"]:
-        if os.path.exists(path):
-            return ImageFont.truetype(path, size)
+def _font(size, bold=False):
+    name = "Arial Bold.ttf" if bold else "Arial.ttf"
+    path = f"/System/Library/Fonts/Supplemental/{name}"
+    if os.path.exists(path):
+        return ImageFont.truetype(path, size)
     return ImageFont.load_default()
 
 
-def supplier_contract_scan(filename, supplier_name, contract_no, lines):
-    W, H = 1654, 2339  # ~A4 at 200dpi
+def scan_delivery_handover():
+    """Mo phong ban scan cua mot bien ban ban giao hang hoa danh may/viet tay -> khong co text layer."""
+    filename = "05_scan_bien_ban_ban_giao_hang_hoa.pdf"
+    W, H = 1654, 2339  # ~A4 tai 200dpi
     img = Image.new("RGB", (W, H), (250, 248, 242))
     draw = ImageDraw.Draw(img)
-    f_title = _font(34)
-    f_body = _font(24)
-    f_small = _font(20)
+    f_title = _font(32, bold=True)
+    f_body = _font(23)
+    f_small = _font(19)
 
-    y = 100
-    draw.text((W // 2, y), f"{BRAND.upper()}", font=f_title, fill=(20, 20, 20), anchor="ma")
-    y += 60
-    draw.text((W // 2, y), "HỢP ĐỒNG NGUYÊN TẮC CUNG CẤP HÀNG HÓA", font=f_title, fill=(20, 20, 20), anchor="ma")
+    y = 90
+    draw.text((W // 2, y), BRAND.upper(), font=f_title, fill=(20, 20, 20), anchor="ma")
     y += 55
-    draw.text((W // 2, y), f"Số: {contract_no}", font=f_body, fill=(40, 40, 40), anchor="ma")
-    y += 70
-    draw.line([(150, y), (W - 150, y)], fill=(60, 60, 60), width=2)
+    draw.text((W // 2, y), "BIÊN BẢN BÀN GIAO HÀNG HÓA", font=f_title, fill=(20, 20, 20), anchor="ma")
     y += 50
-
-    draw.text((150, y), f"Bên A (Bên mua): {BRAND} — Địa chỉ: 268 Đường Trần Duy Hưng, Cầu Giấy, Hà Nội", font=f_body, fill=(20, 20, 20))
+    draw.text((W // 2, y), "Số: BBGH-2026/0817 — Ngày 17/08/2026", font=f_body, fill=(40, 40, 40), anchor="ma")
+    y += 65
+    draw.line([(150, y), (W - 150, y)], fill=(60, 60, 60), width=2)
     y += 45
-    draw.text((150, y), f"Bên B (Bên bán): {supplier_name}", font=f_body, fill=(20, 20, 20))
-    y += 70
 
+    lines = [
+        "Hôm nay, ngày 17 tháng 08 năm 2026, tại kho tổng chi nhánh GM-HN01, chúng tôi gồm có:",
+        "Bên giao: Ông Trần Văn Bình — Nhân viên giao nhận, Công ty TNHH Thương mại Kỹ nghệ Phương Nam.",
+        "Bên nhận: Bà Lê Thị Hồng — Thủ kho, hệ thống GreenMart Việt Nam.",
+        "",
+        "Hai bên cùng tiến hành kiểm đếm và bàn giao lô hàng theo đơn đặt hàng số PO-2026-0742, kết quả cụ",
+        "thể như sau:",
+        "  1. Tivi LED 55 inch - TechVision: số lượng 20 thùng, tình trạng nguyên vẹn, đủ tem niêm phong.",
+        "  2. Tủ lạnh Inverter 300L - CoolMax: số lượng 15 thùng, tình trạng nguyên vẹn.",
+        "  3. Máy giặt cửa trước 9kg - WashPro: số lượng 10 thùng, phát hiện 01 thùng bị móp góc, đã ghi",
+        "     nhận riêng để đổi trả theo chính sách hợp đồng.",
+        "",
+        "Bên nhận xác nhận đã nhận đủ số lượng nêu trên, trừ 01 thùng máy giặt bị móp góc sẽ được Bên giao",
+        "đổi mới trong vòng 7 ngày làm việc theo đúng điều khoản hợp đồng đã ký giữa hai bên.",
+        "",
+        "Biên bản được lập thành 02 bản, mỗi bên giữ 01 bản có giá trị pháp lý như nhau.",
+    ]
     for line in lines:
-        for chunk in [line[i:i + 78] for i in range(0, len(line), 78)]:
-            draw.text((150, y), chunk, font=f_small, fill=(30, 30, 30))
-            y += 36
-        y += 14
+        draw.text((150, y), line, font=f_small, fill=(30, 30, 30))
+        y += 34
 
-    y += 40
-    draw.text((150, y), "Đại diện Bên A", font=f_body, fill=(20, 20, 20))
-    draw.text((W - 450, y), "Đại diện Bên B", font=f_body, fill=(20, 20, 20))
-    y += 140
-    draw.text((150, y), "(Đã ký, đóng dấu)", font=f_small, fill=(90, 90, 90))
-    draw.text((W - 450, y), "(Đã ký, đóng dấu)", font=f_small, fill=(90, 90, 90))
+    y += 50
+    draw.text((280, y), "BÊN GIAO", font=f_body, fill=(20, 20, 20), anchor="ma")
+    draw.text((W - 280, y), "BÊN NHẬN", font=f_body, fill=(20, 20, 20), anchor="ma")
+    y += 130
+    draw.text((280, y), "Trần Văn Bình", font=f_small, fill=(90, 90, 90), anchor="ma")
+    draw.text((W - 280, y), "Lê Thị Hồng", font=f_small, fill=(90, 90, 90), anchor="ma")
 
     img = _add_scan_noise(img)
     img.save(os.path.join(OUT_DIR, filename), "PDF", resolution=200.0)
 
-
-def contract_a():
-    lines = [
-        "Điều 1. Đối tượng hợp đồng: Bên B cung cấp cho Bên A các mặt hàng điện máy - gia dụng theo",
-        "đơn đặt hàng phát sinh từng đợt, chi tiết SKU và đơn giá theo Phụ lục bảng giá đính kèm.",
-        "Điều 2. Thời hạn hợp đồng: 24 tháng kể từ ngày ký, tự động gia hạn nếu không bên nào có ý",
-        "kiến chấm dứt bằng văn bản trước 30 ngày.",
-        "Điều 3. Phương thức giao nhận: Giao hàng tận kho tổng của Bên A trong vòng 5-7 ngày làm việc",
-        "kể từ khi nhận đơn đặt hàng chính thức.",
-        "Điều 4. Thanh toán: Công nợ 30 ngày kể từ ngày nhận hàng và xuất hóa đơn GTGT hợp lệ.",
-        "Điều 5. Chính sách đổi trả hàng lỗi nhà sản xuất: Bên B nhận đổi trong vòng 15 ngày kể từ",
-        "ngày Bên A phát hiện lỗi, chi phí vận chuyển đổi trả do Bên B chi trả.",
-        "Điều 6. Điều khoản chung: Hai bên cam kết thực hiện đúng các điều khoản đã thỏa thuận,",
-        "mọi tranh chấp phát sinh được giải quyết trên tinh thần thương lượng, hòa giải.",
-    ]
-    supplier_contract_scan("04_hop_dong_nha_cung_cap_dien_may.pdf", "Công ty TNHH Thương mại Kỹ nghệ Phương Nam",
-                            "HĐNT-2026/DM-018", lines)
-
-
-def contract_b():
-    lines = [
-        "Điều 1. Đối tượng hợp đồng: Bên B cung cấp cho Bên A các mặt hàng thực phẩm khô đóng gói",
-        "theo danh mục SKU đính kèm Phụ lục 01, số lượng đặt hàng theo nhu cầu thực tế từng chi nhánh.",
-        "Điều 2. Thời hạn hợp đồng: 12 tháng kể từ ngày ký, có thể gia hạn theo thỏa thuận hai bên.",
-        "Điều 3. Tiêu chuẩn chất lượng: Hàng hóa phải có giấy chứng nhận an toàn thực phẩm còn hiệu",
-        "lực, hạn sử dụng còn tối thiểu 2/3 thời hạn tại thời điểm giao hàng.",
-        "Điều 4. Phương thức giao nhận: Giao hàng trực tiếp đến từng cửa hàng theo lịch phân bổ hàng",
-        "tuần do Bên A cung cấp.",
-        "Điều 5. Thanh toán: Công nợ 15 ngày kể từ ngày nhận hàng, chiết khấu 2% nếu thanh toán sớm",
-        "trong vòng 5 ngày.",
-        "Điều 6. Xử lý hàng cận hạn: Bên B hỗ trợ đổi trả hàng cận hạn sử dụng dưới 30 ngày theo",
-        "chính sách thu hồi hàng chậm luân chuyển.",
-    ]
-    supplier_contract_scan("05_hop_dong_nha_cung_cap_thuc_pham.pdf", "Công ty Cổ phần Thực phẩm Sạch Miền Tây",
-                            "HĐNT-2026/TP-042", lines)
+    reference_text = f"{BRAND.upper()}\nBIÊN BẢN BÀN GIAO HÀNG HÓA\nSố: BBGH-2026/0817 — Ngày 17/08/2026\n\n" + "\n".join(
+        l for l in lines if l.strip()) + "\n\nBÊN GIAO: Trần Văn Bình\nBÊN NHẬN: Lê Thị Hồng"
+    return {"filename": filename, "reference_text": reference_text}
 
 
 if __name__ == "__main__":
     os.makedirs(OUT_DIR, exist_ok=True)
     catalogue_home_appliances()
     catalogue_electronics()
-    catalogue_food()
-    contract_a()
-    contract_b()
+    contract_electronics()
+    contract_food()
+    meta = scan_delivery_handover()
     print("Done: 5 pdf files ->", os.path.abspath(OUT_DIR))
+    print("  scan reference_text chars:", len(meta["reference_text"]))

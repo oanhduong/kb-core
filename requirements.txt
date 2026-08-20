@@ -3,3 +3,11 @@ openpyxl==3.1.5
 reportlab==5.0.0
 Pillow==12.3.0
 numpy==2.5.2
+gTTS==2.5.4
+pyttsx3==2.99
+pypdf==6.16.1
+
+# Chi dung cho scripts/gen_ground_truth.py (do so trang docx that qua ban render proxy,
+# vi khong co Microsoft Word/LibreOffice trong moi truong nay):
+mammoth==1.12.1
+weasyprint==69.0
