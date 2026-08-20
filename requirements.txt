@@ -11,3 +11,15 @@ pypdf==6.16.1
 # vi khong co Microsoft Word/LibreOffice trong moi truong nay):
 mammoth==1.12.1
 weasyprint==69.0
+
+# Dung cho ingest/parsers.py (pipeline ingest tai lieu). python-docx/openpyxl da khai bao o tren.
+# ffmpeg la phu thuoc he thong, khong cai qua pip (xem data/raw/README.md).
+docling==2.121.0
+faster-whisper==1.2.1
+
+# Dung cho schemas.py (KBRecord, dung chung toan du an)
+pydantic==2.13.4
+
+# Dung de chay tests/ (pytest tests/ --cov=ingest.parsers --cov-report=term-missing)
+pytest==9.1.1
+pytest-cov==7.1.0
