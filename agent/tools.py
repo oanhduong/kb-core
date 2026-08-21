@@ -298,7 +298,8 @@ def extract_image_content(path_or_page, region_hint=None, client=None):
         }],
     )
     text = "\n".join(b.text for b in response.content if b.type == "text")
-    return {"source": source_desc, "extracted_text": text}
+    size_bytes = len(base64.b64decode(image_b64, validate=True))
+    return {"source": source_desc, "extracted_text": text, "size_bytes": size_bytes}
 
 
 # =====================================================================================
