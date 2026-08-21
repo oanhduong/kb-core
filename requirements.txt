@@ -20,6 +20,10 @@ faster-whisper==1.2.1
 # Dung cho schemas.py (KBRecord, dung chung toan du an)
 pydantic==2.13.4
 
+# Dung cho agent/loop.py + agent/tools.py (agent loop goi Claude qua Anthropic Python SDK,
+# khong dung LangChain hay framework nao khac). Can bien moi truong ANTHROPIC_API_KEY.
+anthropic==0.125.0
+
 # Dung de chay tests/ (pytest tests/ --cov=ingest.parsers --cov-report=term-missing)
 pytest==9.1.1
 pytest-cov==7.1.0
