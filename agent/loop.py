@@ -49,6 +49,7 @@ import anthropic
 from agent import verifier as agent_verifier
 from ingest.invariants import ParserError
 from security import gateway as security_gateway
+from security import provenance as security_provenance
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,9 @@ Quy tắc route tool:
 - Với ảnh, luôn dùng extract_image_content — không dùng parse_document.
 - Nếu parse_document báo một trang pdf nằm trong stats.needs_ocr_pages, dùng
   extract_image_content(path_or_page="<file>.pdf#trang=<N>") cho đúng trang đó.
-- Với audio/video, dùng transcribe_media; nếu file dài, chia theo start_sec/end_sec từng đoạn."""
+- Với audio/video, dùng transcribe_media; nếu file dài, chia theo start_sec/end_sec từng đoạn.
+
+""" + security_provenance.PROVENANCE_SYSTEM_INSTRUCTIONS
 
 EXTRACTION_GUIDELINE = """Hướng dẫn trích xuất và ghi KBRecord:
 - Với mỗi đoạn nội dung có ý nghĩa nghiệp vụ (chính sách, giá, khuyến mãi, hợp đồng, ...), gọi
@@ -607,7 +610,7 @@ def main(argv=None):
         )
 
     client = anthropic.Anthropic()
-    _gateway, gated_tools = security_gateway.build_ingest_tools(client)
+    _gateway, gated_tools = security_gateway.build_ingest_tools(client, file_id=file_path)
     loop = AgentLoop(system_prompt=SYSTEM_PROMPT, tools=gated_tools, client=client, break_cache=args.break_cache)
 
     user_message = (

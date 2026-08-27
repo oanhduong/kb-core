@@ -54,7 +54,7 @@ def _run_one_file(file_path, model, max_turns, max_verify_retries):
     """Chạy 1 AgentLoop độc lập cho 1 file — client riêng vì anthropic.Anthropic() không thread-safe
     để share giữa các worker chạy song song."""
     client = anthropic.Anthropic()
-    _gateway, gated_tools = security_gateway.build_ingest_tools(client)
+    _gateway, gated_tools = security_gateway.build_ingest_tools(client, file_id=file_path)
     loop = AgentLoop(
         system_prompt=SYSTEM_PROMPT, tools=gated_tools, client=client, model=model,
         max_turns=max_turns, max_verify_retries=max_verify_retries,

@@ -28,10 +28,12 @@ import logging
 import os
 import re
 import time
+import uuid
 from dataclasses import dataclass
 
 from agent import tools as agent_tools
 from schemas import KBRecord
+from security import audit as security_audit
 from security import policy as security_policy
 
 logger = logging.getLogger(__name__)
@@ -77,13 +79,19 @@ class ApprovalDenied(GatewayError):
 
 class ApprovalBackend:
     """Giao diện chung — request() tạo/ghi nhận yêu cầu (idempotent theo request_id), check() tra
-    trạng thái hiện tại: "approved" | "denied" | "pending"."""
+    trạng thái hiện tại: "approved" | "denied" | "pending". get_approver() (tuỳ chọn, mặc định None)
+    trả về danh tính người đã duyệt cho request_id — dùng để điền approved_by vào security/audit.py
+    khi Gateway được cấu hình audit_log; không bắt buộc override nếu backend không cần audit chi
+    tiết tới mức này."""
 
     def request(self, request_id, tool_name, arguments, reason):
         raise NotImplementedError
 
     def check(self, request_id):
         raise NotImplementedError
+
+    def get_approver(self, request_id):
+        return None
 
 
 class CLIApprovalBackend(ApprovalBackend):
@@ -108,6 +116,11 @@ class CLIApprovalBackend(ApprovalBackend):
 
     def check(self, request_id):
         return self._resolved.get(request_id, "pending")
+
+    def get_approver(self, request_id):
+        # CLI đồng bộ không hỏi tên người duyệt (chỉ y/N) — ghi nhận đây là duyệt tương tác qua CLI,
+        # đủ để phân biệt với duyệt qua QueueApprovalBackend trong audit log, không giả định danh tính.
+        return "cli-interactive" if self._resolved.get(request_id) == "approved" else None
 
 
 class QueueApprovalBackend(ApprovalBackend):
@@ -150,6 +163,10 @@ class QueueApprovalBackend(ApprovalBackend):
     def check(self, request_id):
         entry = self._load().get(request_id)
         return entry["status"] if entry else "pending"
+
+    def get_approver(self, request_id):
+        entry = self._load().get(request_id)
+        return entry["approver"] if entry else None
 
     def approve(self, request_id, approver="human"):
         """Gọi từ quy trình duyệt riêng (CLI admin, dashboard), KHÔNG phải từ agent."""
@@ -295,7 +312,7 @@ def _tool_schemas():
     return schemas
 
 
-def build_gated_registry(gateway, tool_names=None, requested_by="agent"):
+def build_gated_registry(gateway, tool_names=None, requested_by="agent", run_id=None, file_id=None):
     """Registry để truyền thẳng vào AgentLoop(tools=...). Mỗi "function" chỉ forward sang
     gateway.call_tool(name, kwargs, requested_by=requested_by) — AgentLoop (và model đứng sau nó)
     không bao giờ cầm tham chiếu tới implementation thật, chỉ có thể xin Gateway thực thi hộ.
@@ -305,18 +322,25 @@ def build_gated_registry(gateway, tool_names=None, requested_by="agent"):
     tool_names=agent_tools.build_registry(None).keys() ở nơi khởi tạo AgentLoop cho pipeline ingest
     để không đưa delete_kb_record/publish_to_chatbot vào tay một agent không có hướng dẫn khi nào
     nên gọi chúng (Gateway vẫn từ chối nếu lỡ gọi — đây chỉ là giảm bề mặt tấn công/nhầm lẫn thêm
-    một lớp, không phải cơ chế chặn chính)."""
+    một lớp, không phải cơ chế chặn chính).
+
+    run_id/file_id (tuỳ chọn) được đóng gói sẵn vào mỗi lời gọi tool forward tới gateway.call_tool —
+    dùng khi gateway có audit_log (security/audit.py) để mọi entry của cùng 1 lần chạy/1 file gắn
+    đúng run_id/file_id mà không cần agent tự truyền (agent hoàn toàn không biết khái niệm này)."""
     schemas = _tool_schemas()
     names = tool_names if tool_names is not None else schemas.keys()
     return {
-        name: {"function": _make_gated_call(gateway, name, requested_by), "schema": schemas[name]}
+        name: {
+            "function": _make_gated_call(gateway, name, requested_by, run_id, file_id),
+            "schema": schemas[name],
+        }
         for name in names
     }
 
 
-def _make_gated_call(gateway, tool_name, requested_by):
+def _make_gated_call(gateway, tool_name, requested_by, run_id=None, file_id=None):
     def _call(**kwargs):
-        return gateway.call_tool(tool_name, kwargs, requested_by=requested_by)
+        return gateway.call_tool(tool_name, kwargs, requested_by=requested_by, run_id=run_id, file_id=file_id)
     return _call
 
 
@@ -325,16 +349,35 @@ INGEST_TOOL_NAMES = (
 )
 
 
-def build_ingest_tools(client, requested_by="ingest-agent", approval_backend=None):
+def build_ingest_tools(
+    client, requested_by="ingest-agent", approval_backend=None, file_id=None, run_id=None, audit_log=None,
+):
     """Điểm gọi DUY NHẤT nên dùng ở mọi nơi khởi tạo AgentLoop cho pipeline ingest (agent/loop.py::main,
     agent/orchestrator.py::_run_subagent_for_file, agent/batch.py::_run_one_file) — thay thế hoàn
     toàn agent_tools.build_registry(client) trực tiếp. Trả về tools dict cho AgentLoop(tools=...),
     chỉ chứa 5 tool ingest (không đưa delete_kb_record/publish_to_chatbot vào tay agent này — SYSTEM_
     PROMPT của nó không dạy khi nào nên gọi 2 tool đó). Gateway thật đứng sau (giữ implementation +
     audit log) được tạo mới mỗi lần gọi hàm này — khớp vòng đời 1 Gateway/1 client hiện tại của
-    AgentLoop (mỗi sub-agent/file có anthropic.Anthropic() riêng, xem agent/orchestrator.py)."""
-    gateway = Gateway(tool_registry=build_default_registry(client), approval_backend=approval_backend)
-    return gateway, build_gated_registry(gateway, tool_names=INGEST_TOOL_NAMES, requested_by=requested_by)
+    AgentLoop (mỗi sub-agent/file có anthropic.Anthropic() riêng, xem agent/orchestrator.py).
+
+    file_id nên là đường dẫn file đang xử lý (mỗi call site đã biết giá trị này) — gắn vào mọi entry
+    audit của Gateway này qua build_gated_registry(run_id=, file_id=). run_id mặc định tự sinh (1 mã
+    ngẫu nhiên/lần gọi hàm này = 1 lần chạy AgentLoop cho 1 file, khớp vòng đời Gateway ở trên) nếu
+    không truyền — không dùng time.time()/uuid ở nơi khác để hai lần chạy không trùng run_id kể cả
+    khi retry cùng file. audit_log mặc định tự tạo security.audit.AppendOnlyAuditLog() (ghi thật ra
+    security.audit.DEFAULT_AUDIT_LOG_PATH) — truyền audit_log=False (hoặc bất kỳ giá trị falsy không
+    phải None) nếu muốn tắt hẳn audit trail mới này cho lần gọi cụ thể (vd test, dry-run cục bộ)."""
+    if run_id is None:
+        run_id = uuid.uuid4().hex[:12]
+    if audit_log is None:
+        audit_log = security_audit.AppendOnlyAuditLog()
+    elif audit_log is False:
+        audit_log = None
+    gateway = Gateway(tool_registry=build_default_registry(client), approval_backend=approval_backend, audit_log=audit_log)
+    tools = build_gated_registry(
+        gateway, tool_names=INGEST_TOOL_NAMES, requested_by=requested_by, run_id=run_id, file_id=file_id,
+    )
+    return gateway, tools
 
 
 # =====================================================================================
@@ -358,18 +401,30 @@ class Gateway:
 
     agent_registry chỉ nên chứa TÊN tool ở phía agent (schema cho Claude tool-use) — implementation
     thật nằm ở registry truyền vào đây (mặc định build_default_registry()), agent KHÔNG import
-    hay giữ tham chiếu tới các hàm này."""
+    hay giữ tham chiếu tới các hàm này.
 
-    def __init__(self, tool_registry=None, approval_backend=None, audit_log_path=AUDIT_LOG_PATH):
+    audit_log (tuỳ chọn, security.audit.AppendOnlyAuditLog) — khi truyền vào, Gateway GHI THÊM một
+    entry có cấu trúc đầy đủ (run_id, file_id, tool_name, arguments, result_hash, policy_decision,
+    approved_by, latency — xem security/audit.py) cho MỌI quyết định, song song với log JSONL đơn
+    giản ở _audit_log_path phía trên (không thay thế — hai audit trail phục vụ hai mục đích: log cũ
+    tối ưu cho grep nhanh theo outcome/reason, log mới tối ưu cho truy vấn theo run/file, rate limit,
+    anomaly detection qua CLI `python -m security.audit`). Mặc định None -> không ghi log mới, giữ
+    nguyên hành vi cũ (Gateway khởi tạo không truyền audit_log vẫn hoạt động y hệt trước đây)."""
+
+    def __init__(self, tool_registry=None, approval_backend=None, audit_log_path=None, audit_log=None):
         self._registry = tool_registry if tool_registry is not None else build_default_registry()
         self._approval_backend = approval_backend
-        self._audit_log_path = audit_log_path
+        # Không bind AUDIT_LOG_PATH làm default param trực tiếp (default arg chỉ eval MỘT LẦN lúc
+        # định nghĩa hàm) — tra module attribute bên trong thân hàm để monkeypatch
+        # security.gateway.AUDIT_LOG_PATH lúc test/runtime có tác dụng với mọi Gateway() tạo sau đó.
+        self._audit_log_path = audit_log_path if audit_log_path is not None else AUDIT_LOG_PATH
+        self._audit_log = audit_log
 
-    def call_tool(self, tool_name, arguments, requested_by="agent"):
+    def call_tool(self, tool_name, arguments, requested_by="agent", run_id=None, file_id=None):
         decision = security_policy.decide(tool_name)
 
         if decision.category is None:
-            self._audit(tool_name, decision, "denied", requested_by, arguments)
+            self._audit(tool_name, decision, "denied", requested_by, arguments, run_id=run_id, file_id=file_id)
             raise PolicyDenied(decision.reason)
 
         impl = self._registry.get(tool_name)
@@ -378,54 +433,71 @@ class Gateway:
                 f"Tool '{tool_name}' được policy cho phép ({decision.category.value}) nhưng KHÔNG có "
                 "implementation đăng ký trong registry của gateway — fail-closed, không thực thi."
             )
-            self._audit(tool_name, decision, "denied", requested_by, arguments, reason=reason)
+            self._audit(tool_name, decision, "denied", requested_by, arguments, reason=reason, run_id=run_id, file_id=file_id)
             raise PolicyDenied(reason)
 
         if decision.category == security_policy.ToolCategory.READ:
-            return self._call_read(tool_name, decision, impl, arguments, requested_by)
+            return self._call_read(tool_name, decision, impl, arguments, requested_by, run_id, file_id)
 
         if decision.category == security_policy.ToolCategory.WRITE_REVERSIBLE:
-            return self._call_write_reversible(tool_name, decision, impl, arguments, requested_by)
+            return self._call_write_reversible(tool_name, decision, impl, arguments, requested_by, run_id, file_id)
 
-        return self._call_write_irreversible(tool_name, decision, impl, arguments, requested_by)
+        return self._call_write_irreversible(tool_name, decision, impl, arguments, requested_by, run_id, file_id)
 
-    def _call_read(self, tool_name, decision, impl, arguments, requested_by):
+    def _call_read(self, tool_name, decision, impl, arguments, requested_by, run_id=None, file_id=None):
+        start = time.monotonic()
         result = impl(**arguments)
-        self._audit(tool_name, decision, "auto_approved", requested_by, arguments)
+        latency = time.monotonic() - start
+        self._audit(
+            tool_name, decision, "auto_approved", requested_by, arguments,
+            run_id=run_id, file_id=file_id, result=result, latency=latency,
+        )
         return result
 
-    def _call_write_reversible(self, tool_name, decision, impl, arguments, requested_by):
+    def _call_write_reversible(self, tool_name, decision, impl, arguments, requested_by, run_id=None, file_id=None):
         dry_run_fn = impl["dry_run"] if isinstance(impl, dict) else None
         commit_fn = impl["commit"] if isinstance(impl, dict) else impl
 
         if dry_run_fn is not None:
+            start = time.monotonic()
             preview = dry_run_fn(**arguments)
+            dry_run_latency = time.monotonic() - start
             preview_text = json.dumps(preview, ensure_ascii=False)
             logger.info("gateway dry-run tool=%s preview=%s", tool_name, preview_text)
             self._audit(
                 tool_name, decision, "dry_run", requested_by, arguments,
                 reason=f"{decision.reason} Preview (chưa ghi): {preview_text}",
+                run_id=run_id, file_id=file_id, result=preview, latency=dry_run_latency,
             )
 
+        start = time.monotonic()
         result = commit_fn(**arguments)
-        self._audit(tool_name, decision, "committed", requested_by, arguments)
+        commit_latency = time.monotonic() - start
+        self._audit(
+            tool_name, decision, "committed", requested_by, arguments,
+            run_id=run_id, file_id=file_id, result=result, latency=commit_latency,
+        )
         return result
 
-    def _call_write_irreversible(self, tool_name, decision, impl, arguments, requested_by):
+    def _call_write_irreversible(self, tool_name, decision, impl, arguments, requested_by, run_id=None, file_id=None):
         request_id = _request_id(tool_name, arguments)
 
         def resolved(status):
             """status đã là 'approved'/'denied' (không phải 'pending') -> thực thi hoặc raise
             ApprovalDenied, kèm audit. Trả về kết quả nếu approved, không return nếu denied (raise)."""
             if status == "approved":
+                approved_by = self._approval_backend.get_approver(request_id) if self._approval_backend else None
+                start = time.monotonic()
                 result = impl(**arguments)
+                latency = time.monotonic() - start
                 self._audit(
                     tool_name, decision, "committed", requested_by, arguments,
                     reason=f"{decision.reason} Đã approved cho request_id={request_id}.",
+                    run_id=run_id, file_id=file_id, result=result, latency=latency, approved_by=approved_by,
                 )
                 return result
             reason = f"{decision.reason} Human đã từ chối request_id={request_id}."
-            self._audit(tool_name, decision, "denied", requested_by, arguments, reason=reason)
+            self._audit(tool_name, decision, "denied", requested_by, arguments, reason=reason, run_id=run_id, file_id=file_id)
             raise ApprovalDenied(reason, request_id=request_id)
 
         status = self._approval_backend.check(request_id) if self._approval_backend else "pending"
@@ -447,10 +519,13 @@ class Gateway:
             f"approval queue trước khi thực thi — chưa có approval cho request_id={request_id}"
             + ("." if self._approval_backend is not None else " (không có approval_backend nào được cấu hình).")
         )
-        self._audit(tool_name, decision, "pending_approval", requested_by, arguments, reason=reason)
+        self._audit(tool_name, decision, "pending_approval", requested_by, arguments, reason=reason, run_id=run_id, file_id=file_id)
         raise ApprovalRequired(reason, request_id=request_id)
 
-    def _audit(self, tool_name, decision, outcome, requested_by, arguments, reason=None):
+    def _audit(
+        self, tool_name, decision, outcome, requested_by, arguments, reason=None,
+        run_id=None, file_id=None, result=None, latency=None, approved_by=None,
+    ):
         entry = AuditEntry(
             ts=time.time(),
             tool_name=tool_name,
@@ -468,3 +543,10 @@ class Gateway:
             "gateway audit tool=%s category=%s outcome=%s requested_by=%s reason=%s",
             tool_name, entry.category, outcome, requested_by, entry.reason,
         )
+
+        if self._audit_log is not None:
+            self._audit_log.append(
+                run_id=run_id, file_id=file_id, tool_name=tool_name, arguments=arguments,
+                result=result, policy_decision=outcome, approved_by=approved_by,
+                latency_seconds=latency if latency is not None else 0.0,
+            )

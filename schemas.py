@@ -16,6 +16,10 @@ class KBRecord(BaseModel):
     location: str  # "p.12" | "Sheet1!A5:D5" | "00:02:15"
     metadata: dict  # store_code, sku, effective_date, version
     confidence: float = Field(ge=0.0, le=1.0)
+    # Đoạn nội dung nghi vấn prompt injection lấy từ file nguồn (xem security/provenance.py) — model
+    # tự báo cáo theo PROVENANCE_SYSTEM_INSTRUCTIONS, và/hoặc write_kb_record tự bổ sung qua
+    # scan_for_suspicious_content(). Rỗng ở tuyệt đại đa số record hợp lệ.
+    suspicious_content: list[str] = Field(default_factory=list)
 
     @field_validator("record_id", "source_file", "location", "content")
     @classmethod

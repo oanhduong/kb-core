@@ -24,6 +24,7 @@ from pydantic import ValidationError
 from ingest import parsers
 from ingest.invariants import check_result
 from schemas import KBRecord
+from security import provenance
 
 OUTPUT_DIR = os.path.join("data", "output")
 VISION_MODEL = "claude-sonnet-4-6"
@@ -139,7 +140,8 @@ def parse_document(path, sheet_name=None, page_range=None):
             )
         result = parsers.parse_docx(path)
         check_result("docx", path, result)
-        return {"chunks": result["chunks"], "stats": result["stats"]}
+        chunks = provenance.wrap_chunks(result["chunks"], source=path, doc_type="docx")
+        return {"chunks": chunks, "stats": result["stats"]}
 
     if kind == "xlsx":
         if page_range is not None:
@@ -156,13 +158,15 @@ def parse_document(path, sheet_name=None, page_range=None):
             chunks = [c for c in result["chunks"] if c["location"].startswith(prefix)]
         else:
             chunks = result["chunks"]
+        scoped_chunk_count = len(chunks)
+        chunks = provenance.wrap_chunks(chunks, source=path, doc_type="xlsx")
 
         return {
             "chunks": chunks,
             "stats": {
                 "total_sheets": stats["sheet_count"],
                 "sheet_names": sheet_names,
-                "scoped_chunk_count": len(chunks),
+                "scoped_chunk_count": scoped_chunk_count,
             },
         }
 
@@ -178,13 +182,15 @@ def parse_document(path, sheet_name=None, page_range=None):
             chunks = [c for c in result["chunks"] if _chunk_in_page_range(c, lo, hi)]
         else:
             chunks = result["chunks"]
+        scoped_chunk_count = len(chunks)
+        chunks = provenance.wrap_chunks(chunks, source=path, doc_type="pdf")
 
         return {
             "chunks": chunks,
             "stats": {
                 "total_pages": stats["page_count"],
                 "needs_ocr_pages": stats["pages_needing_ocr"],
-                "scoped_chunk_count": len(chunks),
+                "scoped_chunk_count": scoped_chunk_count,
             },
         }
 
@@ -299,7 +305,8 @@ def extract_image_content(path_or_page, region_hint=None, client=None):
     )
     text = "\n".join(b.text for b in response.content if b.type == "text")
     size_bytes = len(base64.b64decode(image_b64, validate=True))
-    return {"source": source_desc, "extracted_text": text, "size_bytes": size_bytes}
+    wrapped_text = provenance.wrap_untrusted(text, source=source_desc, doc_type="image_ocr")
+    return {"source": source_desc, "extracted_text": wrapped_text, "size_bytes": size_bytes}
 
 
 # =====================================================================================
@@ -401,6 +408,7 @@ def transcribe_media(path, start_sec=None, end_sec=None):
         stats = {"segment_count": len(chunks), "range_start_sec": start_sec or 0.0, "range_end_sec": end_sec}
         check_result(kind, path, {"chunks": chunks, "stats": stats})
 
+    chunks = provenance.wrap_chunks(chunks, source=path, doc_type="transcript")
     return {"chunks": chunks, "stats": stats}
 
 
@@ -489,11 +497,28 @@ def _format_validation_errors(e):
     return "KBRecord không hợp lệ:\n" + "\n".join(lines)
 
 
+def _with_scanned_suspicious_content(record):
+    """Tự động quét record["content"] theo security.provenance.scan_for_suspicious_content và gộp
+    với suspicious_content model đã tự khai theo PROVENANCE_SYSTEM_INSTRUCTIONS (nếu có) — lớp
+    phòng thủ độc lập, hoạt động cả khi model bỏ qua chỉ dẫn. Không mutate record gốc; trả về
+    record y hệt (cùng object) nếu không quét thấy gì mới để tránh copy vô ích."""
+    content = record.get("content")
+    scanned = provenance.scan_for_suspicious_content(content) if isinstance(content, str) else []
+    if not scanned:
+        return record
+    existing = record.get("suspicious_content")
+    if not isinstance(existing, list):
+        existing = []
+    merged = list(dict.fromkeys([*existing, *scanned]))  # dedup, giữ nguyên thứ tự xuất hiện
+    return {**record, "suspicious_content": merged}
+
+
 def write_kb_record(record):
     if not isinstance(record, dict):
         raise ToolError("record phải là object JSON khớp schemas.KBRecord.")
 
     _check_effective_date(record)
+    record = _with_scanned_suspicious_content(record)
 
     try:
         kb_record = KBRecord(**record)

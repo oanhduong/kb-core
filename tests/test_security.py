@@ -15,6 +15,7 @@ import pytest
 
 from agent import tools as agent_tools
 from agent.loop import AgentLoop
+from security import audit as security_audit
 from security import gateway as security_gateway
 from security import policy as security_policy
 from security import sandbox as security_sandbox
@@ -436,6 +437,149 @@ def test_agentloop_compromised_model_calling_delete_kb_record_is_blocked_by_gate
     assert "approval" in tool_result_content.lower()
 
     assert os.path.isfile(record_path)  # file KB vẫn còn nguyên
+
+
+# =====================================================================================
+# GATEWAY <-> security/audit.py — wiring (Gateway ghi thêm entry có cấu trúc khi được cấu hình
+# audit_log, song song với log JSONL đơn giản ở audit_log_path — xem docstring Gateway).
+# =====================================================================================
+
+def test_gateway_without_audit_log_param_behaves_exactly_as_before(tmp_path, audit_path):
+    """audit_log mặc định None -> KHÔNG ghi gì vào security/audit.py, hành vi y hệt trước khi có
+    tham số này (không tạo file nào ngoài audit_log_path cũ)."""
+    gw = make_gateway(tmp_path, audit_path)
+    gw.call_tool("detect_file_type", {"path": "data/raw/f.pdf"})
+    assert gw._audit_log is None
+
+
+def test_gateway_with_audit_log_writes_structured_entry_for_read_tool(tmp_path, audit_path):
+    audit_log = security_audit.AppendOnlyAuditLog(path=os.path.join(tmp_path, "audit_trail.log"))
+    gw = security_gateway.Gateway(
+        tool_registry={"detect_file_type": lambda path: {"path": path, "kind": "pdf"}},
+        audit_log_path=audit_path, audit_log=audit_log,
+    )
+    gw.call_tool("detect_file_type", {"path": "data/raw/f.pdf"}, requested_by="a", run_id="run-1", file_id="data/raw/f.pdf")
+
+    entries = audit_log.read_entries()
+    assert len(entries) == 1
+    assert entries[0]["run_id"] == "run-1"
+    assert entries[0]["file_id"] == "data/raw/f.pdf"
+    assert entries[0]["tool_name"] == "detect_file_type"
+    assert entries[0]["policy_decision"] == "auto_approved"
+    assert entries[0]["result_hash"].startswith("sha256:")
+    assert entries[0]["latency_seconds"] >= 0.0
+
+
+def test_gateway_with_audit_log_records_dry_run_then_committed_for_write_reversible(tmp_path, audit_path):
+    audit_log = security_audit.AppendOnlyAuditLog(path=os.path.join(tmp_path, "audit_trail.log"))
+    registry = {
+        "write_kb_record": {
+            "dry_run": lambda record: {"preview": True},
+            "commit": lambda record: {"status": "written"},
+        },
+    }
+    gw = security_gateway.Gateway(tool_registry=registry, audit_log_path=audit_path, audit_log=audit_log)
+    gw.call_tool("write_kb_record", {"record": VALID_RECORD}, run_id="run-1", file_id="f.pdf")
+
+    entries = audit_log.read_entries(run_id="run-1")
+    assert [e["policy_decision"] for e in entries] == ["dry_run", "committed"]
+    assert all(e["file_id"] == "f.pdf" for e in entries)
+
+
+def test_gateway_with_audit_log_records_pending_then_committed_with_approver_for_irreversible(tmp_path, audit_path):
+    audit_log = security_audit.AppendOnlyAuditLog(path=os.path.join(tmp_path, "audit_trail.log"))
+    queue_path = os.path.join(tmp_path, "approval_queue.json")
+    backend = security_gateway.QueueApprovalBackend(queue_path=queue_path)
+    registry = {"delete_kb_record": lambda record_id: {"status": "deleted", "record_id": record_id}}
+    gw = security_gateway.Gateway(
+        tool_registry=registry, approval_backend=backend, audit_log_path=audit_path, audit_log=audit_log,
+    )
+
+    with pytest.raises(security_gateway.ApprovalRequired) as exc_info:
+        gw.call_tool("delete_kb_record", {"record_id": "price-abc-001"}, run_id="run-1", file_id="f.pdf")
+    request_id = exc_info.value.request_id
+
+    backend.approve(request_id, approver="ops-oanh")
+    gw.call_tool("delete_kb_record", {"record_id": "price-abc-001"}, run_id="run-1", file_id="f.pdf")
+
+    entries = audit_log.read_entries(run_id="run-1")
+    assert [e["policy_decision"] for e in entries] == ["pending_approval", "committed"]
+    assert entries[0]["approved_by"] is None  # chưa có approval lúc pending
+    assert entries[1]["approved_by"] == "ops-oanh"  # QueueApprovalBackend.get_approver tra lại đúng người duyệt
+
+
+def test_gateway_with_audit_log_long_arguments_are_hashed(tmp_path, audit_path):
+    audit_log = security_audit.AppendOnlyAuditLog(path=os.path.join(tmp_path, "audit_trail.log"))
+    registry = {"write_kb_record": lambda record: {"status": "written"}}
+    gw = security_gateway.Gateway(tool_registry=registry, audit_log_path=audit_path, audit_log=audit_log)
+    big_record = {**VALID_RECORD, "content": "x" * 5000}
+
+    gw.call_tool("write_kb_record", {"record": big_record}, run_id="run-1", file_id="f.pdf")
+
+    entries = audit_log.read_entries(run_id="run-1")
+    assert "x" * 5000 not in json.dumps(entries[0]["arguments"])
+    assert entries[0]["arguments"]["truncated"] is True
+
+
+# =====================================================================================
+# build_ingest_tools <-> audit_log thật (mặc định tự tạo AppendOnlyAuditLog nếu không truyền)
+# =====================================================================================
+
+def _write_fake_pdf(path):
+    with open(path, "wb") as f:
+        f.write(b"%PDF-1.4\n%fake pdf for tests\n")
+    return path
+
+
+def test_build_ingest_tools_auto_creates_audit_log_writing_to_given_path(tmp_path, monkeypatch):
+    audit_trail_path = os.path.join(tmp_path, "audit_trail.log")
+    monkeypatch.setattr(security_audit, "DEFAULT_AUDIT_LOG_PATH", audit_trail_path)
+    monkeypatch.setattr(security_gateway, "AUDIT_LOG_PATH", os.path.join(tmp_path, "audit.log"))
+    fake_pdf = _write_fake_pdf(os.path.join(tmp_path, "f.pdf"))
+
+    gateway, tools = security_gateway.build_ingest_tools(client=None, file_id=fake_pdf)
+    tools["detect_file_type"]["function"](path=fake_pdf)
+
+    assert gateway._audit_log is not None
+    entries = gateway._audit_log.read_entries()
+    assert len(entries) == 1
+    assert entries[0]["file_id"] == fake_pdf
+    assert entries[0]["run_id"]  # tự sinh, không rỗng
+
+
+def test_build_ingest_tools_different_calls_get_different_run_ids(tmp_path, monkeypatch):
+    shared_path = os.path.join(tmp_path, "audit_trail.log")
+    monkeypatch.setattr(security_audit, "DEFAULT_AUDIT_LOG_PATH", shared_path)
+    monkeypatch.setattr(security_gateway, "AUDIT_LOG_PATH", os.path.join(tmp_path, "audit.log"))
+    fake_a = _write_fake_pdf(os.path.join(tmp_path, "a.pdf"))
+    fake_b = _write_fake_pdf(os.path.join(tmp_path, "b.pdf"))
+
+    gw1, tools1 = security_gateway.build_ingest_tools(client=None, file_id=fake_a)
+    gw2, tools2 = security_gateway.build_ingest_tools(client=None, file_id=fake_b)
+    tools1["detect_file_type"]["function"](path=fake_a)
+    tools2["detect_file_type"]["function"](path=fake_b)
+
+    entries = security_audit.AppendOnlyAuditLog(path=shared_path).read_entries()
+    run_ids = {e["run_id"] for e in entries}
+    assert len(run_ids) == 2  # 2 lần build_ingest_tools riêng biệt -> 2 run_id khác nhau, không trùng
+
+
+def test_build_ingest_tools_explicit_run_id_is_used_verbatim(tmp_path, monkeypatch):
+    monkeypatch.setattr(security_audit, "DEFAULT_AUDIT_LOG_PATH", os.path.join(tmp_path, "audit_trail.log"))
+    monkeypatch.setattr(security_gateway, "AUDIT_LOG_PATH", os.path.join(tmp_path, "audit.log"))
+    fake_pdf = _write_fake_pdf(os.path.join(tmp_path, "a.pdf"))
+
+    gateway, tools = security_gateway.build_ingest_tools(client=None, file_id=fake_pdf, run_id="fixed-run-id")
+    tools["detect_file_type"]["function"](path=fake_pdf)
+
+    entries = gateway._audit_log.read_entries(run_id="fixed-run-id")
+    assert len(entries) == 1
+
+
+def test_build_ingest_tools_audit_log_false_disables_new_audit_trail(tmp_path, monkeypatch):
+    monkeypatch.setattr(security_gateway, "AUDIT_LOG_PATH", os.path.join(tmp_path, "audit.log"))
+    gateway, _tools = security_gateway.build_ingest_tools(client=None, audit_log=False)
+    assert gateway._audit_log is None
 
 
 # =====================================================================================

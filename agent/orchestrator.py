@@ -60,7 +60,7 @@ def _run_subagent_for_file(file_path, model, max_turns, max_verify_retries, deci
     file trước trong lần chạy này — đưa vào user_message vì sub-agent không có lịch sử chung với
     sub-agent của file khác."""
     client = anthropic.Anthropic()
-    _gateway, gated_tools = security_gateway.build_ingest_tools(client)
+    _gateway, gated_tools = security_gateway.build_ingest_tools(client, file_id=file_path)
     loop = AgentLoop(
         system_prompt=SYSTEM_PROMPT, tools=gated_tools, client=client, model=model,
         max_turns=max_turns, max_verify_retries=max_verify_retries,
