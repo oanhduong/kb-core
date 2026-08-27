@@ -46,9 +46,9 @@ from dataclasses import dataclass, field
 
 import anthropic
 
-from agent import tools as agent_tools
 from agent import verifier as agent_verifier
 from ingest.invariants import ParserError
+from security import gateway as security_gateway
 
 logger = logging.getLogger(__name__)
 
@@ -607,8 +607,8 @@ def main(argv=None):
         )
 
     client = anthropic.Anthropic()
-    registry = agent_tools.build_registry(client)
-    loop = AgentLoop(system_prompt=SYSTEM_PROMPT, tools=registry, client=client, break_cache=args.break_cache)
+    _gateway, gated_tools = security_gateway.build_ingest_tools(client)
+    loop = AgentLoop(system_prompt=SYSTEM_PROMPT, tools=gated_tools, client=client, break_cache=args.break_cache)
 
     user_message = (
         f"Hãy ingest file '{file_path}' vào knowledge base: xác định loại file, đọc toàn bộ nội dung có "

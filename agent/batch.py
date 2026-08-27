@@ -15,8 +15,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import anthropic
 
-from agent import tools as agent_tools
 from agent.loop import MODEL, SYSTEM_PROMPT, AgentLoop
+from security import gateway as security_gateway
 
 DEFAULT_RAW_DIR = os.path.join("data", "raw")
 DEFAULT_WORKERS = 4
@@ -54,9 +54,9 @@ def _run_one_file(file_path, model, max_turns, max_verify_retries):
     """Chạy 1 AgentLoop độc lập cho 1 file — client riêng vì anthropic.Anthropic() không thread-safe
     để share giữa các worker chạy song song."""
     client = anthropic.Anthropic()
-    registry = agent_tools.build_registry(client)
+    _gateway, gated_tools = security_gateway.build_ingest_tools(client)
     loop = AgentLoop(
-        system_prompt=SYSTEM_PROMPT, tools=registry, client=client, model=model,
+        system_prompt=SYSTEM_PROMPT, tools=gated_tools, client=client, model=model,
         max_turns=max_turns, max_verify_retries=max_verify_retries,
     )
     user_message = (

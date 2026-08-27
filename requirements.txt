@@ -27,3 +27,8 @@ anthropic==0.125.0
 # Dung de chay tests/ (pytest tests/ --cov=ingest.parsers --cov-report=term-missing)
 pytest==9.1.1
 pytest-cov==7.1.0
+
+# Dung cho security/sandbox.py (chay parser trong container Docker co lap). Can Docker daemon khi
+# chay that; tests/test_security.py mock docker client qua tham so run_parser(client=...) nen
+# khong can Docker daemon de chay test.
+docker==7.1.0

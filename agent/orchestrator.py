@@ -30,9 +30,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import anthropic
 
 from agent import memory as agent_memory
-from agent import tools as agent_tools
 from agent.loop import MODEL, SYSTEM_PROMPT, AgentLoop
 from ingest import parsers
+from security import gateway as security_gateway
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +60,9 @@ def _run_subagent_for_file(file_path, model, max_turns, max_verify_retries, deci
     file trước trong lần chạy này — đưa vào user_message vì sub-agent không có lịch sử chung với
     sub-agent của file khác."""
     client = anthropic.Anthropic()
-    registry = agent_tools.build_registry(client)
+    _gateway, gated_tools = security_gateway.build_ingest_tools(client)
     loop = AgentLoop(
-        system_prompt=SYSTEM_PROMPT, tools=registry, client=client, model=model,
+        system_prompt=SYSTEM_PROMPT, tools=gated_tools, client=client, model=model,
         max_turns=max_turns, max_verify_retries=max_verify_retries,
     )
     source_type = parsers.detect_file_type(file_path)
