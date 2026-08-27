@@ -32,3 +32,7 @@ pytest-cov==7.1.0
 # chay that; tests/test_security.py mock docker client qua tham so run_parser(client=...) nen
 # khong can Docker daemon de chay test.
 docker==7.1.0
+
+# Dung cho ingest/chunkers.py, chien luoc "recursive" (RecursiveCharacterTextSplitter). Package
+# nhe, chi keo theo langchain-core - khong dung framework LangChain day du.
+langchain-text-splitters==1.1.2
