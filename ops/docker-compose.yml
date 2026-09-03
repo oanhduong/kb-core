@@ -1,0 +1,36 @@
+# Hai vector store dùng cho index/store.py (PgVectorStore, QdrantStore). Chạy: docker compose -f
+# ops/docker-compose.yml up -d. Cổng mặc định khớp với index/store.py::DEFAULT_PG_DSN /
+# DEFAULT_QDRANT_URL (localhost, không cần đổi biến môi trường khi chạy local).
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: retail
+      POSTGRES_PASSWORD: retail
+      POSTGRES_DB: retailkb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U retail -d retailkb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.5
+    ports:
+      - "6333:6333"  # HTTP/REST
+      - "6334:6334"  # gRPC
+    volumes:
+      - qdrantdata:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6333'"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  qdrantdata:
