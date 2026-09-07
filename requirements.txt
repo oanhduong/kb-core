@@ -44,3 +44,20 @@ pgvector==0.3.6
 
 # Dung cho index/store.py (QdrantStore) - can Qdrant chay qua ops/docker-compose.yml.
 qdrant-client==1.12.1
+
+# Dung cho index/hybrid.py: BM25 (rank_bm25.BM25Okapi) + tokenize tieng Viet (pyvi.ViTokenizer,
+# nhe hon underthesea - khong keo theo model NLP nang).
+rank_bm25==0.2.2
+pyvi==0.1.1
+
+# Dung cho index/rerank.py (cross-encoder BAAI/bge-reranker-v2-m3, chay CPU qua
+# transformers.AutoModelForSequenceClassification - khong dung sentence-transformers/FlagEmbedding).
+torch==2.13.0
+transformers==5.8.1
+
+# Dung cho qa/answer.py (FastAPI endpoint POST /ask).
+fastapi==0.141.1
+uvicorn==0.52.4
+
+# Dung de chay tests/test_answer.py (fastapi.testclient.TestClient can httpx cai san).
+httpx==0.28.1
