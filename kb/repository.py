@@ -115,12 +115,15 @@ def context_chunks_for_records(session: Session, record_ids: Sequence[str], *, i
 
 
 def active_price_records_for_skus(session: Session, skus: Sequence[str], store_codes: Sequence[str | None] | None,
-                                  doc_types: Sequence[str] = ("price_list", "promotion", "catalog")) -> list[KBRecordRow]:
+                                  doc_types: Sequence[str] = ("price_list", "promotion", "catalog"),
+                                  workspace_id: str | None = None) -> list[KBRecordRow]:
     """Mọi record ĐANG hiệu lực nhắc tới các SKU (để phát hiện mâu thuẫn giá — B4)."""
     if not skus:
         return []
     q = select(KBRecordRow).where(KBRecordRow.skus.op("&&")(list(skus)), KBRecordRow.is_active.is_(True),
                                   KBRecordRow.deleted_at.is_(None), KBRecordRow.doc_type.in_(list(doc_types)))
+    if workspace_id is not None:
+        q = q.where(KBRecordRow.workspace_id == workspace_id)
     if store_codes is not None:
         concrete = [s for s in store_codes if s]
         cond = KBRecordRow.store_code.in_(concrete) if concrete else None
@@ -131,10 +134,11 @@ def active_price_records_for_skus(session: Session, skus: Sequence[str], store_c
     return list(session.execute(q.limit(200)).scalars())
 
 
-def record_counts_by_doc_type(session: Session) -> dict[str, dict[str, int]]:
-    rows = session.execute(
-        select(KBRecordRow.doc_type, KBRecordRow.status, func.count()).where(KBRecordRow.deleted_at.is_(None))
-        .group_by(KBRecordRow.doc_type, KBRecordRow.status)).all()
+def record_counts_by_doc_type(session: Session, workspace_id: str | None = None) -> dict[str, dict[str, int]]:
+    q = select(KBRecordRow.doc_type, KBRecordRow.status, func.count()).where(KBRecordRow.deleted_at.is_(None))
+    if workspace_id:
+        q = q.where(KBRecordRow.workspace_id == workspace_id)
+    rows = session.execute(q.group_by(KBRecordRow.doc_type, KBRecordRow.status)).all()
     out: dict[str, dict[str, int]] = {}
     for dt, status, n in rows:
         out.setdefault(dt, {})[status] = int(n)

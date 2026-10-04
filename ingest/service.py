@@ -67,15 +67,15 @@ def humanize_title(filename: str) -> str:
     return re.sub(r"[_]+", " ", stem).strip() or filename
 
 
-def register_upload(session: Session, cfg: AppConfig, *, src: BinaryIO | str, filename: str, opts: UploadOptions,
-                    uploaded_by: str | None, batch_id: str | None = None) -> UploadResult:
+def register_upload(session: Session, cfg: AppConfig, *, workspace_id: str, src: BinaryIO | str, filename: str,
+                    opts: UploadOptions, uploaded_by: str | None, batch_id: str | None = None) -> UploadResult:
     fname = safe_filename(filename)
     ext = os.path.splitext(fname)[1].lower()
     if ext not in cfg.ingest.allowed_extensions or ext not in EXT_SOURCE_TYPE:
         raise ValidationFailed(f"Định dạng {ext or '(không có đuôi)'} không được hỗ trợ. Hỗ trợ: {', '.join(cfg.ingest.allowed_extensions)}",
                                context={"filename": fname})
-    if opts.doc_type and opts.doc_type not in DOC_TYPES:
-        raise ValidationFailed(f"doc_type không hợp lệ: {opts.doc_type}. Hợp lệ: {', '.join(DOC_TYPES)}")
+    if opts.doc_type and not re.match(r"^[a-z][a-z0-9_]{1,31}$", opts.doc_type):
+        raise ValidationFailed("doc_type phải là mã chữ thường (vd policy, report, price_list)")
     validate_replace_mode(opts.replace_mode)
 
     doc_id = new_id()
@@ -105,20 +105,20 @@ def register_upload(session: Session, cfg: AppConfig, *, src: BinaryIO | str, fi
         raise ValidationFailed("File rỗng", context={"filename": fname})
     digest = file_sha256(dest)
 
-    existing = session.execute(select(Document).where(Document.content_hash == digest, Document.deleted_at.is_(None))
-                               .order_by(Document.created_at)).scalars().first()
+    existing = session.execute(select(Document).where(Document.workspace_id == workspace_id, Document.content_hash == digest,
+                                                      Document.deleted_at.is_(None)).order_by(Document.created_at)).scalars().first()
     if existing is not None:
         shutil.rmtree(folder, ignore_errors=True)
         job = session.execute(select(Job).where(Job.document_id == existing.id, Job.type == "ingest_file")
                               .order_by(Job.created_at.desc())).scalars().first()
         if job is None:
             job = enqueue_job(session, "ingest_file", {"document_id": existing.id}, document_id=existing.id,
-                              created_by=uploaded_by, idempotency_key=f"ingest:{existing.id}")
+                              created_by=uploaded_by, idempotency_key=f"ingest:{existing.id}", workspace_id=workspace_id)
         log_event(logger, "upload_duplicate_file", document_id=existing.id, filename=fname)
         return UploadResult(existing.id, job.id, existing.filename, True, existing.status)
 
     doc = Document(
-        id=doc_id, filename=fname, title=(opts.title or humanize_title(fname)).strip(),
+        id=doc_id, workspace_id=workspace_id, filename=fname, title=(opts.title or humanize_title(fname)).strip(),
         series_key=opts.series_key or derive_series_key(fname), source_type=EXT_SOURCE_TYPE[ext],
         doc_type=opts.doc_type or "unknown", store_code=opts.store_code, effective_date=opts.effective_date,
         version=opts.version, content_hash=digest, storage_path=dest, size_bytes=written, status="pending",
@@ -129,6 +129,6 @@ def register_upload(session: Session, cfg: AppConfig, *, src: BinaryIO | str, fi
     session.add(doc)
     session.flush()
     job = enqueue_job(session, "ingest_file", {"document_id": doc.id}, document_id=doc.id, batch_id=batch_id,
-                      created_by=uploaded_by, idempotency_key=f"ingest:{doc.id}")
+                      created_by=uploaded_by, idempotency_key=f"ingest:{doc.id}", workspace_id=workspace_id)
     log_event(logger, "upload_registered", document_id=doc.id, filename=fname, size=written, job_id=job.id)
     return UploadResult(doc.id, job.id, fname, False, doc.status)

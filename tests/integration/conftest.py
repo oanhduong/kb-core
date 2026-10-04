@@ -49,17 +49,22 @@ def env(tmp_path_factory):
         conn.execute("DROP SCHEMA IF EXISTS public CASCADE")
         conn.execute("CREATE SCHEMA public")
         conn.execute("LOAD 'age'")
-        if conn.execute("SELECT 1 FROM ag_catalog.ag_graph WHERE name = 'retail_kb'").fetchone():
-            conn.execute("SELECT ag_catalog.drop_graph('retail_kb', true)")
+        for (name,) in conn.execute("SELECT name FROM ag_catalog.ag_graph").fetchall():
+            conn.execute(f"SELECT ag_catalog.drop_graph('{name}', true)")
     cfg = Config(os.path.join(os.path.dirname(__file__), "..", "..", "alembic.ini"))
     cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "..", "..", "migrations"))
     command.upgrade(cfg, "head")
 
-    from graph.store import AgeGraphStore, set_graph_store
+    from graph.store import AgeGraphStore, graph_name_for, set_graph_store_factory
 
-    set_graph_store(AgeGraphStore(TEST_DSN, "retail_kb"))
+    def _factory(ws: str):
+        store = AgeGraphStore(TEST_DSN, graph_name_for(ws))
+        store.ensure()
+        return store
+
+    set_graph_store_factory(_factory)
     yield {"upload_dir": str(upload_dir)}
-    set_graph_store(None)
+    set_graph_store_factory(None)
     shutil.rmtree(upload_dir, ignore_errors=True)
     reset_caches()
     reset_engine_cache()
@@ -76,8 +81,20 @@ SEED = [
 
 
 @pytest.fixture(scope="session")
-def seeded(env):
-    """Ingest dữ liệu mẫu 1 lần (idempotent: file đã có thì trả document cũ)."""
+def account(env):
+    """User + workspace pack retail dùng chung cho integration test. Trả dict id/email/password."""
+    from accounts import service as accounts
+    from core.db import session_scope
+
+    with session_scope() as s:
+        user = accounts.create_user(s, email="owner@test.local", password="owner-pass-123", name="Owner")
+        ws = accounts.create_workspace(s, user, name="Test retail", domain_pack="retail")
+        return {"user_id": user.id, "email": user.email, "password": "owner-pass-123", "workspace_id": ws.id}
+
+
+@pytest.fixture(scope="session")
+def seeded(env, account):
+    """Ingest dữ liệu mẫu 1 lần vào workspace test (idempotent: file đã có thì trả document cũ)."""
     from core.config import get_config
     from core.db import session_scope
     from ingest.service import UploadOptions, register_upload
@@ -85,7 +102,7 @@ def seeded(env):
 
     with session_scope() as s:
         for path, opts in SEED:
-            register_upload(s, get_config(), src=path, filename=path.rsplit("/", 1)[-1], opts=UploadOptions(**opts),
-                            uploaded_by="test")
+            register_upload(s, get_config(), workspace_id=account["workspace_id"], src=path, filename=path.rsplit("/", 1)[-1],
+                            opts=UploadOptions(**opts), uploaded_by="test")
     Worker("seed-test").loop(once=True)
-    return True
+    return account

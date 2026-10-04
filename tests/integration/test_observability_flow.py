@@ -35,6 +35,13 @@ class FakeLangfuse:
         pass
 
 
+@pytest.fixture(autouse=True)
+def _ws(seeded):
+    from tests.integration.test_qa_service import WS
+
+    WS["id"] = seeded["workspace_id"]
+
+
 @pytest.fixture
 def langfuse(monkeypatch, env):
     from observability import tracing
@@ -54,7 +61,7 @@ def test_qa_request_produces_all_required_spans_and_metadata(langfuse, seeded):
     traces = [kw for k, kw in langfuse.rec if k == "trace"]
     assert traces[0]["id"] == r.trace_id
     meta = traces[0]["metadata"]
-    assert meta["config_version"] and meta["store_code"] == "GM-HN01" and meta["user_id"] == "u-staff"
+    assert meta["config_version"] and meta["store_code"] == "GM-HN01" and meta["user_id"] == "u-viewer" and meta["workspace_id"]
     spans = {kw["name"] for k, kw in langfuse.rec if k == "span"}
     assert {"router", "retrieval", "retrieval.dense", "retrieval.bm25", "retrieval.fusion", "retrieval.rerank",
             "model.answer", "answer.postcheck", "answer.final"} <= spans
@@ -66,7 +73,7 @@ def test_qa_request_produces_all_required_spans_and_metadata(langfuse, seeded):
     assert any((u.get("metadata") or {}).get("question_type") for u in updates)
 
 
-def test_ingest_has_one_trace_per_file(langfuse, env, tmp_path):
+def test_ingest_has_one_trace_per_file(langfuse, env, account, tmp_path):
     from docx import Document as Docx
 
     from core.config import get_config
@@ -82,7 +89,7 @@ def test_ingest_has_one_trace_per_file(langfuse, env, tmp_path):
         d.add_paragraph(f"Ca sáng bắt đầu lúc {7 + i} giờ, nhân viên có mặt trước 15 phút để bàn giao.")
         d.save(p)
         with session_scope() as s:
-            register_upload(s, get_config(), src=str(p), filename=p.name, opts=UploadOptions(), uploaded_by="t")
+            register_upload(s, get_config(), workspace_id=account["workspace_id"], src=str(p), filename=p.name, opts=UploadOptions(), uploaded_by="t")
     Worker("obs").loop(once=True)
     ingest_traces = [kw for k, kw in langfuse.rec if k == "trace" and kw["name"] == "ingest.file"]
     assert len(ingest_traces) == 2

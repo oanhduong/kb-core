@@ -28,17 +28,19 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--dim", type=int)
     r.add_argument("--force", action="store_true")
     r.add_argument("--wait", action="store_true")
-    sub.add_parser("health")
+    r.add_argument("--workspace")
+    h = sub.add_parser("health")
+    h.add_argument("--workspace", required=True)
     args = p.parse_args(argv)
     if args.cmd == "health":
         with session_scope() as s:
-            print(json.dumps(kb_health(s, get_config()), ensure_ascii=False, indent=2, default=str))
+            print(json.dumps(kb_health(s, get_config(), workspace_id=args.workspace), ensure_ascii=False, indent=2, default=str))
         return 0
-    payload = {"doc_type": args.doc_type, "document_id": args.document, "model": args.model, "dim": args.dim,
+    payload = {"doc_type": args.doc_type, "document_id": args.document, "model": args.model, "dim": args.dim, "workspace_id": args.workspace,
                "rechunk": {"true": True, "false": False}.get(args.rechunk, "auto"), "force": args.force or None}
     payload = {k: v for k, v in payload.items() if v is not None}
     with session_scope() as s:
-        job = enqueue_job(s, "reindex", payload, document_id=args.document, created_by="cli")
+        job = enqueue_job(s, "reindex", payload, document_id=args.document, created_by="cli", workspace_id=args.workspace)
         job_id = job.id
     print(f"Job reindex {job_id}: {payload}")
     while args.wait:

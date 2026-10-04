@@ -61,6 +61,15 @@ def overlap_rerank(query, texts):
     return [4.0 * len(q & set(re.findall(r"\w+", t.lower()))) / max(1, len(q)) - 1.0 for t in texts]
 
 
+WS: dict = {}
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _ws(seeded):
+    WS["id"] = seeded["workspace_id"]
+    return seeded
+
+
 def make_service(mode="cite", rerank=overlap_rerank, graph=True, cfg_mut=None):
     from core.config import get_config
     from core.db import get_sessionmaker
@@ -81,21 +90,23 @@ def make_service(mode="cite", rerank=overlap_rerank, graph=True, cfg_mut=None):
     fake = FakeModel(mode)
     llm = LLMClient(cfg=cfg, client=fake, sleep=lambda s: None)
     retr = VectorRetriever(cfg, KBVectorStore(sm, emb.model_name, emb.dim), BM25Cache(sm, 0).get, emb, rerank_fn=rerank)
-    provider = (lambda: get_graph_store()) if graph else (lambda: AgeGraphStore("postgresql://x@127.0.0.1:1/none", connect_timeout=1))
+    provider = (lambda ws: get_graph_store(ws)) if graph else (lambda ws: AgeGraphStore("postgresql://x@127.0.0.1:1/none", connect_timeout=1))
     return QAService(cfg, sm, llm, retr, provider), fake
 
 
-def staff(store="GM-HN01", role="staff"):
-    from core.principal import Principal
+def staff(store="GM-HN01", role="viewer", pack="retail"):
+    """Ngữ cảnh workspace test: viewer có scope store (nhân viên), editor = supervisor."""
+    from core.principal import Principal, WorkspaceContext
 
-    return Principal(subject=f"u-{role}", role=role, store_code=store)
+    p = Principal(subject=f"u-{role}", email=f"{role}@test.local", name=role)
+    return WorkspaceContext(WS["id"], "Test retail", pack, role, {"store_code": store} if store else {}, {}, p)
 
 
 def req(q, principal=None, **kw):
     from qa.answer import QARequest
 
-    p = principal or staff()
-    return QARequest(question=q, principal=p, store_code=p.store_code, **kw)
+    ctx = principal or staff()
+    return QARequest(question=q, ctx=ctx, store_code=ctx.scope_value, **kw)
 
 
 def test_policy_lookup_answered_with_formatted_citation(seeded):
@@ -138,7 +149,7 @@ def test_money_question_goes_to_review_then_supervisor_override(seeded):
 
 def test_supervisor_money_question_bypasses_review(seeded):
     svc, _ = make_service()
-    r = svc.answer(req("Giá bán của ĐT-018 là bao nhiêu?", principal=staff(role="supervisor")))
+    r = svc.answer(req("Giá bán của ĐT-018 là bao nhiêu?", principal=staff(role="editor")))
     assert r.status == "answered" and r.citations
 
 
@@ -194,7 +205,7 @@ def test_graph_unavailable_falls_back_to_vector(seeded):
 
 def test_aggregation_counts_with_computed_fact(seeded):
     svc, _ = make_service()
-    r = svc.answer(req("Có bao nhiêu chương trình khuyến mãi áp dụng cho ngành hàng Điện máy?", principal=staff(role="supervisor")))
+    r = svc.answer(req("Có bao nhiêu chương trình khuyến mãi áp dụng cho ngành hàng Điện máy?", principal=staff(role="editor")))
     assert r.question_type == "aggregation" and r.route == "graph_aggregation"
     assert r.decision_trace["computed_facts"] and "Số khuyến mãi" in r.decision_trace["computed_facts"][0]
 
@@ -226,12 +237,12 @@ def test_conflicting_price_sources_are_surfaced_with_dates(seeded, tmp_path):
     d.add_paragraph("Hiệu lực từ ngày 01/10/2026. Loa ĐT-018 giá chỉ còn 1.199.000đ tại toàn hệ thống.")
     d.save(p)
     with session_scope() as s:
-        register_upload(s, get_config(), src=str(p), filename=p.name, opts=UploadOptions(doc_type="promotion"), uploaded_by="test")
+        register_upload(s, get_config(), workspace_id=WS["id"], src=str(p), filename=p.name, opts=UploadOptions(doc_type="promotion"), uploaded_by="test")
     Worker("qa-test").loop(once=True)
     with session_scope() as s:
         assert s.execute(select(Conflict).where(Conflict.entity_key == "sku:ĐT-018|store:*", Conflict.status == "open")).first()
     svc, _ = make_service()
-    r = svc.answer(req("Giá ĐT-018 hiện tại là bao nhiêu?", principal=staff(role="supervisor")))
+    r = svc.answer(req("Giá ĐT-018 hiện tại là bao nhiêu?", principal=staff(role="editor")))
     assert r.conflicts and {v["value"] for v in r.conflicts[0]["values"]} >= {1199000}
     assert "1.199.000đ" in r.answer and "MỚI HƠN" in r.answer  # code tự công bố đủ các giá trị + nguồn mới hơn
 

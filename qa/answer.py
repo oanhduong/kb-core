@@ -27,7 +27,8 @@ from core.errors import AppError
 from core.llm import LLMClient, LLMUnavailable
 from core.logging import log_context, log_event
 from core.models import QATrace, new_id
-from core.principal import Principal
+from core.principal import WorkspaceContext
+from domains import get_pack
 from graph.query import GraphSearcher
 from graph.resolve import get_resolver
 from graph.router import QuestionRouter, RouteDecision
@@ -71,11 +72,20 @@ class QAResponse(BaseModel):
 @dataclass
 class QARequest:
     question: str
-    principal: Principal
-    store_code: str | None
+    ctx: WorkspaceContext  # workspace + vai trò + scope (pack retail: store_code)
+    store_code: str | None  # scope hiệu lực cho request (api.auth.effective_scope)
     channel: str = "ask"  # ask | chat
     session_id: str | None = None
     as_of: date | None = None
+    document_ids: list[str] | None = None  # giới hạn trong vài tài liệu ("hỏi trong file này")
+
+    @property
+    def user_id(self) -> str:
+        return self.ctx.subject
+
+    @property
+    def role(self) -> str:
+        return self.ctx.role
 
 
 @dataclass
@@ -102,7 +112,7 @@ class Prepared:
 
 class QAService:
     def __init__(self, cfg: AppConfig, sm: sessionmaker, llm: LLMClient, retriever: VectorRetriever,
-                 graph_store_provider: Callable[[], GraphStore | None]) -> None:
+                 graph_store_provider: Callable[[str], GraphStore | None]) -> None:
         self.cfg = cfg
         self.sm = sm
         self.llm = llm
@@ -111,20 +121,22 @@ class QAService:
         self.sessions = ChatSessionService(cfg, llm)
 
     # ================================================================== PREPARE
-    def _filters(self, store_code: str | None, as_of: date | None) -> Filters:
-        stores = [store_code, None] if store_code else None
+    def _filters(self, req: QARequest, as_of: date | None) -> Filters:
+        stores = [req.store_code, None] if req.store_code else None
+        common = {"workspace_id": req.ctx.workspace_id, "document_ids": req.document_ids or None}
         if as_of:
-            return Filters(store_code=stores, as_of=as_of.isoformat())
-        return Filters(store_code=stores, is_active=True)
+            return Filters(store_code=stores, as_of=as_of.isoformat(), **common)
+        return Filters(store_code=stores, is_active=True, **common)
 
-    def _graph(self, s: Session, dtrace: DecisionTrace) -> GraphSearcher | None:
-        if not (self.cfg.graph.enabled and self.cfg.router.graph_enabled):
+    def _graph(self, s: Session, req: QARequest, dtrace: DecisionTrace) -> GraphSearcher | None:
+        """Graph rule-based (AGE) chỉ có khi domain pack của workspace bật rule_graph."""
+        if not (self.cfg.graph.enabled and self.cfg.router.graph_enabled and get_pack(req.ctx.domain_pack).rule_graph):
             return None
         try:
-            store = self.graph_store_provider()
+            store = self.graph_store_provider(req.ctx.workspace_id)
             if store is None:
                 return None
-            resolver = get_resolver(store, s, kb_version=repo.current_kb_version(s))
+            resolver = get_resolver(store, s, req.ctx.workspace_id, kb_version=repo.current_kb_version(s))
             return GraphSearcher(store, resolver, self.llm, self.cfg)
         except GraphUnavailable as e:
             dtrace.degrade("Graph (Apache AGE) không truy cập được -> mọi câu hỏi đi tìm kiếm văn bản")
@@ -138,7 +150,8 @@ class QAService:
         with self.sm() as s:
             chat_ctx: ChatContext | None = None
             if req.channel == "chat":
-                sess = self.sessions.get_or_create(s, req.session_id, user_id=req.principal.subject, store_code=req.store_code)
+                sess = self.sessions.get_or_create(s, req.session_id, workspace_id=req.ctx.workspace_id,
+                                                   user_id=req.user_id, store_code=req.store_code)
                 prep.session_id = sess.id
                 th = tracing.current_trace()
                 if th is not None:  # E2: session mới tạo trong request -> gắn session_id thật lên trace
@@ -149,10 +162,10 @@ class QAService:
                 s.commit()
             rq = retrieval_query(req.question, chat_ctx)
             prep.as_of = req.as_of or extract_as_of(req.question)
-            prep.filters = self._filters(req.store_code, prep.as_of)
-            prep.money, prep.money_hits = needs_review(req.question, req.principal.role, cfg)
+            prep.filters = self._filters(req, prep.as_of)
+            prep.money, prep.money_hits = needs_review(req.question, req.role, cfg, req.ctx.domain_pack)
 
-            searcher = self._graph(s, dtrace)
+            searcher = self._graph(s, req, dtrace)
             with tracing.span("router", input={"question": req.question}) as sp:
                 route = QuestionRouter(cfg, self.llm, searcher).route(rq)
                 sp.update(output=route.to_dict())
@@ -162,7 +175,8 @@ class QAService:
                 "question_type": route.question_type, "route": route.route, "router_method": route.method,
                 "router_confidence": round(route.confidence, 2), "router_reasons": route.reasons,
                 "entities": [{"type": m.label, "id": m.id, "text": m.text} for m in route.entities],
-                "store_scope": f"{req.store_code} + dữ liệu toàn hệ thống" if req.store_code else "toàn hệ thống",
+                "store_scope": f"{req.store_code} + dữ liệu toàn hệ thống" if req.store_code else "toàn workspace",
+                "workspace_id": req.ctx.workspace_id, "document_ids": req.document_ids,
                 "as_of": prep.as_of.isoformat() if prep.as_of else None,
                 "money_topic": prep.money, "money_keywords": prep.money_hits,
             }
@@ -264,7 +278,7 @@ class QAService:
         recs = repo.get_records(s, [src.record_id for src in prep.sources])
         skus = sorted({k for r in recs.values() for k in (r.skus or [])})
         stores = [req.store_code, None] if req.store_code else None
-        extra = repo.active_price_records_for_skus(s, skus[:20], stores) if skus and not prep.as_of else []
+        extra = repo.active_price_records_for_skus(s, skus[:20], stores, workspace_id=req.ctx.workspace_id) if skus and not prep.as_of else []
         label_by_record = {src.record_id: src.label for src in prep.sources}
         docs = repo.get_documents(s, {r.document_id for r in extra})
         facts = []
@@ -346,7 +360,7 @@ class QAService:
             if status == "pending_review":
                 user_answer = self.cfg.review.pending_message
             if req.channel == "chat" and prep.session_id:
-                sess = self.sessions.get_owned(s, prep.session_id, req.principal.subject)
+                sess = self.sessions.get_owned(s, prep.session_id, req.user_id, workspace_id=req.ctx.workspace_id)
                 msg = self.sessions.add_message(
                     s, sess, "assistant", user_answer, trace_id=prep.trace_id,
                     status={"pending_review": "pending_review", "error": "error"}.get(status, "final"),
@@ -354,7 +368,8 @@ class QAService:
                 message_id = msg.id
             if status == "pending_review":
                 item = enqueue_review(s, trace_id=prep.trace_id, session_id=prep.session_id, message_id=message_id,
-                                      user_id=req.principal.subject, store_code=req.store_code, question=req.question,
+                                      user_id=req.user_id, store_code=req.store_code, question=req.question,
+                                      workspace_id=req.ctx.workspace_id,
                                       draft_answer=answer, citations=citations, decision_trace=trace_dict,
                                       reason="Câu hỏi liên quan tiền: " + ", ".join(prep.money_hits))
                 review_id = item.id
@@ -362,12 +377,12 @@ class QAService:
                 record_abstention(s, trace_id=prep.trace_id, question=req.question,
                                   reason=(prep.abstain.reason if status == "abstained" and prep.abstain else "no_citation") or status,
                                   top_score=prep.top_score, question_type=prep.route.question_type if prep.route else None,
-                                  store_code=req.store_code, user_id=req.principal.subject)
+                                  store_code=req.store_code, user_id=req.user_id, workspace_id=req.ctx.workspace_id)
             if prep.conflicts:
-                persist_conflicts(s, prep.conflicts)
+                persist_conflicts(s, prep.conflicts, req.ctx.workspace_id)
             s.add(QATrace(
-                trace_id=prep.trace_id, channel=req.channel, session_id=prep.session_id, user_id=req.principal.subject,
-                role=req.principal.role, store_code=req.store_code, question=req.question,
+                trace_id=prep.trace_id, workspace_id=req.ctx.workspace_id, channel=req.channel, session_id=prep.session_id,
+                user_id=req.user_id, role=req.role, store_code=req.store_code, question=req.question,
                 question_type=prep.route.question_type if prep.route else None, route=prep.route.route if prep.route else None,
                 status=status, answer=answer, citations=citations, decision_trace=trace_dict,
                 conflicts=[c.to_dict() for c in prep.conflicts], confidence=conf.get("score"), top_score=prep.top_score,
@@ -410,15 +425,15 @@ class QAService:
             return QAResponse(trace_id=trace_id, status="error", answer=msg, session_id=prep.session_id)
 
     def _trace_meta(self, req: QARequest) -> dict[str, Any]:
-        return {"store_code": req.store_code, "user_id": req.principal.subject, "role": req.principal.role,
-                "session_id": req.session_id, "channel": req.channel}
+        return {"workspace_id": req.ctx.workspace_id, "store_code": req.store_code, "user_id": req.user_id,
+                "role": req.role, "session_id": req.session_id, "channel": req.channel}
 
     # ================================================================== ONE-SHOT
     def answer(self, req: QARequest) -> QAResponse:
         trace_id = new_id()
-        with log_context(trace_id=trace_id, user_id=req.principal.subject, store_code=req.store_code,
+        with log_context(trace_id=trace_id, user_id=req.user_id, store_code=req.store_code,
                          session_id=req.session_id, config_version=self.cfg.config_version), \
-                tracing.start_trace(f"qa.{req.channel}", trace_id=trace_id, user_id=req.principal.subject,
+                tracing.start_trace(f"qa.{req.channel}", trace_id=trace_id, user_id=req.user_id,
                                     session_id=req.session_id, input=req.question, metadata=self._trace_meta(req)):
             prep: Prepared | None = None
             try:
@@ -453,9 +468,9 @@ class QAService:
         thấy citation hợp lệ đầu tiên (StreamingCitationGate); post-check cuối cùng quyết định: không đạt
         -> event replace bằng thông báo không đủ căn cứ."""
         trace_id = new_id()
-        with log_context(trace_id=trace_id, user_id=req.principal.subject, store_code=req.store_code,
+        with log_context(trace_id=trace_id, user_id=req.user_id, store_code=req.store_code,
                          session_id=req.session_id, config_version=self.cfg.config_version), \
-                tracing.start_trace(f"qa.{req.channel}", trace_id=trace_id, user_id=req.principal.subject,
+                tracing.start_trace(f"qa.{req.channel}", trace_id=trace_id, user_id=req.user_id,
                                     session_id=req.session_id, input=req.question, metadata=self._trace_meta(req)):
             prep: Prepared | None = None
             try:

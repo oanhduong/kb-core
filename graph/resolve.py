@@ -112,16 +112,16 @@ class AliasEntry:
     note: str | None = None
 
 
-def load_aliases(session: Any) -> list[AliasEntry]:
+def load_aliases(session: Any, workspace_id: str) -> list[AliasEntry]:
     from sqlalchemy import select
 
     from core.models import GraphAlias
 
-    rows = session.execute(select(GraphAlias)).scalars().all()
+    rows = session.execute(select(GraphAlias).where(GraphAlias.workspace_id == workspace_id)).scalars().all()
     return [AliasEntry(kind=r.kind, alias=r.alias, canonical=r.canonical, id=r.id, note=r.note) for r in rows]
 
 
-def upsert_alias(session: Any, kind: str, alias: str, canonical: str, *, note: str | None = None,
+def upsert_alias(session: Any, workspace_id: str, kind: str, alias: str, canonical: str, *, note: str | None = None,
                  actor: str | None = None) -> Any:
     """Idempotent theo (kind, alias_norm) — gọi lại cùng alias thì cập nhật canonical."""
     from sqlalchemy import select
@@ -134,11 +134,12 @@ def upsert_alias(session: Any, kind: str, alias: str, canonical: str, *, note: s
     alias_n = normalize_alias(kind, alias)
     if not alias_n or not normalize_text(canonical):
         raise ValidationFailed("alias và canonical không được rỗng")
-    row = session.execute(select(GraphAlias).where(GraphAlias.kind == kind, GraphAlias.alias_norm == alias_n)).scalar_one_or_none()
+    row = session.execute(select(GraphAlias).where(GraphAlias.workspace_id == workspace_id, GraphAlias.kind == kind,
+                                                   GraphAlias.alias_norm == alias_n)).scalar_one_or_none()
     canonical_n = normalize_sku(canonical) if kind == "sku" else normalize_text(canonical)
     if row is None:
-        row = GraphAlias(kind=kind, alias=normalize_text(alias), alias_norm=alias_n, canonical=canonical_n,
-                         note=note, created_by=actor)
+        row = GraphAlias(workspace_id=workspace_id, kind=kind, alias=normalize_text(alias), alias_norm=alias_n,
+                         canonical=canonical_n, note=note, created_by=actor)
         session.add(row)
     else:
         row.alias = normalize_text(alias)
@@ -370,7 +371,7 @@ def _dedupe_mentions(mentions: list[EntityMention], folded_q: str) -> list[Entit
 # CACHE resolver cho api (dựng lại khi graph/alias đổi)
 # =====================================================================================
 
-_resolver_cache: dict[str, Any] = {"resolver": None, "built_at": 0.0, "kb_version": None}
+_resolver_cache: dict[str, dict[str, Any]] = {}  # workspace_id -> {resolver, built_at, kb_version}
 
 
 def build_resolver(store: Any, aliases: Iterable[AliasEntry]) -> EntityResolver:
@@ -379,15 +380,19 @@ def build_resolver(store: Any, aliases: Iterable[AliasEntry]) -> EntityResolver:
     return EntityResolver(nodes, aliases)
 
 
-def get_resolver(store: Any, session: Any, kb_version: int | None = None, ttl_seconds: float = 300.0) -> EntityResolver:
+def get_resolver(store: Any, session: Any, workspace_id: str, kb_version: int | None = None,
+                 ttl_seconds: float = 300.0) -> EntityResolver:
     now = time.monotonic()
-    cached = _resolver_cache["resolver"]
-    if cached is not None and _resolver_cache["kb_version"] == kb_version and now - _resolver_cache["built_at"] < ttl_seconds:
-        return cached
-    resolver = build_resolver(store, load_aliases(session))
-    _resolver_cache.update(resolver=resolver, built_at=now, kb_version=kb_version)
+    entry = _resolver_cache.get(workspace_id)
+    if entry and entry["kb_version"] == kb_version and now - entry["built_at"] < ttl_seconds:
+        return entry["resolver"]
+    resolver = build_resolver(store, load_aliases(session, workspace_id))
+    _resolver_cache[workspace_id] = {"resolver": resolver, "built_at": now, "kb_version": kb_version}
     return resolver
 
 
-def invalidate_resolver_cache() -> None:
-    _resolver_cache.update(resolver=None, built_at=0.0, kb_version=None)
+def invalidate_resolver_cache(workspace_id: str | None = None) -> None:
+    if workspace_id is None:
+        _resolver_cache.clear()
+    else:
+        _resolver_cache.pop(workspace_id, None)

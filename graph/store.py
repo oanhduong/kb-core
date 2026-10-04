@@ -565,22 +565,33 @@ class AgeGraphStore(GraphStore):
 # FACTORY
 # =====================================================================================
 
-_store_singleton: GraphStore | None = None
+_store_cache: dict[str, GraphStore] = {}
+_store_factory: Any = None
 
 
-def get_graph_store() -> GraphStore:
-    """Store dùng cho api/worker theo config (graph.name) + DATABASE_URL."""
-    global _store_singleton
-    if _store_singleton is None:
-        from core.config import get_config, get_settings
-
-        _store_singleton = AgeGraphStore(get_settings().psycopg_dsn, get_config().graph.name)
-    return _store_singleton
+def graph_name_for(workspace_id: str) -> str:
+    return _validate_identifier(f"ws_{workspace_id}", "Tên graph")
 
 
-def set_graph_store(store: GraphStore | None) -> None:
-    global _store_singleton
-    _store_singleton = store
+def get_graph_store(workspace_id: str) -> GraphStore:
+    """Mỗi workspace 1 graph AGE riêng (`ws_<id>`) trong cùng Postgres; tạo graph nếu chưa có."""
+    if workspace_id not in _store_cache:
+        if _store_factory is not None:
+            _store_cache[workspace_id] = _store_factory(workspace_id)
+        else:
+            from core.config import get_settings
+
+            store = AgeGraphStore(get_settings().psycopg_dsn, graph_name_for(workspace_id))
+            store.ensure()
+            _store_cache[workspace_id] = store
+    return _store_cache[workspace_id]
+
+
+def set_graph_store_factory(factory: Any) -> None:
+    """Test: thay cách tạo store theo workspace (vd MemoryGraphStore)."""
+    global _store_factory
+    _store_factory = factory
+    _store_cache.clear()
 
 
 def main(argv: list[str] | None = None) -> int:  # pragma: no cover - CLI vận hành
@@ -589,8 +600,9 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - CLI vận 
 
     parser = argparse.ArgumentParser(description="Tiện ích graph store (AGE).")
     parser.add_argument("cmd", choices=["ensure", "stats"])
+    parser.add_argument("--workspace", required=True)
     args = parser.parse_args(argv)
-    store = get_graph_store()
+    store = get_graph_store(args.workspace)
     try:
         if args.cmd == "ensure" and isinstance(store, AgeGraphStore):
             store.ensure()
@@ -606,5 +618,5 @@ if __name__ == "__main__":  # pragma: no cover
 
 
 __all__ = ["NODE_LABELS", "GraphStore", "MemoryGraphStore", "AgeGraphStore", "GraphUnavailable", "NodeRef",
-           "GraphNode", "GraphEdge", "GraphPath", "get_graph_store", "set_graph_store", "_cypher_literal",
+           "GraphNode", "GraphEdge", "GraphPath", "get_graph_store", "set_graph_store_factory", "graph_name_for", "_cypher_literal",
            "_validate_identifier"]

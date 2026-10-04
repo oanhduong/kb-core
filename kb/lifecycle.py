@@ -76,8 +76,8 @@ def _doc_records(session: Session, doc_id: str) -> list[KBRecordRow]:
 
 
 def _active_series(session: Session, doc: Document) -> list[Document]:
-    q = select(Document).where(Document.series_key == doc.series_key, Document.doc_type == doc.doc_type,
-                               Document.id != doc.id, Document.deleted_at.is_(None),
+    q = select(Document).where(Document.workspace_id == doc.workspace_id, Document.series_key == doc.series_key,
+                               Document.doc_type == doc.doc_type, Document.id != doc.id, Document.deleted_at.is_(None),
                                Document.is_active.is_(True), Document.replace_mode != "none")
     q = q.where(Document.store_code.is_(None)) if doc.store_code is None else q.where(Document.store_code == doc.store_code)
     return list(session.execute(q).scalars())
@@ -140,6 +140,7 @@ def _replace_by_entity(session: Session, doc: Document, recs: list[KBRecordRow])
     if not keys:
         return 0
     olds = list(session.execute(select(KBRecordRow).where(
+        KBRecordRow.workspace_id == doc.workspace_id,
         KBRecordRow.entity_key.in_(keys), KBRecordRow.document_id != doc.id, KBRecordRow.is_active.is_(True),
         KBRecordRow.deleted_at.is_(None))).scalars())
     valid_to = doc.effective_date or date.today()
@@ -159,6 +160,7 @@ def dedup_document(session: Session, doc: Document) -> int:
         return 0
     by_hash = {r.content_hash: r for r in recs}
     others = list(session.execute(select(KBRecordRow).where(
+        KBRecordRow.workspace_id == doc.workspace_id,
         KBRecordRow.content_hash.in_(list(by_hash)), KBRecordRow.document_id != doc.id,
         KBRecordRow.is_active.is_(True), KBRecordRow.deleted_at.is_(None))).scalars())
     changed: list[KBRecordRow] = []

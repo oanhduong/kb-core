@@ -81,7 +81,7 @@ def edit_record(session: Session, cfg: AppConfig, rec: KBRecordRow, changes: dic
                     u.meta["fields"] = _row_fields(rec.content, headers)
         save_units(units_cache_path(doc), units)
     enqueue_job(session, "graph_sync", {"document_id": rec.document_id, "llm": False}, document_id=rec.document_id,
-                created_by=actor)
+                created_by=actor, workspace_id=rec.workspace_id)
     session.flush()
     if embed is not None:
         embed([c.chunk_id for c in chunks])

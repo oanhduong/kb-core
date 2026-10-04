@@ -32,7 +32,7 @@ def kb_version(sm: sessionmaker) -> int:
 
 
 def load_bm25_documents(sm: sessionmaker) -> list[VectorRecord]:
-    sql = ("SELECT chunk_id, text, context_prefix, record_id, document_id, parent_chunk_id, role, doc_type, "
+    sql = ("SELECT chunk_id, text, context_prefix, workspace_id, record_id, document_id, parent_chunk_id, role, doc_type, "
            "store_code, skus, effective_date, valid_to, is_active, location FROM kb_chunks "
            "WHERE deleted = false AND role <> 'parent'")
     docs = []
@@ -40,7 +40,7 @@ def load_bm25_documents(sm: sessionmaker) -> list[VectorRecord]:
         for r in s.execute(text(sql)):
             body = f"{r.context_prefix}\n{r.text}" if r.context_prefix else r.text
             docs.append(VectorRecord(id=r.chunk_id, vector=None, text=body, metadata={
-                "record_id": r.record_id, "document_id": r.document_id, "parent_chunk_id": r.parent_chunk_id,
+                "workspace_id": r.workspace_id, "record_id": r.record_id, "document_id": r.document_id, "parent_chunk_id": r.parent_chunk_id,
                 "role": r.role, "doc_type": r.doc_type, "store_code": r.store_code, "sku": list(r.skus or []),
                 "effective_date": r.effective_date.isoformat() if r.effective_date else None,
                 "valid_to": r.valid_to.isoformat() if r.valid_to else None, "is_active": r.is_active,

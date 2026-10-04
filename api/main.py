@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from api.routes import admin, ingest, kb, qa, review
+from api.routes import accounts, admin, ingest, kb, qa, review
 from core.config import get_config
 from core.errors import AppError
 from core.logging import bind_log_context, configure_logging, log_event, reset_log_context
@@ -46,8 +46,9 @@ async def lifespan(app: FastAPI):
 
 def create_app(services=None) -> FastAPI:
     cfg = get_config()
-    app = FastAPI(title="RetailKB Copilot API", version=cfg.config_version, lifespan=lifespan,
-                  description="Knowledge base + chatbot hỗ trợ nhân viên cửa hàng bán lẻ. Xác thực: X-API-Key hoặc Bearer JWT.")
+    app = FastAPI(title="RetailKB API", version=cfg.config_version, lifespan=lifespan,
+                  description="Khai phá tài liệu: upload file bất kỳ -> knowledge base, hỏi đáp có trích dẫn, phân tích bảng số liệu, "
+                              "đồ thị quan hệ, báo cáo. Xác thực: Bearer JWT (đăng nhập) hoặc X-API-Key (tích hợp).")
     app.state.services = services
     origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",") if o.strip()]
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"],
@@ -111,10 +112,11 @@ def create_app(services=None) -> FastAPI:
         except Exception as e:
             ok, checks["database"] = False, f"lỗi: {e}"[:200]
         try:
-            store = services.graph_store()
-            checks["graph"] = "tắt" if store is None else (store.healthcheck() and "ok")
+            with services.sm() as s:
+                has_age = s.execute(text("SELECT 1 FROM pg_extension WHERE extname = 'age'")).scalar()
+            checks["graph_age"] = "ok" if has_age else "AGE chưa cài — graph rule-based (pack retail) tắt, QA vẫn chạy"
         except Exception as e:
-            checks["graph"] = f"lỗi (QA vẫn chạy bằng vector): {e}"[:200]
+            checks["graph_age"] = f"lỗi: {e}"[:200]
         checks["reranker"] = "ok" if services.retriever._rerank_ready.is_set() else (
             "tắt" if not services.cfg.retrieval.rerank.enabled else "đang tải (tạm dùng hybrid)")
         checks["anthropic_api_key"] = "ok" if services.settings.anthropic_api_key else "THIẾU — không trả lời được"
@@ -122,7 +124,7 @@ def create_app(services=None) -> FastAPI:
         return JSONResponse(status_code=200 if ok else 503, content={"ready": ok, "config_version": cfg.config_version,
                                                                       "config_hash": cfg.config_hash, "checks": checks})
 
-    for r in (qa.router, ingest.router, kb.router, review.router, admin.router):
+    for r in (accounts.router, qa.router, ingest.router, kb.router, review.router, admin.ws_router, admin.router):
         app.include_router(r)
     return app
 

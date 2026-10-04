@@ -68,24 +68,49 @@ class Worker:
     def _ingest(self, job: Job) -> dict[str, Any]:
         return self.pipeline.run(job.id, job.payload["document_id"])
 
+    def _pack_rule_graph(self, workspace_id: str | None) -> bool:
+        from core.models import Workspace
+        from domains import get_pack
+
+        if not self.cfg.graph.enabled or not workspace_id:
+            return False
+        with session_scope() as s:
+            ws = s.get(Workspace, workspace_id)
+            return bool(ws and get_pack(ws.domain_pack).rule_graph)
+
     def _graph_sync(self, job: Job) -> dict[str, Any]:
         from graph.store import get_graph_store
         from graph.sync import sync_document
 
-        if not self.cfg.graph.enabled:
-            return {"skipped": "graph.enabled=false"}
+        if not self._pack_rule_graph(job.workspace_id):
+            return {"skipped": "graph rule-based tắt (config hoặc domain pack không bật)"}
         with session_scope() as s:
-            return sync_document(s, get_graph_store(), job.payload["document_id"],
+            return sync_document(s, get_graph_store(job.workspace_id), job.payload["document_id"],
                                  llm=bool(job.payload.get("llm", True)) and self.llm is not None)
 
     def _graph_rebuild(self, job: Job) -> dict[str, Any]:
         from graph.store import get_graph_store
         from graph.sync import rebuild_full
 
+        if not self._pack_rule_graph(job.workspace_id):
+            return {"skipped": "graph rule-based tắt (config hoặc domain pack không bật)"}
         with session_scope() as s:
-            out = rebuild_full(s, get_graph_store(), llm=bool(job.payload.get("llm", True)) and self.llm is not None,
+            out = rebuild_full(s, get_graph_store(job.workspace_id), job.workspace_id,
+                               llm=bool(job.payload.get("llm", True)) and self.llm is not None,
                                progress=lambda d, t: queue.update_progress(job.id, d, t))
         return {"documents": out["documents"], "graph": out["graph"]}
+
+    def _knowledge_extract(self, job: Job) -> dict[str, Any]:
+        from knowledge.pipeline import extract_document_knowledge
+
+        return extract_document_knowledge(self.cfg, self.sm, self.llm, self.embedder, job.payload["document_id"],
+                                          progress=lambda d, t, note=None: queue.update_progress(job.id, d, t, note=note))
+
+    def _report_generate(self, job: Job) -> dict[str, Any]:
+        from reports.generator import generate_report
+
+        return generate_report(self.cfg, self.sm, self.llm, job.payload["report_id"],
+                               progress=lambda d, t, note=None: queue.update_progress(job.id, d, t, note=note))
 
     def _reindex(self, job: Job) -> dict[str, Any]:
         from kb.reindex import run_reindex
@@ -98,15 +123,18 @@ class Worker:
         from graph.store import get_graph_store
         from graph.sync import sync_document
 
+        if not self._pack_rule_graph(job.workspace_id):
+            return {"skipped": "graph rule-based tắt"}
         out = []
         with session_scope() as s:
             for did in job.payload.get("document_ids", []):
-                out.append(sync_document(s, get_graph_store(), did, llm=False)["status"])
+                out.append(sync_document(s, get_graph_store(job.workspace_id), did, llm=False)["status"])
         return {"synced": out}
 
     HANDLERS: dict[str, Callable[["Worker", Job], dict[str, Any]]] = {
         "ingest_file": _ingest, "graph_sync": _graph_sync, "graph_rebuild": _graph_rebuild,
         "reindex": _reindex, "document_lifecycle": _document_lifecycle,
+        "knowledge_extract": _knowledge_extract, "report_generate": _report_generate,
     }
 
     # ------------------------------------------------------------------ loop

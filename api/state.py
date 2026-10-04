@@ -35,8 +35,8 @@ class Services:
     retriever: VectorRetriever
     qa: QAService
 
-    def graph_store(self) -> GraphStore | None:
-        return get_graph_store() if self.cfg.graph.enabled else None
+    def graph_store(self, workspace_id: str) -> GraphStore | None:
+        return get_graph_store(workspace_id) if self.cfg.graph.enabled else None
 
 
 def record_config_version(cfg: AppConfig) -> None:
@@ -55,7 +55,7 @@ def build_services(*, warmup: bool = True) -> Services:
     embedder = get_embedder(cfg)
     bm25 = BM25Cache(sm, cfg.retrieval.bm25_refresh_seconds)
     retriever = VectorRetriever(cfg, KBVectorStore(sm, embedder.model_name, embedder.dim), bm25.get, embedder)
-    qa = QAService(cfg, sm, llm, retriever, lambda: get_graph_store() if cfg.graph.enabled else None)
+    qa = QAService(cfg, sm, llm, retriever, lambda ws: get_graph_store(ws) if cfg.graph.enabled else None)
     services = Services(cfg, settings, sm, llm, embedder, bm25, retriever, qa)
     if warmup:
         retriever.warmup_reranker()

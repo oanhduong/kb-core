@@ -11,7 +11,7 @@ class KBRecord(BaseModel):
     record_id: str
     source_file: str
     source_type: SourceType
-    doc_type: DocType
+    doc_type: str  # danh sách hợp lệ do domain pack quyết định (domains/packs.py); DocType ở trên là enum cho agent retail
     content: str
     location: str  # "p.12" | "Sheet1!A5:D5" | "00:02:15"
     metadata: dict  # store_code, sku, effective_date, version

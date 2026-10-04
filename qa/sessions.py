@@ -79,27 +79,31 @@ class ChatSessionService:
         self.cfg = cfg
         self.llm = llm
 
-    def get_or_create(self, s: Session, session_id: str | None, *, user_id: str, store_code: str | None) -> ChatSession:
+    def get_or_create(self, s: Session, session_id: str | None, *, workspace_id: str, user_id: str,
+                      store_code: str | None) -> ChatSession:
         if session_id:
             sess = s.get(ChatSession, session_id)
             if sess is None:
-                sess = ChatSession(id=session_id, user_id=user_id, store_code=store_code)
+                sess = ChatSession(id=session_id, workspace_id=workspace_id, user_id=user_id, store_code=store_code)
                 s.add(sess)
                 s.flush()
                 return sess
             if sess.user_id != user_id:
                 raise ForbiddenError("Session này thuộc người dùng khác.", context={"session_id": session_id})
+            if sess.workspace_id != workspace_id:
+                raise ForbiddenError("Session thuộc workspace khác.")
             if sess.store_code and store_code and sess.store_code != store_code:
-                raise ForbiddenError(f"Session gắn với cửa hàng {sess.store_code}, không dùng cho {store_code}.")
+                raise ForbiddenError(f"Session gắn với phạm vi {sess.store_code}, không dùng cho {store_code}.")
             return sess
-        sess = ChatSession(user_id=user_id, store_code=store_code)
+        sess = ChatSession(workspace_id=workspace_id, user_id=user_id, store_code=store_code)
         s.add(sess)
         s.flush()
         return sess
 
-    def get_owned(self, s: Session, session_id: str, user_id: str, *, allow_any: bool = False) -> ChatSession:
+    def get_owned(self, s: Session, session_id: str, user_id: str, *, workspace_id: str | None = None,
+                  allow_any: bool = False) -> ChatSession:
         sess = s.get(ChatSession, session_id)
-        if sess is None:
+        if sess is None or (workspace_id and sess.workspace_id != workspace_id):
             raise NotFoundError(f"Không có session {session_id}")
         if sess.user_id != user_id and not allow_any:
             raise ForbiddenError("Session này thuộc người dùng khác.")

@@ -71,7 +71,7 @@ class SearchResult:
     metadata: dict = field(default_factory=dict)
 
 
-_FILTER_FIELDS = ("doc_type", "store_code", "sku", "is_active", "effective_date_from", "effective_date_to", "as_of")
+_FILTER_FIELDS = ("doc_type", "store_code", "sku", "is_active", "effective_date_from", "effective_date_to", "as_of", "workspace_id", "document_ids")
 
 
 @dataclass
@@ -91,6 +91,8 @@ class Filters:
     # đó: effective_date <= as_of < valid_to (valid_to NULL = còn hiệu lực). store_code có thể chứa None
     # trong list = "kể cả dữ liệu toàn hệ thống (không gắn cửa hàng)".
     as_of: object = None
+    workspace_id: object = None  # multi-tenant: chỉ chunk của workspace này
+    document_ids: object = None  # giới hạn trong 1 số tài liệu (hỏi "trong file X")
 
     def is_empty(self):
         return all(getattr(self, f) is None for f in _FILTER_FIELDS)
@@ -104,6 +106,10 @@ def _matches_filters(metadata, filters):
     """Kiểm tra 1 metadata dict có khớp Filters hay không — thuần Python, không đụng DB/engine nào.
     Dùng làm bước lọc HẬU KỲ khi prefilter=False (xem docstring đầu file), và test được độc lập."""
     metadata = metadata or {}
+    if filters.workspace_id is not None and metadata.get("workspace_id") != filters.workspace_id:
+        return False
+    if filters.document_ids is not None and metadata.get("document_id") not in _as_list(filters.document_ids):
+        return False
     if filters.doc_type is not None and metadata.get("doc_type") not in _as_list(filters.doc_type):
         return False
     if filters.store_code is not None and metadata.get("store_code") not in _as_list(filters.store_code):

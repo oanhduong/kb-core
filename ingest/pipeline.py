@@ -27,7 +27,7 @@ from core.config import AppConfig, read_prompt
 from core.db import session_scope
 from core.llm import AnthropicCompatAdapter, LLMClient, LLMOutputInvalid, LLMUnavailable
 from core.logging import log_context, log_event
-from core.models import Document, KBRecordRow, new_id, utcnow
+from core.models import Document, KBRecordRow, Workspace, new_id, utcnow
 from graph.sync import units_cache_path
 from ingest.invariants import ParserError, check_result
 from ingest.metadata import classify_doc_type_by_rules, extract_effective_date, extract_version, find_skus, record_fields
@@ -119,7 +119,7 @@ class IngestPipeline:
                     rows.append(row)  # giữ bản admin đã sửa tay, không ghi đè khi ingest lại
                     continue
                 if row is None:
-                    row = KBRecordRow(record_id=r["record_id"], document_id=doc.id)
+                    row = KBRecordRow(record_id=r["record_id"], document_id=doc.id, workspace_id=doc.workspace_id)
                     s.add(row)
                 row.source_file, row.source_type, row.doc_type = r["source_file"], r["source_type"], r["doc_type"]
                 row.content, row.location, row.meta = r["content"], r["location"], r["metadata"]
@@ -147,23 +147,34 @@ class IngestPipeline:
         return unwrap_untrusted(out.get("extracted_text", "")).strip()
 
     def _classify(self, doc: Document, units: list[RecordUnit]) -> tuple[str, str]:
+        """doc_type theo domain pack của workspace: pack retail dùng rule tên file/cột trước; mọi pack
+        dùng LLM phân loại trong danh sách pack.doc_types khi rule không ra."""
+        from domains import get_pack
+
+        pack = get_pack(self._pack_of(doc))
         head = "\n".join(u.content for u in units[:8])[:3000]
-        dt = classify_doc_type_by_rules(doc.filename, head, doc.source_type)
-        if dt:
-            return dt, "rule"
+        if pack.rule_graph:
+            dt = classify_doc_type_by_rules(doc.filename, head, doc.source_type)
+            if dt:
+                return dt, "rule"
+        fallback = "unknown" if "unknown" in pack.doc_types else pack.doc_types[-1]
         if self.llm is None:
-            return "unknown", "none"
+            return fallback, "none"
         try:
-            out = self.llm.complete_json("doc_classification", system=read_prompt("doc_classify", self.cfg),
+            system = read_prompt("doc_classify", self.cfg) + "\n\nDanh sách doc_type hợp lệ cho workspace này: " + ", ".join(pack.doc_types)
+            out = self.llm.complete_json("doc_classification", system=system,
                                          user=f"Tên file: {doc.filename}\n" + wrap_untrusted(head, source=doc.filename),
                                          schema=_DocTypeOut, max_tokens=80, max_retries=1)
-            from ingest.service import DOC_TYPES
-
-            if out.doc_type in DOC_TYPES and out.confidence >= 0.5:
+            if out.doc_type in pack.doc_types and out.confidence >= 0.5:
                 return out.doc_type, "llm"
         except (LLMOutputInvalid, LLMUnavailable) as e:
             log_event(logger, "doc_classify_failed", level=logging.WARNING, error=str(e)[:200])
-        return "unknown", "none"
+        return fallback, "none"
+
+    def _pack_of(self, doc: Document) -> str:
+        with session_scope() as s:
+            ws = s.get(Workspace, doc.workspace_id)
+            return ws.domain_pack if ws else "generic"
 
     def _build_records(self, doc: Document, units: list[RecordUnit]) -> list[dict[str, Any]]:
         out, seen = [], {}
@@ -296,10 +307,15 @@ class IngestPipeline:
             conflicts = self._detect_conflicts(document_id) if not suspicious else []
 
             with session_scope() as s:
+                ws_id = s.get(Document, document_id).workspace_id
                 to_sync = [document_id, *summary.get("superseded_documents", [])]
                 for did in to_sync:
                     enqueue_job(s, "graph_sync", {"document_id": did}, document_id=did, created_by="ingest",
-                                idempotency_key=f"graph_sync:{did}:{job_id}")
+                                idempotency_key=f"graph_sync:{did}:{job_id}", workspace_id=ws_id)
+                if not suspicious:
+                    # Tri thức mở (entity/quan hệ + hồ sơ ngữ nghĩa + bảng số liệu) — job riêng, cần LLM
+                    enqueue_job(s, "knowledge_extract", {"document_id": document_id}, document_id=document_id,
+                                created_by="ingest", idempotency_key=f"knowledge:{document_id}:{job_id}", workspace_id=ws_id)
             result = {"trace_id": trace_id, "document_id": document_id, "kind": kind, **summary, "embedding": emb,
                       "conflicts": conflicts, "warnings": warnings, "suspicious_records": suspicious[:20]}
             th.update(output={k: v for k, v in result.items() if k != "suspicious_records"})
@@ -339,14 +355,14 @@ class IngestPipeline:
             skus = sorted({k for r in recs for k in (r.skus or [])})
             if not skus:
                 return []
-            others = active_price_records_for_skus(s, skus, None)
+            others = active_price_records_for_skus(s, skus, None, workspace_id=doc.workspace_id)
             docs = {d.id: d for d in s.query(Document).filter(Document.id.in_({r.document_id for r in others} | {document_id})).all()}
             facts = []
             for r in {r.record_id: r for r in [*recs, *others]}.values():
                 d = docs.get(r.document_id)
                 facts.extend(extract_price_facts(r, format_citation(d.title, d.source_type, r.location) if d else r.source_file))
             conflicts = detect_conflicts(facts)
-            return persist_conflicts(s, conflicts) if conflicts else []
+            return persist_conflicts(s, conflicts, workspace_id=doc.workspace_id) if conflicts else []
 
 
 def approve_blocked_document(session: Any, doc: Document, actor: str) -> dict[str, Any]:
@@ -357,9 +373,9 @@ def approve_blocked_document(session: Any, doc: Document, actor: str) -> dict[st
         r.meta = {**(r.meta or {}), "approved_by": actor}
     session.flush()
     summary = activate_document(session, doc)
-    enqueue_job(session, "graph_sync", {"document_id": doc.id}, document_id=doc.id, created_by=actor)
-    for did in summary.get("superseded_documents", []):
-        enqueue_job(session, "graph_sync", {"document_id": did}, document_id=did, created_by=actor)
+    for did in [doc.id, *summary.get("superseded_documents", [])]:
+        enqueue_job(session, "graph_sync", {"document_id": did}, document_id=did, created_by=actor, workspace_id=doc.workspace_id)
+    enqueue_job(session, "knowledge_extract", {"document_id": doc.id}, document_id=doc.id, created_by=actor, workspace_id=doc.workspace_id)
     return {"document_id": doc.id, "approved_records": len(recs), **summary}
 
 

@@ -46,6 +46,188 @@ class Base(DeclarativeBase):
 
 
 # =====================================================================================
+# TÀI KHOẢN & WORKSPACE (multi-tenant)
+# =====================================================================================
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    email: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    is_superadmin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    locale: Mapped[str] = mapped_column(String(8), nullable=False, default="vi")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Workspace(Base):
+    __tablename__ = "workspaces"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    slug: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    owner_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    # generic | retail | ... (domains/*.yaml) — quyết định graph rule-based, luật review, thuộc tính thành viên
+    domain_pack: Mapped[str] = mapped_column(String(32), nullable=False, default="generic")
+    settings: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class WorkspaceMember(Base):
+    __tablename__ = "workspace_members"
+
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    role: Mapped[str] = mapped_column(String(16), nullable=False, default="viewer")  # owner | editor | viewer
+    attributes: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)  # domain pack: vd {"store_code": "GM-HN01"}
+    invited_by: Mapped[str | None] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+    __table_args__ = (PrimaryKeyConstraint("workspace_id", "user_id"), Index("ix_ws_members_user", "user_id"))
+
+
+class WorkspaceInvite(Base):
+    __tablename__ = "workspace_invites"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    email: Mapped[str] = mapped_column(Text, nullable=False)
+    role: Mapped[str] = mapped_column(String(16), nullable=False, default="viewer")
+    attributes: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    invited_by: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (UniqueConstraint("workspace_id", "email", name="uq_ws_invite_email"),)
+
+
+# =====================================================================================
+# ANALYTICS — bảng dữ liệu trích từ file (DuckDB/parquet)
+# =====================================================================================
+
+class DataTable(Base):
+    __tablename__ = "data_tables"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    document_id: Mapped[str] = mapped_column(String(32), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)  # tên SQL hợp lệ, duy nhất trong workspace
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    source_location: Mapped[str] = mapped_column(Text, nullable=False)  # "Sheet BangGia" | "Trang 3 > Bảng 1"
+    columns: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)  # [{name, type, original, nullable, examples}]
+    row_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    storage_path: Mapped[str] = mapped_column(Text, nullable=False)  # parquet
+    description: Mapped[str | None] = mapped_column(Text)  # LLM: bảng này nói về gì
+    semantic: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)  # cột đo lường/thời gian/chiều
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
+
+    __table_args__ = (UniqueConstraint("workspace_id", "name", name="uq_data_table_name"),
+                      Index("ix_data_tables_document", "document_id"))
+
+
+class SavedQuery(Base):
+    __tablename__ = "saved_queries"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    question: Mapped[str | None] = mapped_column(Text)
+    sql: Mapped[str] = mapped_column(Text, nullable=False)
+    chart_spec: Mapped[dict | None] = mapped_column(JSONB)
+    created_by: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+# =====================================================================================
+# KNOWLEDGE GRAPH MỞ (open schema) — entity/quan hệ do LLM trích, hợp nhất theo workspace
+# =====================================================================================
+
+class Entity(Base):
+    __tablename__ = "entities"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    type: Mapped[str] = mapped_column(String(48), nullable=False)  # person | organization | product | location | ... (mở)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    name_norm: Mapped[str] = mapped_column(Text, nullable=False)
+    aliases: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    description: Mapped[str | None] = mapped_column(Text)
+    properties: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    mention_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    document_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
+
+    __table_args__ = (UniqueConstraint("workspace_id", "type", "name_norm", name="uq_entity_ws_type_name"),
+                      Index("ix_entities_ws_type", "workspace_id", "type"))
+
+
+class EntityMention(Base):
+    __tablename__ = "entity_mentions"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    entity_id: Mapped[str] = mapped_column(String(32), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False)
+    document_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    record_id: Mapped[str] = mapped_column(Text, nullable=False)
+    snippet: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (Index("ix_entity_mentions_entity", "entity_id"), Index("ix_entity_mentions_document", "document_id"))
+
+
+class Relation(Base):
+    __tablename__ = "relations"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(32), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False)
+    target_id: Mapped[str] = mapped_column(String(32), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False)
+    type: Mapped[str] = mapped_column(String(64), nullable=False)  # mở, chuẩn hoá snake_case
+    label: Mapped[str] = mapped_column(Text, nullable=False)  # dạng người đọc ("cung cấp cho")
+    evidence: Mapped[str | None] = mapped_column(Text)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.5)
+    document_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    record_id: Mapped[str] = mapped_column(Text, nullable=False)
+    properties: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+    __table_args__ = (UniqueConstraint("source_id", "target_id", "type", "record_id", name="uq_relation_edge"),
+                      Index("ix_relations_ws", "workspace_id", "type"), Index("ix_relations_source", "source_id"),
+                      Index("ix_relations_target", "target_id"), Index("ix_relations_document", "document_id"))
+
+
+# =====================================================================================
+# BÁO CÁO
+# =====================================================================================
+
+class Report(Base):
+    __tablename__ = "reports"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    # blocks: [{id, type: markdown|chart|table|sources|kpi, ...}]
+    blocks: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")  # draft | generating | ready | error
+    prompt: Mapped[str | None] = mapped_column(Text)
+    job_id: Mapped[str | None] = mapped_column(String(32))
+    created_by: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (Index("ix_reports_ws", "workspace_id", "updated_at"),)
+
+
+# =====================================================================================
 # KB
 # =====================================================================================
 
@@ -53,6 +235,7 @@ class Document(Base):
     __tablename__ = "documents"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     series_key: Mapped[str] = mapped_column(Text, nullable=False)
@@ -75,6 +258,10 @@ class Document(Base):
     record_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     uploaded_by: Mapped[str | None] = mapped_column(Text)
     meta: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
+    # Hồ sơ ngữ nghĩa (LLM, sau ingest): summary + {kind, topics, key_entities, time_range, language, audience, ...}
+    summary: Mapped[str | None] = mapped_column(Text)
+    semantic_profile: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    table_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -83,6 +270,7 @@ class Document(Base):
         Index("ix_documents_content_hash", "content_hash"),
         Index("ix_documents_series", "series_key", "doc_type", "store_code"),
         Index("ix_documents_status", "status"),
+        Index("ix_documents_workspace", "workspace_id", "status"),
     )
 
 
@@ -90,6 +278,7 @@ class KBRecordRow(Base):
     __tablename__ = "kb_records"
 
     record_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     document_id: Mapped[str] = mapped_column(String(32), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     source_file: Mapped[str] = mapped_column(Text, nullable=False)
     source_type: Mapped[str] = mapped_column(String(16), nullable=False)
@@ -124,6 +313,7 @@ class KBRecordRow(Base):
         Index("ix_kb_records_entity", "entity_key"),
         Index("ix_kb_records_filter", "doc_type", "store_code", "is_active"),
         Index("ix_kb_records_skus", "skus", postgresql_using="gin"),
+        Index("ix_kb_records_workspace", "workspace_id", "doc_type", "status"),
     )
 
 
@@ -131,6 +321,7 @@ class ChunkRow(Base):
     __tablename__ = "kb_chunks"
 
     chunk_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     record_id: Mapped[str] = mapped_column(Text, ForeignKey("kb_records.record_id", ondelete="CASCADE"), nullable=False)
     document_id: Mapped[str] = mapped_column(String(32), nullable=False)
     parent_chunk_id: Mapped[str | None] = mapped_column(Text)
@@ -154,6 +345,7 @@ class ChunkRow(Base):
         Index("ix_kb_chunks_document", "document_id"),
         Index("ix_kb_chunks_filter", "role", "doc_type", "store_code", "is_active", "deleted"),
         Index("ix_kb_chunks_skus", "skus", postgresql_using="gin"),
+        Index("ix_kb_chunks_workspace", "workspace_id", "role", "deleted"),
     )
 
 
@@ -186,6 +378,7 @@ class Conflict(Base):
     __tablename__ = "conflicts"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     kind: Mapped[str] = mapped_column(String(32), nullable=False)
     entity_key: Mapped[str] = mapped_column(Text, nullable=False)
     fingerprint: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
@@ -209,6 +402,7 @@ class GraphAlias(Base):
     __tablename__ = "graph_aliases"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     kind: Mapped[str] = mapped_column(String(16), nullable=False)  # sku | product | store | category | supplier | promotion | policy
     alias: Mapped[str] = mapped_column(Text, nullable=False)
     alias_norm: Mapped[str] = mapped_column(Text, nullable=False)
@@ -218,7 +412,7 @@ class GraphAlias(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
 
-    __table_args__ = (UniqueConstraint("kind", "alias_norm", name="uq_graph_alias_kind_norm"),)
+    __table_args__ = (UniqueConstraint("workspace_id", "kind", "alias_norm", name="uq_graph_alias_kind_norm"),)
 
 
 class GraphDocument(Base):
@@ -227,6 +421,7 @@ class GraphDocument(Base):
     __tablename__ = "graph_documents"
 
     document_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     builder: Mapped[str] = mapped_column(String(32), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)  # done | skipped | error
     node_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -245,6 +440,7 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str | None] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"))
     type: Mapped[str] = mapped_column(String(32), nullable=False)  # ingest_file | reindex | graph_rebuild | graph_update | ...
     # queued | processing | done | blocked | error
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="queued")
@@ -282,6 +478,7 @@ class QATrace(Base):
     __tablename__ = "qa_traces"
 
     trace_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    workspace_id: Mapped[str | None] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
     channel: Mapped[str] = mapped_column(String(8), nullable=False)  # chat | ask
     session_id: Mapped[str | None] = mapped_column(String(32))
@@ -289,8 +486,10 @@ class QATrace(Base):
     role: Mapped[str | None] = mapped_column(String(16))
     store_code: Mapped[str | None] = mapped_column(String(32))
     question: Mapped[str] = mapped_column(Text, nullable=False)
-    question_type: Mapped[str | None] = mapped_column(String(16))
+    question_type: Mapped[str | None] = mapped_column(String(24))
     route: Mapped[str | None] = mapped_column(String(24))
+    tool_calls: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)  # agent: tool + tham số + tóm tắt kết quả
+    artifacts: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)  # chart/table sinh kèm câu trả lời
     # answered | abstained | pending_review | no_citation | rejected | error
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     answer: Mapped[str | None] = mapped_column(Text)
@@ -320,6 +519,7 @@ class Abstention(Base):
     __tablename__ = "abstentions"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    workspace_id: Mapped[str | None] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"))
     trace_id: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
     question: Mapped[str] = mapped_column(Text, nullable=False)
@@ -336,6 +536,7 @@ class ReviewItem(Base):
     __tablename__ = "review_queue"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str | None] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"))
     trace_id: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
     session_id: Mapped[str | None] = mapped_column(String(32))
     message_id: Mapped[int | None] = mapped_column(BigInteger)
@@ -361,6 +562,7 @@ class ChatSession(Base):
     __tablename__ = "chat_sessions"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[str] = mapped_column(Text, nullable=False)
     store_code: Mapped[str | None] = mapped_column(String(32))
     title: Mapped[str | None] = mapped_column(Text)
@@ -415,6 +617,7 @@ class ApiKey(Base):
     __tablename__ = "api_keys"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str | None] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(Text, nullable=False)
     key_prefix: Mapped[str] = mapped_column(String(16), nullable=False)
     key_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)

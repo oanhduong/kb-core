@@ -45,15 +45,18 @@ def document_input(session: Session, doc: Document) -> DocumentInput:
     return di
 
 
-def _product_aliases(session: Session) -> dict[str, str]:
-    return {normalize_text(a.alias): normalize_text(a.canonical) for a in load_aliases(session) if a.kind == "product"}
+def _product_aliases(session: Session, workspace_id: str) -> dict[str, str]:
+    return {normalize_text(a.alias): normalize_text(a.canonical) for a in load_aliases(session, workspace_id) if a.kind == "product"}
 
 
 def _record_state(session: Session, doc_id: str, builder: str, status: str, nodes: int = 0, edges: int = 0,
-                  llm_edges: int = 0, warnings: list[str] | None = None, error: str | None = None) -> None:
+                  llm_edges: int = 0, warnings: list[str] | None = None, error: str | None = None,
+                  workspace_id: str | None = None) -> None:
     row = session.get(GraphDocument, doc_id)
     if row is None:
-        row = GraphDocument(document_id=doc_id, builder=builder, status=status)
+        if workspace_id is None:
+            return
+        row = GraphDocument(document_id=doc_id, workspace_id=workspace_id, builder=builder, status=status)
         session.add(row)
     row.builder, row.status, row.node_count, row.edge_count = builder, status, nodes, edges
     row.llm_edges, row.warnings, row.error, row.updated_at = llm_edges, (warnings or [])[:50], error, utcnow()
@@ -70,12 +73,12 @@ def sync_document(session: Session, store: GraphStore, document_id: str, *, llm:
         removed = {k: removed.get(k, 0) + removed_llm.get(k, 0) for k in removed}
     if doc is None or not doc.is_active or doc.deleted_at is not None:
         _record_state(session, document_id, "none", "removed")
-        invalidate_resolver_cache()
+        invalidate_resolver_cache(doc.workspace_id if doc else None)
         log_event(logger, "graph_sync_removed", document_id=document_id, **removed)
         return {"document_id": document_id, "status": "removed", "removed": removed}
 
     di = document_input(session, doc)
-    ctx = BuildContext.from_store(store, product_aliases=_product_aliases(session))
+    ctx = BuildContext.from_store(store, product_aliases=_product_aliases(session, doc.workspace_id))
     if llm and extractor is None and cfg.graph.llm_extraction.enabled and doc.doc_type in cfg.graph.llm_extraction.doc_types:
         from core.llm import get_llm
         from graph.extract import GraphExtractor
@@ -85,7 +88,7 @@ def sync_document(session: Session, store: GraphStore, document_id: str, *, llm:
     written = store.write_accumulator(result.acc) if result.builder != "none" else {"nodes": 0, "edges": 0}
     status = "done" if result.builder != "none" else "skipped"
     _record_state(session, document_id, result.builder, status, written["nodes"], written["edges"],
-                  result.llm_edges, result.warnings)
+                  result.llm_edges, result.warnings, workspace_id=doc.workspace_id)
     out: dict[str, Any] = {"document_id": document_id, "status": status, "builder": result.builder,
                            "removed": removed, "written": written, "llm_edges": result.llm_edges,
                            "warnings": result.warnings[:20], "dependents": []}
@@ -95,22 +98,23 @@ def sync_document(session: Session, store: GraphStore, document_id: str, *, llm:
     if cascade and result.builder in DEPENDENTS:
         dep_builders = set(DEPENDENTS[result.builder])
         deps = session.execute(select(GraphDocument.document_id).where(
-            GraphDocument.builder.in_(dep_builders), GraphDocument.status == "done",
-            GraphDocument.document_id != document_id)).scalars().all()
+            GraphDocument.workspace_id == doc.workspace_id, GraphDocument.builder.in_(dep_builders),
+            GraphDocument.status == "done", GraphDocument.document_id != document_id)).scalars().all()
         for dep_id in deps:
             out["dependents"].append(sync_document(session, store, dep_id, llm=False, cascade=False)["document_id"])
-    invalidate_resolver_cache()
+    invalidate_resolver_cache(doc.workspace_id)
     return out
 
 
-def rebuild_full(session: Session, store: GraphStore, *, llm: bool = True,
+def rebuild_full(session: Session, store: GraphStore, workspace_id: str, *, llm: bool = True,
                  progress: Any = None) -> dict[str, Any]:
-    """Xoá sạch graph rồi build lại mọi document active theo BUILD_ORDER."""
+    """Xoá sạch graph của workspace rồi build lại mọi document active theo BUILD_ORDER."""
     store.clear()
-    for row in session.execute(select(GraphDocument)).scalars().all():
+    for row in session.execute(select(GraphDocument).where(GraphDocument.workspace_id == workspace_id)).scalars().all():
         session.delete(row)
     session.flush()
-    docs = session.execute(select(Document).where(Document.is_active.is_(True), Document.deleted_at.is_(None))).scalars().all()
+    docs = session.execute(select(Document).where(Document.workspace_id == workspace_id, Document.is_active.is_(True),
+                                                  Document.deleted_at.is_(None))).scalars().all()
     planned: list[tuple[int, Document]] = []
     for d in docs:
         di = document_input(session, d)

@@ -69,7 +69,8 @@ def rebuild_chunks(session: Session, cfg: AppConfig, doc: Document, records: Seq
         meta = {k: v for k, v in ch.metadata.items() if k not in ("fields",)}
         meta.update({"source_file": owner.source_file, "source_type": owner.source_type})
         rows.append(ChunkRow(
-            chunk_id=ch.chunk_id, record_id=owner.record_id, document_id=owner.document_id, parent_chunk_id=parent,
+            chunk_id=ch.chunk_id, workspace_id=owner.workspace_id, record_id=owner.record_id,
+            document_id=owner.document_id, parent_chunk_id=parent,
             role=role, text=ch.text, context_prefix=f"{doc.title} | {short_location(owner.source_type, ch.location)}",
             location=ch.location, meta=meta, doc_type=owner.doc_type, store_code=owner.store_code,
             skus=list(owner.skus or []), effective_date=owner.effective_date, valid_to=owner.valid_to,

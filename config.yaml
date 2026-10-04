@@ -114,8 +114,7 @@ citation:
   min_sentence_coverage: 0.0  # 0 = chỉ cần >= 1 citation hợp lệ; 0.6 = >= 60% câu khẳng định có citation
 
 review:
-  enabled: true
-  bypass_roles: [supervisor, admin]
+  enabled: true                # luật cụ thể (từ khoá tiền, vai trò phải duyệt) do domain pack của workspace quyết định
 
 chat:
   history_max_messages: 12

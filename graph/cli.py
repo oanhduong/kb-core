@@ -27,6 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     configure_logging()
     parser = argparse.ArgumentParser(description="Vận hành graph layer RetailKB.")
     sub = parser.add_subparsers(dest="cmd", required=True)
+    parser.add_argument("--workspace", required=True, help="id workspace (graph rule-based theo workspace)")
     sub.add_parser("stats")
     p_sync = sub.add_parser("sync")
     p_sync.add_argument("--document", required=True)
@@ -42,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     p_al.add_argument("--note")
     args = parser.parse_args(argv)
 
-    store = get_graph_store()
+    store = get_graph_store(args.workspace)
     try:
         if args.cmd == "stats":
             print(json.dumps(store.stats(), ensure_ascii=False, indent=2))
@@ -54,28 +55,28 @@ def main(argv: list[str] | None = None) -> int:
                 from worker.queue import enqueue_job
 
                 with session_scope() as s:
-                    job = enqueue_job(s, "graph_rebuild", {"llm": not args.no_llm}, created_by="cli")
+                    job = enqueue_job(s, "graph_rebuild", {"llm": not args.no_llm}, created_by="cli", workspace_id=args.workspace)
                     print(f"Đã đưa job graph_rebuild vào hàng đợi: {job.id}")
             else:
                 with session_scope() as s:
-                    out = rebuild_full(s, store, llm=not args.no_llm,
+                    out = rebuild_full(s, store, args.workspace, llm=not args.no_llm,
                                        progress=lambda i, n: print(f"  {i}/{n} document", file=sys.stderr))
                 print(json.dumps(out["graph"], ensure_ascii=False, indent=2))
         elif args.cmd == "aliases":
             with session_scope() as s:
                 if args.action == "list":
-                    for a in load_aliases(s):
+                    for a in load_aliases(s, args.workspace):
                         if not args.kind or a.kind == args.kind:
                             print(f"[{a.id}] {a.kind}: {a.alias!r} -> {a.canonical!r}" + (f"  ({a.note})" if a.note else ""))
                 elif args.action == "add":
                     if not (args.kind and args.alias and args.canonical):
                         print("Cần --kind --alias --canonical", file=sys.stderr)
                         return 2
-                    row = upsert_alias(s, args.kind, args.alias, args.canonical, note=args.note, actor="cli")
+                    row = upsert_alias(s, args.workspace, args.kind, args.alias, args.canonical, note=args.note, actor="cli")
                     print(f"OK [{row.id}] {row.kind}: {row.alias!r} -> {row.canonical!r}")
                 else:
                     for a in default_seed_aliases():
-                        upsert_alias(s, a.kind, a.alias, a.canonical, note="seed", actor="seed")
+                        upsert_alias(s, args.workspace, a.kind, a.alias, a.canonical, note="seed", actor="seed")
                     print(f"Đã nạp {len(default_seed_aliases())} alias mặc định.")
     except GraphUnavailable as e:
         print(f"Graph không dùng được (AGE/DB): {e}", file=sys.stderr)

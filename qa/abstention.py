@@ -55,12 +55,13 @@ def decide(cfg: AppConfig, *, candidates: int, rerank_top: float | None, dense_t
 
 
 def record_abstention(session: Any, *, trace_id: str, question: str, reason: str, top_score: float | None,
-                      question_type: str | None, store_code: str | None, user_id: str | None) -> None:
+                      question_type: str | None, store_code: str | None, user_id: str | None,
+                      workspace_id: str | None = None) -> None:
     from sqlalchemy.dialects.postgresql import insert
 
     from core.models import Abstention
 
     session.execute(insert(Abstention).values(
-        trace_id=trace_id, question=question, reason=reason, top_score=top_score, question_type=question_type,
-        store_code=store_code, user_id=user_id).on_conflict_do_nothing(index_elements=["trace_id"]))
+        trace_id=trace_id, workspace_id=workspace_id, question=question, reason=reason, top_score=top_score,
+        question_type=question_type, store_code=store_code, user_id=user_id).on_conflict_do_nothing(index_elements=["trace_id"]))
     log_event(logger, "qa_abstained", reason=reason, top_score=top_score, question_type=question_type)

@@ -20,18 +20,23 @@ from graph.resolve import fold_text
 from kb.repository import current_kb_version, record_counts_by_doc_type
 
 
-def kb_health(session: Session, cfg: AppConfig, *, days: int = 7, graph_stats: dict[str, Any] | None = None,
+def kb_health(session: Session, cfg: AppConfig, *, workspace_id: str, days: int = 7, graph_stats: dict[str, Any] | None = None,
               embedding_model: str | None = None) -> dict[str, Any]:
     now = datetime.now(timezone.utc)
     since = now - timedelta(days=days)
+    ws = workspace_id
 
-    blocked_docs = session.execute(select(Document).where(Document.status == "blocked", Document.deleted_at.is_(None))
+    blocked_docs = session.execute(select(Document).where(Document.workspace_id == ws, Document.status == "blocked",
+                                                          Document.deleted_at.is_(None))
                                    .order_by(Document.updated_at.desc())).scalars().all()
-    blocked_jobs = session.execute(select(Job).where(Job.status.in_(("blocked", "error")), Job.type == "ingest_file")
+    blocked_jobs = session.execute(select(Job).where(Job.workspace_id == ws, Job.status.in_(("blocked", "error")),
+                                                     Job.type == "ingest_file")
                                    .order_by(Job.finished_at.desc().nullslast()).limit(50)).scalars().all()
-    open_conflicts = session.execute(select(func.count()).select_from(Conflict).where(Conflict.status == "open")).scalar_one()
+    open_conflicts = session.execute(select(func.count()).select_from(Conflict)
+                                     .where(Conflict.workspace_id == ws, Conflict.status == "open")).scalar_one()
 
-    abst = session.execute(select(Abstention).where(Abstention.created_at >= since).order_by(Abstention.created_at.desc())).scalars().all()
+    abst = session.execute(select(Abstention).where(Abstention.workspace_id == ws, Abstention.created_at >= since)
+                           .order_by(Abstention.created_at.desc())).scalars().all()
     grouped: dict[str, dict[str, Any]] = {}
     for a in abst:
         key = fold_text(a.question)
@@ -44,10 +49,11 @@ def kb_health(session: Session, cfg: AppConfig, *, days: int = 7, graph_stats: d
                        key=lambda g: (-g["count"], -g["last_at"].timestamp()))
 
     last_update = {dt: ts for dt, ts in session.execute(
-        select(Document.doc_type, func.max(Document.updated_at)).where(Document.deleted_at.is_(None), Document.status.in_(("active", "superseded")))
+        select(Document.doc_type, func.max(Document.updated_at)).where(Document.workspace_id == ws, Document.deleted_at.is_(None),
+                                                                        Document.status.in_(("active", "superseded")))
         .group_by(Document.doc_type)).all()}
     active_docs = {dt: n for dt, n in session.execute(
-        select(Document.doc_type, func.count()).where(Document.is_active.is_(True), Document.deleted_at.is_(None))
+        select(Document.doc_type, func.count()).where(Document.workspace_id == ws, Document.is_active.is_(True), Document.deleted_at.is_(None))
         .group_by(Document.doc_type)).all()}
 
     from index.embeddings import effective_embedding_model
@@ -56,15 +62,20 @@ def kb_health(session: Session, cfg: AppConfig, *, days: int = 7, graph_stats: d
     cov = session.execute(text(
         "SELECT count(*) AS total, count(e.chunk_id) AS embedded FROM kb_chunks c "
         "LEFT JOIN chunk_embeddings e ON e.chunk_id = c.chunk_id AND e.model = :m "
-        "WHERE c.deleted = false AND c.role <> 'parent'"), {"m": model}).one()
-    jobs = {s: int(n) for s, n in session.execute(text("SELECT status, count(*) FROM jobs GROUP BY status")).all()}
-    total_q = session.execute(text("SELECT count(*) FROM qa_traces WHERE created_at >= :s"), {"s": since}).scalar_one()
+        "WHERE c.deleted = false AND c.role <> 'parent' AND c.workspace_id = :ws"), {"m": model, "ws": ws}).one()
+    jobs = {s: int(n) for s, n in session.execute(text("SELECT status, count(*) FROM jobs WHERE workspace_id = :ws GROUP BY status"), {"ws": ws}).all()}
+    total_q = session.execute(text("SELECT count(*) FROM qa_traces WHERE created_at >= :s AND workspace_id = :ws"), {"s": since, "ws": ws}).scalar_one()
+    doc_total = session.execute(text("SELECT count(*) FROM documents WHERE workspace_id = :ws AND deleted_at IS NULL"), {"ws": ws}).scalar_one()
+    table_total = session.execute(text("SELECT count(*) FROM data_tables WHERE workspace_id = :ws AND is_active"), {"ws": ws}).scalar_one()
+    entity_total = session.execute(text("SELECT count(*) FROM entities WHERE workspace_id = :ws"), {"ws": ws}).scalar_one()
 
     return {
         "generated_at": now.isoformat(),
         "config_version": cfg.config_version,
         "kb_version": current_kb_version(session),
-        "records_by_doc_type": record_counts_by_doc_type(session),
+        "workspace_id": ws,
+        "totals": {"documents": int(doc_total), "data_tables": int(table_total), "entities": int(entity_total)},
+        "records_by_doc_type": record_counts_by_doc_type(session, ws),
         "active_documents_by_doc_type": active_docs,
         "last_updated_by_doc_type": {k: v.isoformat() if v else None for k, v in last_update.items()},
         "blocked_files": {

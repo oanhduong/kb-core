@@ -31,12 +31,12 @@ _UNACCENTED_RE = re.compile(r"(?<!\w)(gia (bao nhieu|ban|niem yet|cua|la|moi|cu)
 _AMOUNT_RE = re.compile(r"\d[\d.,]*\s*(?:k|nghìn|ngàn|triệu|tr|đ|đồng|vnđ|vnd)(?!\w)", re.IGNORECASE)
 
 
-def is_money_question(question: str, cfg: AppConfig) -> tuple[bool, list[str]]:
+def is_money_question(question: str, keywords: tuple[str, ...] | list[str]) -> tuple[bool, list[str]]:
     """Từ khoá tiền khớp trên chữ CÓ dấu (tránh "đồng" ~ "hợp đồng"/"đóng" khi bỏ dấu), cộng mẫu gõ
     không dấu nhiều từ và số tiền ("590k", "1,2 triệu")."""
     low = _NOT_MONEY_RE.sub(" ", question.lower())
     hits = []
-    for kw in cfg.review.money_keywords:
+    for kw in keywords:
         k = kw.lower().strip()
         if k == "đồng":
             pattern = r"(?<![\w])(?<!hợp )đồng(?!\w)"
@@ -52,19 +52,24 @@ def is_money_question(question: str, cfg: AppConfig) -> tuple[bool, list[str]]:
     return bool(hits), hits
 
 
-def needs_review(question: str, role: str | None, cfg: AppConfig) -> tuple[bool, list[str]]:
-    if not cfg.review.enabled or (role and role in cfg.review.bypass_roles):
+def needs_review(question: str, role: str | None, cfg: AppConfig, pack_key: str = "generic") -> tuple[bool, list[str]]:
+    """Luật duyệt do domain pack quyết định (pack generic: không bao giờ duyệt). review.enabled trong
+    config là công tắc tổng."""
+    from domains import get_pack
+
+    policy = get_pack(pack_key).review
+    if not cfg.review.enabled or not policy.enabled or (role and role not in policy.require_review_roles):
         return False, []
-    return is_money_question(question, cfg)
+    return is_money_question(question, policy.keywords)
 
 
 def enqueue_review(session: Session, *, trace_id: str, session_id: str | None, message_id: int | None,
                    user_id: str | None, store_code: str | None, question: str, draft_answer: str,
-                   citations: list[dict], decision_trace: dict, reason: str) -> ReviewItem:
+                   citations: list[dict], decision_trace: dict, reason: str, workspace_id: str | None = None) -> ReviewItem:
     existing = session.execute(select(ReviewItem).where(ReviewItem.trace_id == trace_id)).scalar_one_or_none()
     if existing is not None:
         return existing
-    item = ReviewItem(trace_id=trace_id, session_id=session_id, message_id=message_id, user_id=user_id,
+    item = ReviewItem(trace_id=trace_id, workspace_id=workspace_id, session_id=session_id, message_id=message_id, user_id=user_id,
                       store_code=store_code, question=question, draft_answer=draft_answer,
                       draft_citations=citations, decision_trace=decision_trace, reason=reason)
     session.add(item)

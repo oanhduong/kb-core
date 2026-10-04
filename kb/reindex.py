@@ -42,6 +42,8 @@ def run_reindex(cfg: AppConfig, sm: sessionmaker, embedder: Any, payload: dict[s
     rechunked_records = 0
     with session_scope() as s:
         q = select(Document).where(Document.deleted_at.is_(None))
+        if payload.get("workspace_id"):
+            q = q.where(Document.workspace_id == payload["workspace_id"])
         if document_ids:
             q = q.where(Document.id.in_(document_ids))
         if doc_types:

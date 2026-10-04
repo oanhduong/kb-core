@@ -187,12 +187,9 @@ class CitationConfig(BaseModel):
 
 
 class ReviewConfig(BaseModel):
+    """Công tắc tổng cho human-in-the-loop; luật cụ thể (từ khoá, vai trò phải duyệt) nằm ở domain pack."""
+
     enabled: bool = True
-    money_keywords: list[str] = Field(default_factory=lambda: [
-        "giá", "bao nhiêu tiền", "chiết khấu", "giảm giá", "hoàn tiền", "trả lại tiền", "bồi thường",
-        "đền bù", "khấu trừ", "phí", "chi phí", "thanh toán", "voucher", "mức giảm", "ưu đãi bao nhiêu",
-        "vnđ", "vnd", "đồng"])
-    bypass_roles: list[str] = Field(default_factory=lambda: ["supervisor", "admin"])
     pending_message: str = (
         "Câu hỏi liên quan đến tiền (giá/chiết khấu/hoàn tiền/bồi thường) nên đã được chuyển cho "
         "supervisor duyệt trước khi gửi. Bạn sẽ nhận câu trả lời ngay khi được duyệt."

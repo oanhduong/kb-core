@@ -102,7 +102,7 @@ class Citation:
         return {"n": self.n, "sid": self.sid, "label": self.label, "chunk_id": self.chunk_id,
                 "record_id": self.record_id, "document_id": self.document_id, "location": self.location,
                 "snippet": self.snippet, "effective_date": self.effective_date,
-                "url": f"/kb/chunks/{quote(self.chunk_id, safe='')}"}
+                "url": f"/chunks/{quote(self.chunk_id, safe='')}"}
 
 
 @dataclass

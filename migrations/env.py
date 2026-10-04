@@ -24,6 +24,8 @@ def include_object(obj, name, type_, reflected, compare_to):  # pragma: no cover
     schema = getattr(obj, "schema", None)
     if schema in _EXCLUDED_SCHEMAS:
         return False
+    if type_ == "index" and name and name.startswith("ix_chunk_emb_hnsw_"):
+        return False  # partial HNSW theo embedding model tạo lúc runtime (index/kb_store.ensure_model_index)
     return True
 
 

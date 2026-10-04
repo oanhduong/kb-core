@@ -26,6 +26,37 @@ from graph.resolve import default_seed_aliases, upsert_alias
 from ingest.service import UploadOptions, register_upload
 from worker.queue import job_view
 
+
+def resolve_workspace(session, workspace: str | None, create_pack: str = "retail") -> str:
+    """--workspace <id|slug>; không truyền -> workspace 'default' (tạo cùng tài khoản bootstrap nếu chưa có)."""
+    from sqlalchemy import select
+
+    from accounts import service as accounts
+    from core.models import User, Workspace
+
+    if workspace:
+        ws = session.get(Workspace, workspace) or session.execute(select(Workspace).where(Workspace.slug == workspace)).scalar_one_or_none()
+        if ws is None:
+            raise SystemExit(f"Không có workspace {workspace!r}")
+        return ws.id
+    ws = session.execute(select(Workspace).where(Workspace.slug == "default")).scalar_one_or_none()
+    if ws is not None:
+        return ws.id
+    email = (os.environ.get("BOOTSTRAP_ADMIN_EMAIL") or "admin@retailkb.local").lower()
+    user = session.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    if user is None:
+        import secrets
+
+        pw = os.environ.get("BOOTSTRAP_ADMIN_PASSWORD") or secrets.token_urlsafe(12)
+        user = accounts.create_user(session, email=email, password=pw, name="Admin")
+        user.is_superadmin = True
+        print(f"Đã tạo tài khoản quản trị {email}" + ("" if os.environ.get("BOOTSTRAP_ADMIN_PASSWORD") else f" / mật khẩu tạm: {pw} (đổi sau khi đăng nhập)"))
+    ws = accounts.create_workspace(session, user, name="Workspace mặc định", domain_pack=create_pack)
+    ws.slug = "default"
+    session.flush()
+    print(f"Đã tạo workspace 'default' (pack {create_pack}): {ws.id}")
+    return ws.id
+
 # Tên hiển thị (dùng trong citation) + ngày hiệu lực cho bộ dữ liệu mẫu GreenMart (data/raw).
 SEED_META: dict[str, dict] = {
     "01_bang_gia_sku.xlsx": {"title": "Bảng giá tháng 8", "effective_date": date(2026, 8, 1), "doc_type": "price_list"},
@@ -51,12 +82,13 @@ SEED_META: dict[str, dict] = {
 }
 
 
-def _upload(paths: list[str], opts_for, actor: str) -> list[str]:
+def _upload(paths: list[str], opts_for, actor: str, workspace: str | None) -> list[str]:
     cfg = get_config()
     job_ids = []
     with session_scope() as s:
+        ws_id = resolve_workspace(s, workspace)
         for path in paths:
-            res = register_upload(s, cfg, src=path, filename=os.path.basename(path), opts=opts_for(path), uploaded_by=actor)
+            res = register_upload(s, cfg, workspace_id=ws_id, src=path, filename=os.path.basename(path), opts=opts_for(path), uploaded_by=actor)
             flag = " (đã có — không xử lý lại)" if res.duplicate_of_upload else ""
             print(f"  {res.filename}: document={res.document_id} job={res.job_id}{flag}")
             job_ids.append(res.job_id)
@@ -96,7 +128,9 @@ def main(argv: list[str] | None = None) -> int:
     ps.add_argument("--only", choices=["docx", "xlsx", "pdf", "image", "audio", "video"], nargs="*",
                     help="Chỉ nạp các thư mục này (mặc định: tất cả)")
     ps.add_argument("--wait", action="store_true")
+    ps.add_argument("--workspace", help="id hoặc slug; mặc định workspace 'default' (tự tạo, pack retail)")
     pu = sub.add_parser("upload")
+    pu.add_argument("--workspace")
     pu.add_argument("files", nargs="+")
     pu.add_argument("--doc-type")
     pu.add_argument("--store")
@@ -121,12 +155,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "seed":
         with session_scope() as s:
+            ws_id = resolve_workspace(s, args.workspace)
             for a in default_seed_aliases():
-                upsert_alias(s, a.kind, a.alias, a.canonical, note="seed", actor="seed")
+                upsert_alias(s, ws_id, a.kind, a.alias, a.canonical, note="seed", actor="seed")
         folders = args.only or ["xlsx", "docx", "pdf", "image", "audio", "video"]
         paths = [f for folder in folders for f in sorted(glob.glob(os.path.join(args.dir, folder, "*"))) if not f.endswith(".md")]
         print(f"Nạp {len(paths)} file mẫu từ {args.dir} ...")
-        ids = _upload(paths, lambda path: UploadOptions(**SEED_META.get(os.path.basename(path), {})), "seed")
+        ids = _upload(paths, lambda path: UploadOptions(**SEED_META.get(os.path.basename(path), {})), "seed", args.workspace)
         return _wait(ids) if args.wait else 0
 
     if len(args.files) > 1 and args.title:
@@ -134,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     opts = UploadOptions(title=args.title, doc_type=args.doc_type, store_code=args.store, effective_date=args.effective_date,
                          version=args.version, series_key=args.series_key, replace_mode=args.replace_mode)
-    ids = _upload(args.files, lambda _p: opts, "cli")
+    ids = _upload(args.files, lambda _p: opts, "cli", args.workspace)
     return _wait(ids) if args.wait else 0
 
 

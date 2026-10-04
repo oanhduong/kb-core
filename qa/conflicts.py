@@ -166,7 +166,7 @@ def ensure_conflict_disclosure(answer: str, conflicts: list[ConflictInfo], numbe
     return answer.rstrip() + "\n" + "\n".join(lines), True
 
 
-def persist_conflicts(session: Any, conflicts: list[ConflictInfo]) -> list[str]:
+def persist_conflicts(session: Any, conflicts: list[ConflictInfo], workspace_id: str) -> list[str]:
     """Lưu bảng conflicts, idempotent theo fingerprint. -> id các conflict (mới hoặc đã có)."""
     from sqlalchemy import select
 
@@ -176,7 +176,7 @@ def persist_conflicts(session: Any, conflicts: list[ConflictInfo]) -> list[str]:
     for c in conflicts:
         row = session.execute(select(Conflict).where(Conflict.fingerprint == c.fingerprint)).scalar_one_or_none()
         if row is None:
-            row = Conflict(kind=c.kind, entity_key=c.entity_key, fingerprint=c.fingerprint,
+            row = Conflict(workspace_id=workspace_id, kind=c.kind, entity_key=c.entity_key, fingerprint=c.fingerprint,
                            record_ids=[v.record_id for v in c.values], details=c.to_dict(), status="open")
             session.add(row)
             session.flush()

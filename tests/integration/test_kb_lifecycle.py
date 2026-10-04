@@ -25,7 +25,7 @@ def _upload(path, **opts):
     from ingest.service import UploadOptions, register_upload
 
     with session_scope() as s:
-        return register_upload(s, get_config(), src=path, filename=path.rsplit("/", 1)[-1],
+        return register_upload(s, get_config(), workspace_id=STATE["ws"], src=path, filename=path.rsplit("/", 1)[-1],
                                opts=UploadOptions(**opts), uploaded_by="test")
 
 
@@ -37,7 +37,8 @@ def _drain():
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _env(env):
+def _env(env, account):
+    STATE["ws"] = account["workspace_id"]
     return env
 
 
@@ -52,7 +53,7 @@ def test_ingest_sample_files_end_to_end():
     with session_scope() as s:
         jobs = s.execute(select(Job.type, Job.status, Job.error)).all()
         assert all(st == "done" for _, st, _ in jobs), jobs
-        assert {t for t, _, _ in jobs} == {"ingest_file", "graph_sync"}
+        assert {t for t, _, _ in jobs} == {"ingest_file", "graph_sync", "knowledge_extract"}
         docs = s.execute(select(Document)).scalars().all()
         assert all(d.status == "active" and d.is_active for d in docs)
         by_name = {d.filename: d for d in docs}
@@ -78,13 +79,13 @@ def test_graph_built_incrementally_in_age_with_record_links():
     from core.models import GraphDocument
     from graph.store import NodeRef, get_graph_store
 
-    st = get_graph_store().stats()
+    st = get_graph_store(STATE["ws"]).stats()
     assert st["node_count_by_label"]["SKU"] >= 300 and st["node_count_by_label"]["Store"] == 8
     assert {"BELONGS_TO", "STOCKS", "APPLIES_TO", "SUPPLIES", "GOVERNS", "REFERENCES", "PART_OF"} <= set(st["edge_count_by_type"])
-    node = get_graph_store().get_node("SKU", "ĐT-018")
+    node = get_graph_store(STATE["ws"]).get_node("SKU", "ĐT-018")
     price_doc = STATE["xlsx/01_bang_gia_sku.xlsx"]
     assert node.props["source_chunk_ids"] == [f"{price_doc}:BangGiaSKU!A3"]  # trỏ đúng record_id trong KB
-    paths = get_graph_store().paths_from([NodeRef("SKU", "ĐT-018")], 2, limit=200)
+    paths = get_graph_store(STATE["ws"]).paths_from([NodeRef("SKU", "ĐT-018")], 2, limit=200)
     assert any(p.nodes[-1].label == "Promotion" for p in paths)
     with session_scope() as s:
         assert {g.status for g in s.execute(select(GraphDocument)).scalars()} == {"done"}
@@ -118,12 +119,13 @@ def test_new_month_price_list_replaces_old_and_keeps_history(tmp_path):
         assert (old_rec.is_active, old_rec.status, old_rec.valid_to) == (False, "superseded", date(2026, 9, 1))
         assert s.execute(select(Job).where(Job.type == "graph_sync", Job.document_id == old.id, Job.status == "done")).first()
     # graph: SKU giờ trỏ về record của bảng giá mới, giá mới
-    node = get_graph_store().get_node("SKU", "ĐT-018")
+    node = get_graph_store(STATE["ws"]).get_node("SKU", "ĐT-018")
     assert node.props["price"] == 1290000 and node.props["source_chunk_ids"] == [f"{res.document_id}:BangGiaSKU!A3"]
     # BM25/vector filter: mặc định chỉ active; as_of 15/8 ra bản cũ
     from index.store import _matches_filters
 
-    docs = [d for d in load_bm25_documents(get_sessionmaker()) if d.metadata["record_id"].endswith(":BangGiaSKU!A3")]
+    docs = [d for d in load_bm25_documents(get_sessionmaker())
+            if d.metadata["record_id"].endswith(":BangGiaSKU!A3") and d.metadata["workspace_id"] == STATE["ws"]]
     active = [d for d in docs if _matches_filters(d.metadata, Filters(is_active=True))]
     hist = [d for d in docs if _matches_filters(d.metadata, Filters(as_of="2026-08-15"))]
     assert [d.metadata["document_id"] for d in active] == [res.document_id]
@@ -137,7 +139,8 @@ def test_reupload_same_file_is_idempotent():
     res = _upload(f"{DATA}/docx/01_chinh_sach_doi_tra_hang_hoa.docx")
     assert res.duplicate_of_upload and res.document_id == STATE["docx/01_chinh_sach_doi_tra_hang_hoa.docx"]
     with session_scope() as s:
-        assert s.execute(select(func.count()).select_from(Document).where(Document.filename == "01_chinh_sach_doi_tra_hang_hoa.docx")).scalar_one() == 1
+        assert s.execute(select(func.count()).select_from(Document).where(
+            Document.workspace_id == STATE["ws"], Document.filename == "01_chinh_sach_doi_tra_hang_hoa.docx")).scalar_one() == 1
 
 
 def test_dedup_same_content_in_two_files_keeps_newer(tmp_path):
@@ -203,7 +206,7 @@ def test_kb_health_reports_all_required_signals():
     from kb.health import kb_health
 
     with session_scope() as s:
-        h = kb_health(s, get_config())
+        h = kb_health(s, get_config(), workspace_id=STATE["ws"])
     assert h["records_by_doc_type"]["price_list"]["superseded"] >= 300
     assert "policy" in h["last_updated_by_doc_type"]
     assert h["blocked_files"]["count"] == 0 and isinstance(h["open_conflicts"], int)

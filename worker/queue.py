@@ -23,7 +23,7 @@ from core.models import Job, utcnow
 
 logger = logging.getLogger(__name__)
 
-JOB_TYPES = ("ingest_file", "reindex", "graph_sync", "graph_rebuild", "document_lifecycle")
+JOB_TYPES = ("ingest_file", "reindex", "graph_sync", "graph_rebuild", "document_lifecycle", "knowledge_extract", "report_generate")
 
 
 class JobBlocked(Exception):
@@ -37,7 +37,7 @@ class JobBlocked(Exception):
 
 def enqueue_job(session: Session, job_type: str, payload: dict[str, Any], *, idempotency_key: str | None = None,
                 document_id: str | None = None, batch_id: str | None = None, created_by: str | None = None,
-                max_attempts: int = 3, delay_seconds: float = 0) -> Job:
+                max_attempts: int = 3, delay_seconds: float = 0, workspace_id: str | None = None) -> Job:
     if job_type not in JOB_TYPES:
         raise ValueError(f"job type không hợp lệ: {job_type}")
     if idempotency_key:
@@ -45,7 +45,7 @@ def enqueue_job(session: Session, job_type: str, payload: dict[str, Any], *, ide
         if existing is not None:
             return existing
     job = Job(type=job_type, payload=payload, idempotency_key=idempotency_key, document_id=document_id,
-              batch_id=batch_id, created_by=created_by, max_attempts=max_attempts,
+              batch_id=batch_id, created_by=created_by, max_attempts=max_attempts, workspace_id=workspace_id,
               run_after=utcnow() + timedelta(seconds=delay_seconds))
     session.add(job)
     session.flush()
@@ -127,7 +127,7 @@ def recover_stale(session: Session, stale_minutes: int) -> int:
 
 def job_view(job: Job) -> dict[str, Any]:
     return {
-        "job_id": job.id, "type": job.type, "status": job.status, "document_id": job.document_id,
+        "job_id": job.id, "type": job.type, "status": job.status, "document_id": job.document_id, "workspace_id": job.workspace_id,
         "batch_id": job.batch_id, "attempts": job.attempts, "max_attempts": job.max_attempts,
         "progress": {"done": job.progress_done, "total": job.progress_total,
                      "percent": round(100 * job.progress_done / job.progress_total, 1) if job.progress_total else None},

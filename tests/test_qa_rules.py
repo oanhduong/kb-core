@@ -8,7 +8,10 @@ from core.config import get_config
 from qa.abstention import decide, sigmoid
 from qa.conflicts import detect_conflicts, ensure_conflict_disclosure, extract_price_facts, format_vnd, parse_vnd
 from qa.dates import extract_as_of
+from domains import get_pack
 from qa.review import is_money_question, needs_review
+
+RETAIL_KW = get_pack("retail").review.keywords
 from qa.trace import DecisionTrace, compute_confidence
 
 CFG = get_config()
@@ -106,12 +109,13 @@ def test_extract_as_of(q, expected):
     ("Nồi chiên thuộc ngành gia dụng không?", False),
 ])
 def test_money_question_detection(q, money):
-    assert is_money_question(q, CFG)[0] is money
+    assert is_money_question(q, RETAIL_KW)[0] is money
 
 
-def test_supervisor_bypasses_review():
-    assert needs_review("Giá ĐT-018 bao nhiêu?", "staff", CFG)[0] is True
-    assert needs_review("Giá ĐT-018 bao nhiêu?", "supervisor", CFG)[0] is False
+def test_review_policy_comes_from_domain_pack():
+    assert needs_review("Giá ĐT-018 bao nhiêu?", "viewer", CFG, "retail")[0] is True
+    assert needs_review("Giá ĐT-018 bao nhiêu?", "editor", CFG, "retail")[0] is False  # supervisor = editor
+    assert needs_review("Giá ĐT-018 bao nhiêu?", "viewer", CFG, "generic")[0] is False  # pack tổng quát không duyệt
 
 
 # =====================================================================================

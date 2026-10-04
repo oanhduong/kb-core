@@ -55,6 +55,12 @@ def build_filter_sql(filters: Filters | None, alias: str = "c") -> tuple[str, di
     f = filters or Filters()
     clauses: list[str] = [f"{alias}.deleted = false", f"{alias}.role <> 'parent'"]
     params: dict[str, Any] = {}
+    if f.workspace_id is not None:
+        clauses.append(f"{alias}.workspace_id = :ws")
+        params["ws"] = f.workspace_id
+    if f.document_ids is not None:
+        clauses.append(f"{alias}.document_id = ANY(:doc_ids)")
+        params["doc_ids"] = _as_list(f.document_ids)
     if f.doc_type is not None:
         clauses.append(f"{alias}.doc_type = ANY(:doc_types)")
         params["doc_types"] = _as_list(f.doc_type)
@@ -90,7 +96,7 @@ def build_filter_sql(filters: Filters | None, alias: str = "c") -> tuple[str, di
 def chunk_metadata_row(row: Any) -> dict[str, Any]:
     meta = dict(row.meta or {})
     meta.update({
-        "record_id": row.record_id, "document_id": row.document_id, "parent_chunk_id": row.parent_chunk_id,
+        "workspace_id": row.workspace_id, "record_id": row.record_id, "document_id": row.document_id, "parent_chunk_id": row.parent_chunk_id,
         "role": row.role, "doc_type": row.doc_type, "store_code": row.store_code, "sku": list(row.skus or []),
         "effective_date": row.effective_date.isoformat() if row.effective_date else None,
         "valid_to": row.valid_to.isoformat() if row.valid_to else None, "is_active": row.is_active,
@@ -124,7 +130,7 @@ class KBVectorStore(VectorStore):
         where, params = build_filter_sql(filters)
         params.update({"q": _vec_literal(query_vec), "k": int(top_k)})
         sql = (
-            f"SELECT c.chunk_id, c.text, c.record_id, c.document_id, c.parent_chunk_id, c.role, c.doc_type, "
+            f"SELECT c.chunk_id, c.text, c.workspace_id, c.record_id, c.document_id, c.parent_chunk_id, c.role, c.doc_type, "
             f"c.store_code, c.skus, c.effective_date, c.valid_to, c.is_active, c.location, c.context_prefix, "
             f"c.metadata AS meta, 1 - ((e.embedding::vector({self.dim})) <=> CAST(:q AS vector({self.dim}))) AS score "
             f"FROM chunk_embeddings e JOIN kb_chunks c ON c.chunk_id = e.chunk_id "
