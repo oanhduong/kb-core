@@ -4,3 +4,16 @@ __pycache__/
 .DS_Store
 .coverage
 .pytest_cache/
+
+# Runtime data (do Docker volume/dev tạo ra)
+data/uploads/
+data/parsework/
+data/output/
+data/security/
+data/chunks/
+data/published/
+data/ingest_state.json
+backups/
+.env
+chat_ui/node_modules/
+chat_ui/dist/

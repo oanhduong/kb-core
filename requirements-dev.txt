@@ -1,0 +1,14 @@
+-r requirements.txt
+
+# Test
+pytest==9.1.1
+pytest-cov==7.1.0
+# Postgres 16 + pgvector nhúng (không cần Docker) cho integration test local — xem README "Chạy test".
+pgserver==0.1.4
+
+# Chỉ dùng cho scripts/gen_*.py (sinh lại corpus mẫu data/raw) — không cần khi vận hành.
+reportlab==5.0.0
+gTTS==2.5.4
+pyttsx3==2.99
+mammoth==1.12.1
+weasyprint==69.0

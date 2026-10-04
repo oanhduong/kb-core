@@ -1,0 +1,189 @@
+# RetailKB Copilot — toàn bộ hệ thống (F2).
+#   cp .env.example .env   # điền biến BẮT BUỘC (xem README)
+#   make up                # = docker compose up -d --build
+#   make ingest            # nạp dữ liệu mẫu data/raw (hoặc make ingest FILE=duong/dan/file.xlsx)
+# Cổng: chat-ui :3000 · admin-ui :8501 · api :8000 (/docs) · langfuse :3001 · postgres 127.0.0.1:5432
+
+name: retailkb
+
+x-app: &app
+  image: retailkb-app:${APP_IMAGE_TAG:-latest}
+  env_file: .env
+  restart: unless-stopped
+  environment: &app-env
+    DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-retail}:${POSTGRES_PASSWORD:?đặt POSTGRES_PASSWORD trong .env}@postgres:5432/${POSTGRES_DB:-retailkb}
+    LANGFUSE_HOST: http://langfuse:3000
+    LANGFUSE_PROJECT_ID: retailkb-prod
+    LANGFUSE_DATABASE_URL: postgresql://${POSTGRES_USER:-retail}:${POSTGRES_PASSWORD}@postgres:5432/langfuse
+    UPLOAD_DIR: /app/data/uploads
+    PARSER_WORK_DIR: /app/data/parsework
+    AUDIT_LOG_DIR: /app/data/security/audit
+    HF_HOME: /models/hf
+  volumes: &app-volumes
+    - uploads:/app/data/uploads
+    - parsework:/app/data/parsework
+    - audit:/app/data/security
+    - models:/models
+    - ./data/raw:/app/data/raw:ro
+  logging: &logging
+    driver: json-file
+    options: {max-size: "20m", max-file: "5"}
+
+services:
+  postgres:
+    build: docker/postgres
+    image: retailkb-postgres:16-age
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-retail}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?đặt POSTGRES_PASSWORD trong .env}
+      POSTGRES_DB: ${POSTGRES_DB:-retailkb}
+      LANGFUSE_DB: langfuse
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-retail} -d ${POSTGRES_DB:-retailkb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *logging
+
+  langfuse:
+    image: langfuse/langfuse:2
+    restart: unless-stopped
+    depends_on:
+      postgres: {condition: service_healthy}
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-retail}:${POSTGRES_PASSWORD}@postgres:5432/langfuse
+      NEXTAUTH_URL: ${LANGFUSE_PUBLIC_URL:-http://localhost:3001}
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:?đặt LANGFUSE_NEXTAUTH_SECRET trong .env}
+      SALT: ${LANGFUSE_SALT:?đặt LANGFUSE_SALT trong .env}
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+      # Khởi tạo sẵn org/project/key -> api dùng được ngay LANGFUSE_PUBLIC_KEY/SECRET_KEY trong .env
+      LANGFUSE_INIT_ORG_ID: retailkb
+      LANGFUSE_INIT_ORG_NAME: RetailKB
+      LANGFUSE_INIT_PROJECT_ID: retailkb-prod
+      LANGFUSE_INIT_PROJECT_NAME: RetailKB Copilot
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:?đặt LANGFUSE_PUBLIC_KEY trong .env}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY:?đặt LANGFUSE_SECRET_KEY trong .env}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_ADMIN_EMAIL:-admin@retailkb.local}
+      LANGFUSE_INIT_USER_NAME: admin
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_ADMIN_PASSWORD:?đặt LANGFUSE_ADMIN_PASSWORD trong .env}
+    ports:
+      - "${LANGFUSE_PORT:-3001}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/public/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+    logging: *logging
+
+  # Chạy migration Alembic 1 lần rồi thoát — api/worker chỉ khởi động khi migration thành công.
+  migrate:
+    <<: *app
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      target: app
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  api:
+    <<: *app
+    command: ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port 8000 --workers ${API_WORKERS:-2} --proxy-headers"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      postgres: {condition: service_healthy}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/healthz >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
+
+  worker:
+    <<: *app
+    command: ["python", "-m", "worker.main"]
+    environment:
+      <<: *app-env
+      INGEST_SANDBOX_MODE: ${INGEST_SANDBOX_MODE:-sidecar}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      parser: {condition: service_started}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import os,sys,time; sys.exit(0 if time.time()-os.path.getmtime('/tmp/retailkb-worker.heartbeat') < 180 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+
+  # Parser sandbox: KHÔNG có mạng, rootfs read-only, non-root, không capability — nhận việc qua volume.
+  parser:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      target: parser
+      args:
+        WHISPER_MODEL_SIZE: ${WHISPER_MODEL_SIZE:-small}
+    image: retailkb-parser:${APP_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    network_mode: none
+    read_only: true
+    user: "1000:1000"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: ${PARSER_MEM_LIMIT:-3g}
+    pids_limit: 256
+    tmpfs:
+      - /tmp:size=512m
+    volumes:
+      - uploads:/app/data/uploads:ro
+      - parsework:/work
+    healthcheck:
+      test: ["CMD-SHELL", "test -d /work/inbox"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+
+  admin-ui:
+    <<: *app
+    command: ["streamlit", "run", "admin_ui/app.py", "--server.port", "8501", "--server.address", "0.0.0.0",
+              "--server.headless", "true", "--browser.gatherUsageStats", "false"]
+    environment:
+      <<: *app-env
+      API_BASE_URL: http://api:8000
+    depends_on:
+      api: {condition: service_healthy}
+    ports:
+      - "${ADMIN_UI_PORT:-8501}:8501"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8501/_stcore/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  chat-ui:
+    build: chat_ui
+    image: retailkb-chat-ui:${APP_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      api: {condition: service_healthy}
+    ports:
+      - "${CHAT_UI_PORT:-3000}:80"
+    logging: *logging
+
+volumes:
+  pgdata:
+  uploads:
+  parsework:
+  audit:
+  models:

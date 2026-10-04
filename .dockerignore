@@ -1,0 +1,17 @@
+.git
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.coverage
+chat_ui/node_modules
+chat_ui/dist
+data/uploads
+data/parsework
+data/output
+data/security
+data/chunks
+data/published
+backups
+.env
+.claude
