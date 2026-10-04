@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from api.routes import accounts, admin, analytics, ingest, kb, knowledge, qa, review
+from api.routes import accounts, admin, analytics, ingest, kb, knowledge, qa, reports, review
 from core.config import get_config
 from core.errors import AppError
 from core.logging import bind_log_context, configure_logging, log_event, reset_log_context
@@ -124,7 +124,8 @@ def create_app(services=None) -> FastAPI:
         return JSONResponse(status_code=200 if ok else 503, content={"ready": ok, "config_version": cfg.config_version,
                                                                       "config_hash": cfg.config_hash, "checks": checks})
 
-    for r in (accounts.router, qa.router, ingest.router, kb.router, review.router, analytics.router, knowledge.router, admin.ws_router, admin.router):
+    for r in (accounts.router, qa.router, ingest.router, kb.router, review.router, analytics.router, knowledge.router, reports.router,
+              admin.ws_router, admin.router):
         app.include_router(r)
     return app
 
