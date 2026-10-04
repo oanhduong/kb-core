@@ -71,7 +71,7 @@ class SearchResult:
     metadata: dict = field(default_factory=dict)
 
 
-_FILTER_FIELDS = ("doc_type", "store_code", "sku", "is_active", "effective_date_from", "effective_date_to")
+_FILTER_FIELDS = ("doc_type", "store_code", "sku", "is_active", "effective_date_from", "effective_date_to", "as_of")
 
 
 @dataclass
@@ -87,6 +87,10 @@ class Filters:
     is_active: object = None
     effective_date_from: object = None
     effective_date_to: object = None
+    # as_of ('YYYY-MM-DD'): hỏi "tại thời điểm" (C2) — bỏ qua is_active, lấy record có hiệu lực vào ngày
+    # đó: effective_date <= as_of < valid_to (valid_to NULL = còn hiệu lực). store_code có thể chứa None
+    # trong list = "kể cả dữ liệu toàn hệ thống (không gắn cửa hàng)".
+    as_of: object = None
 
     def is_empty(self):
         return all(getattr(self, f) is None for f in _FILTER_FIELDS)
@@ -110,7 +114,13 @@ def _matches_filters(metadata, filters):
         have = have if isinstance(have, list) else [have]
         if not wanted.intersection(have):
             return False
-    if filters.is_active is not None and metadata.get("is_active", True) != filters.is_active:
+    if filters.as_of is not None:
+        eff, valid_to = metadata.get("effective_date"), metadata.get("valid_to")
+        if eff is not None and str(eff) > str(filters.as_of):
+            return False
+        if valid_to is not None and str(valid_to) <= str(filters.as_of):
+            return False
+    elif filters.is_active is not None and metadata.get("is_active", True) != filters.is_active:
         return False
     effective_date = metadata.get("effective_date")
     if filters.effective_date_from is not None and (effective_date is None or effective_date < filters.effective_date_from):
