@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 SourceType = Literal["docx", "xlsx", "pdf", "image", "audio", "video"]
-DocType = Literal["policy", "price_list", "promotion", "catalog", "training", "contract", "unknown"]
+DocType = Literal["policy", "price_list", "promotion", "catalog", "training", "contract", "inventory", "supplier", "unknown"]
 
 
 class KBRecord(BaseModel):

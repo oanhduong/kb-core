@@ -1,63 +1,53 @@
+# Runtime RetailKB Copilot (api, worker, admin-ui, parser sidecar). Dev/test/sinh dữ liệu mẫu: requirements-dev.txt.
+# torch cài riêng bản CPU trong Dockerfile (--index-url https://download.pytorch.org/whl/cpu) trước file này.
+
+# --- Parse tài liệu (ingest/parsers.py). ffmpeg là phụ thuộc hệ thống (apt), không qua pip.
 python-docx==1.2.0
 openpyxl==3.1.5
-reportlab==5.0.0
+pypdf==6.16.1
 Pillow==12.3.0
 numpy==2.5.2
-gTTS==2.5.4
-pyttsx3==2.99
-pypdf==6.16.1
-
-# Chi dung cho scripts/gen_ground_truth.py (do so trang docx that qua ban render proxy,
-# vi khong co Microsoft Word/LibreOffice trong moi truong nay):
-mammoth==1.12.1
-weasyprint==69.0
-
-# Dung cho ingest/parsers.py (pipeline ingest tai lieu). python-docx/openpyxl da khai bao o tren.
-# ffmpeg la phu thuoc he thong, khong cai qua pip (xem data/raw/README.md).
 docling==2.121.0
 faster-whisper==1.2.1
 
-# Dung cho schemas.py (KBRecord, dung chung toan du an)
+# --- Schema, config, LLM
 pydantic==2.13.4
-
-# Dung cho agent/loop.py + agent/tools.py (agent loop goi Claude qua Anthropic Python SDK,
-# khong dung LangChain hay framework nao khac). Can bien moi truong ANTHROPIC_API_KEY.
+PyYAML==6.0.3
 anthropic==0.125.0
 
-# Dung de chay tests/ (pytest tests/ --cov=ingest.parsers --cov-report=term-missing)
-pytest==9.1.1
-pytest-cov==7.1.0
-
-# Dung cho security/sandbox.py (chay parser trong container Docker co lap). Can Docker daemon khi
-# chay that; tests/test_security.py mock docker client qua tham so run_parser(client=...) nen
-# khong can Docker daemon de chay test.
-docker==7.1.0
-
-# Dung cho ingest/chunkers.py, chien luoc "recursive" (RecursiveCharacterTextSplitter). Package
-# nhe, chi keo theo langchain-core - khong dung framework LangChain day du.
+# --- Chunking (ingest/chunkers.py chiến lược recursive)
 langchain-text-splitters==1.1.2
 
-# Dung cho index/store.py (PgVectorStore) - can Postgres + extension pgvector chay qua
-# ops/docker-compose.yml. psycopg[binary] = psycopg 3, khong dung psycopg2.
+# --- Postgres + pgvector (+ Apache AGE qua psycopg), ORM + migration
 psycopg[binary]==3.2.3
 pgvector==0.3.6
+SQLAlchemy==2.1.3
+alembic==1.20.0
+networkx==3.6.1
 
-# Dung cho index/store.py (QdrantStore) - can Qdrant chay qua ops/docker-compose.yml.
-qdrant-client==1.12.1
-
-# Dung cho index/hybrid.py: BM25 (rank_bm25.BM25Okapi) + tokenize tieng Viet (pyvi.ViTokenizer,
-# nhe hon underthesea - khong keo theo model NLP nang).
+# --- Retrieval: BM25 tiếng Việt, embedding, rerank
 rank_bm25==0.2.2
 pyvi==0.1.1
-
-# Dung cho index/rerank.py (cross-encoder BAAI/bge-reranker-v2-m3, chay CPU qua
-# transformers.AutoModelForSequenceClassification - khong dung sentence-transformers/FlagEmbedding).
 torch==2.13.0
 transformers==5.8.1
+sentence-transformers==6.1.0
 
-# Dung cho qa/answer.py (FastAPI endpoint POST /ask).
+# --- Vector store phụ (index/store.py QdrantStore — không dùng trong docker-compose mặc định)
+qdrant-client==1.12.1
+
+# --- API
 fastapi==0.141.1
 uvicorn==0.52.4
-
-# Dung de chay tests/test_answer.py (fastapi.testclient.TestClient can httpx cai san).
+python-multipart==0.0.32
+PyJWT==2.15.1
 httpx==0.28.1
+
+# --- Observability
+langfuse==2.60.10
+
+# --- Admin UI
+streamlit==1.65.0
+pandas==3.0.5
+
+# --- Sandbox parser kiểu docker run (security/sandbox.py, ingest.sandbox_mode=docker)
+docker==7.1.0

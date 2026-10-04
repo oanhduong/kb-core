@@ -1,0 +1,176 @@
+# RetailKB Copilot — config tập trung (F1). MỌI tham số ảnh hưởng kết quả nằm ở đây.
+# Secret (API key, DSN, JWT secret, webhook) KHÔNG đặt ở đây — xem .env.example.
+#
+# Quy trình đổi config:
+#   1. Sửa file này + bump config_version (định dạng YYYY.MM.DD-N).
+#   2. Đổi prompt => tạo file prompt MỚI (vd answer_system.v2.md), trỏ path tới file mới, cập nhật sha256
+#      (`python -m core.config hash-prompts --write`). Không sửa đè prompt cũ — bản cũ cần cho rollback.
+#   3. Ghi config/CHANGELOG.md.
+#   4. `make config-snapshot` (chép sang config/versions/<version>.yaml) rồi restart api + worker.
+# Rollback: đặt RETAILKB_CONFIG_VERSION=<bản cũ> trong .env rồi `make restart` (xem docs/OPERATIONS.md).
+
+config_version: "2026.10.03-1"
+description: "Bản đầu tiên: hybrid + rerank + graph AGE, citation bắt buộc, review tiền."
+
+models:
+  answer: claude-sonnet-4-6
+  router: claude-haiku-4-5
+  entity_extraction: claude-haiku-4-5
+  graph_extraction: claude-haiku-4-5
+  compaction: claude-haiku-4-5
+  contextual_retrieval: claude-haiku-4-5
+  metadata_fallback: claude-haiku-4-5
+  doc_classification: claude-haiku-4-5
+  vision: claude-sonnet-4-6
+  ingest_agent: claude-sonnet-4-6
+
+llm:
+  timeout_seconds: 60
+  max_retries: 2              # B9: model timeout -> retry 2 lần, exponential backoff
+  backoff_base_seconds: 1.0
+  backoff_max_seconds: 8.0
+  answer_max_tokens: 1024
+  pricing:                    # USD / 1M token — dùng để tính cost trên trace và alert chi phí ngày
+    claude-sonnet-4-6: {input: 3.0, output: 15.0}
+    claude-haiku-4-5: {input: 1.0, output: 5.0}
+
+ingest:
+  mode: deterministic         # deterministic (parser -> record, rẻ, ổn định) | agent (agent/loop.py + verifier)
+  sandbox_mode: ${INGEST_SANDBOX_MODE:-none}   # sidecar (docker-compose: container parser KHÔNG network) | docker | none
+  sandbox_image: retailkb-parser-sandbox:latest
+  sandbox_timeout_seconds: 300
+  sidecar_work_dir: ${PARSER_WORK_DIR:-data/parsework}
+  storage_dir: ${UPLOAD_DIR:-data/uploads}
+  max_upload_mb: 200
+  contextual_retrieval: false
+  metadata_llm_fallback: false
+  image_extraction: true      # ảnh -> Claude vision (extract_image_content qua gateway)
+  whisper_model_size: small
+  agent_max_turns: 15
+  agent_max_verify_retries: 3
+
+chunking:
+  strategy: parent_child
+  fixed_chunk_tokens: 512
+  fixed_overlap_tokens: 50
+  recursive_chunk_chars: 1800
+  recursive_overlap_chars: 200
+  small_table_max_rows: 10
+  parent_chunk_tokens: 1024
+  child_chunk_tokens: 256
+  child_overlap_tokens: 30
+  media_max_gap_seconds: 5.0
+  media_max_chunk_chars: 2000
+
+embedding:
+  provider: ${EMBEDDING_PROVIDER:-sentence_transformers}   # hashing: không tải model (dev/test offline)
+  model: intfloat/multilingual-e5-base
+  dim: 768
+  query_prefix: "query: "
+  passage_prefix: "passage: "
+  batch_size: 32
+  device: cpu
+
+retrieval:
+  top_k: 5                    # số parent chunk đưa vào context
+  candidate_top_k: 50         # ứng viên mỗi nhánh dense/BM25 trước fusion
+  rrf_k: 60
+  max_context_chars: 16000
+  bm25_refresh_seconds: 30
+  rerank:
+    enabled: ${RERANK_ENABLED:-true}
+    model: BAAI/bge-reranker-v2-m3
+    top_n: 8
+    candidate_pool: 40
+    batch_size: 16
+    timeout_seconds: 20
+
+abstention:
+  rerank_min_score: 0.25      # sigmoid(logit) của top-1 sau rerank; dưới ngưỡng -> không trả lời
+  fallback_min_dense_score: 0.35   # khi reranker lỗi: cosine dense top-1 tối thiểu (hoặc có BM25 khớp SKU)
+  graph_min_paths: 1
+
+router:
+  graph_enabled: true         # false = tắt graph hoàn toàn, mọi câu đi vector
+  llm_fallback: true
+  force_route: null           # lookup | multi_hop | aggregation | null
+  llm_min_confidence: 0.5
+
+graph:
+  enabled: ${GRAPH_ENABLED:-true}
+  name: retail_kb
+  max_hops: 2
+  max_paths: 40
+  max_neighbors_per_hop: 60
+  max_chunks: 8
+  llm_extraction:
+    enabled: true
+    doc_types: [policy, training]
+    max_retries: 2
+    max_chunks_per_document: 60
+
+citation:
+  required: true
+  min_sentence_coverage: 0.0  # 0 = chỉ cần >= 1 citation hợp lệ; 0.6 = >= 60% câu khẳng định có citation
+
+review:
+  enabled: true
+  bypass_roles: [supervisor, admin]
+
+chat:
+  history_max_messages: 12
+  compaction_token_threshold: 6000
+  keep_recent_messages: 6
+  session_idle_days: 30
+
+prompts:
+  answer_system:
+    path: prompts/answer_system.v1.md
+    sha256: 41556d80a665e40a76f19c86aab758b66f363b2d140e70f8148c49beb8e76f25
+  router_classify:
+    path: prompts/router_classify.v1.md
+    sha256: 754a2600dcd00ce28fdda44edba4368c2bb0c96dddf98860c922f9bb6dd96f65
+  entity_extract:
+    path: prompts/entity_extract.v1.md
+    sha256: 1daf1a8b7b3e1e5fd070c9105be67b5b46fc2522180eb3c7ca4d393acae02a1f
+  graph_extract:
+    path: prompts/graph_extract.v1.md
+    sha256: 2f78e495a734ed6fcd0121906a0dd1123b6633608ecc5853c23ca9a0972d35b3
+  chat_compaction:
+    path: prompts/chat_compaction.v1.md
+    sha256: d29c2e16623bd185ba1c38ae846c55eceaded793a94326cb97e2fcd5a1589b90
+  doc_classify:
+    path: prompts/doc_classify.v1.md
+    sha256: cfd8a0b58c243d41243dc51b7bed01cff07d20773f1c7faaa1bba6d1fb396f05
+
+auth:
+  jwt_algorithm: HS256
+  jwt_issuer: retailkb
+  jwt_ttl_minutes: 720
+  default_rate_limit_per_minute: 120   # API key service-to-service
+  user_rate_limit_per_minute: 30       # JWT user
+
+observability:
+  langfuse_enabled: true
+  trace_retention_days: 30
+  audit_retention_days: 365
+  abstention_retention_days: 180
+
+alerts:
+  enabled: true
+  channel: ${ALERT_CHANNEL:-slack}     # slack | telegram | generic
+  check_interval_seconds: 60
+  cooldown_minutes: 60
+  daily_cost_usd: 20.0
+  error_rate_5m: 0.2
+  error_rate_min_requests: 10
+  abstention_spike_ratio: 2.0
+  abstention_min_questions: 20
+  abstention_baseline_days: 7
+  review_queue_max: 30
+
+worker:
+  poll_interval_seconds: 2.0
+  max_attempts: 3
+  stale_lock_minutes: 30
+  retention_interval_hours: 6
