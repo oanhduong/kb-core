@@ -253,8 +253,17 @@ def _check_media(file_path, chunks, stats):
 # DISPATCH
 # =====================================================================================
 
+def _check_csv(file_path, chunks, stats):
+    if stats.get("row_count") != len(chunks):
+        raise ParserError(f"CSV: stats.row_count ({stats.get('row_count')}) khác số chunk ({len(chunks)}): {file_path}")
+    for c in chunks:
+        if not str(c.get("location", "")).startswith("CSV!A"):
+            raise ParserError(f"CSV: location sai định dạng 'CSV!A<row>': {c.get('location')!r} ({file_path})")
+
+
 _CHECKERS = {
     "docx": _check_docx,
+    "csv": _check_csv,
     "xlsx": _check_xlsx,
     "pdf": _check_pdf,
     "image": _check_image,

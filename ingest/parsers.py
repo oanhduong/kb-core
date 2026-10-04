@@ -100,6 +100,9 @@ def _sniff_format(file_path):
 
 
 def detect_file_type(file_path):
+    if file_path.lower().endswith((".csv", ".tsv")):
+        _require_file(file_path)
+        return "csv"
     """Trả về loại file ở mức dispatch: 'docx' | 'xlsx' | 'pdf' | 'image' | 'audio' | 'video'."""
     fmt = _sniff_format(file_path)
     kind = FORMAT_TO_KIND.get(fmt)
@@ -503,8 +506,37 @@ def parse_media(file_path, model_size="small", language="vi", device="auto", com
 # DISPATCH + CLI
 # =====================================================================================
 
+def parse_csv(file_path):
+    """CSV/TSV -> cùng định dạng row như parse_xlsx ("cột là giá trị, ...", location "CSV!A<row>")."""
+    _require_file(file_path)
+    import csv
+
+    with open(file_path, "r", encoding="utf-8-sig", newline="") as f:
+        sample = f.read(8192)
+        f.seek(0)
+        try:
+            dialect = csv.Sniffer().sniff(sample, delimiters=",;\t|")
+        except csv.Error:
+            dialect = csv.excel_tab if file_path.lower().endswith(".tsv") else csv.excel
+        rows = list(csv.reader(f, dialect))
+    rows = [r for r in rows if any(c.strip() for c in r)]
+    if not rows:
+        raise ValueError(f"File CSV rỗng: {file_path}")
+    header = [h.strip() or f"cot_{i + 1}" for i, h in enumerate(rows[0])]
+    chunks = []
+    for i, row in enumerate(rows[1:], start=2):
+        cells = [c.strip() for c in row] + [""] * (len(header) - len(row))
+        text = ", ".join(f"{h} là {v}" for h, v in zip(header, cells) if v)
+        if text:
+            chunks.append({"text": text, "location": f"CSV!A{i}", "kind": "row"})
+    stats = {"sheet_count": 1, "sheets": {"CSV": {"header_row_count": 1, "header": header, "row_count": len(chunks)}},
+             "row_count": len(chunks), "chunk_count": len(chunks)}
+    return {"chunks": chunks, "stats": stats}
+
+
 _PARSERS = {
     "docx": parse_docx,
+    "csv": parse_csv,
     "xlsx": parse_xlsx,
     "pdf": parse_pdf,
     "image": parse_image,

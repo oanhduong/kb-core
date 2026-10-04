@@ -29,7 +29,7 @@ from worker.queue import enqueue_job
 logger = logging.getLogger(__name__)
 
 _SAFE_NAME_RE = re.compile(r"[^\w.\- ]+", re.UNICODE)
-EXT_SOURCE_TYPE = {".docx": "docx", ".xlsx": "xlsx", ".pdf": "pdf", ".png": "image", ".jpg": "image",
+EXT_SOURCE_TYPE = {".docx": "docx", ".xlsx": "xlsx", ".csv": "csv", ".tsv": "csv", ".pdf": "pdf", ".png": "image", ".jpg": "image",
                    ".jpeg": "image", ".webp": "image", ".mp3": "audio", ".wav": "audio", ".m4a": "audio",
                    ".mp4": "video", ".mov": "video"}
 DOC_TYPES = ("policy", "price_list", "promotion", "catalog", "training", "contract", "inventory", "supplier", "unknown")

@@ -51,6 +51,12 @@ class ModelsConfig(BaseModel):
     contextual_retrieval: str = "claude-haiku-4-5"
     metadata_fallback: str = "claude-haiku-4-5"
     doc_classification: str = "claude-haiku-4-5"
+    nl2sql: str = "claude-sonnet-4-6"
+    table_describe: str = "claude-haiku-4-5"
+    document_profile: str = "claude-haiku-4-5"
+    knowledge_extract: str = "claude-haiku-4-5"
+    assistant: str = "claude-sonnet-4-6"
+    report: str = "claude-sonnet-4-6"
     vision: str = "claude-sonnet-4-6"
     ingest_agent: str = "claude-sonnet-4-6"
 
@@ -68,6 +74,7 @@ class LLMConfig(BaseModel):
     backoff_base_seconds: float = 1.0
     backoff_max_seconds: float = 8.0
     answer_max_tokens: int = 1024
+    assistant_max_tokens: int = 2048
     pricing: dict[str, ModelPrice] = Field(default_factory=dict)
 
 
@@ -82,7 +89,7 @@ class IngestConfig(BaseModel):
     storage_dir: str = "data/uploads"
     max_upload_mb: int = 200
     allowed_extensions: list[str] = Field(default_factory=lambda: [
-        ".docx", ".xlsx", ".pdf", ".png", ".jpg", ".jpeg", ".webp", ".mp3", ".wav", ".m4a", ".mp4", ".mov"])
+        ".docx", ".xlsx", ".csv", ".tsv", ".pdf", ".png", ".jpg", ".jpeg", ".webp", ".mp3", ".wav", ".m4a", ".mp4", ".mov"])
     contextual_retrieval: bool = False
     metadata_llm_fallback: bool = False
     image_extraction: bool = True
@@ -177,6 +184,27 @@ class GraphConfig(BaseModel):
         return v
 
 
+class AnalyticsConfig(BaseModel):
+    enabled: bool = True
+    storage_dir: str = "data/tables"
+    min_rows: int = 2
+    max_rows_per_table: int = 500_000
+    max_result_rows: int = 500
+    chart_max_points: int = 2000
+    query_timeout_seconds: float = 20.0
+    describe_with_llm: bool = True
+    sql_max_retries: int = 2
+
+
+class KnowledgeConfig(BaseModel):
+    enabled: bool = True
+    entity_extraction: bool = True
+    max_chunks_per_document: int = 80
+    window_chars: int = 2500
+    min_confidence: float = 0.5
+    summary_max_chars: int = 12000
+
+
 class CitationConfig(BaseModel):
     required: bool = True
     min_sentence_coverage: float = 0.0
@@ -215,6 +243,12 @@ class PromptsConfig(BaseModel):
     graph_extract: PromptRef
     chat_compaction: PromptRef
     doc_classify: PromptRef
+    nl2sql: PromptRef
+    table_describe: PromptRef
+    document_profile: PromptRef
+    knowledge_extract: PromptRef
+    assistant_system: PromptRef
+    report_plan: PromptRef
 
 
 class AuthConfig(BaseModel):
@@ -265,6 +299,8 @@ class AppConfig(BaseModel):
     abstention: AbstentionConfig = Field(default_factory=AbstentionConfig)
     router: RouterConfig = Field(default_factory=RouterConfig)
     graph: GraphConfig = Field(default_factory=GraphConfig)
+    analytics: AnalyticsConfig = Field(default_factory=AnalyticsConfig)
+    knowledge: KnowledgeConfig = Field(default_factory=KnowledgeConfig)
     citation: CitationConfig = Field(default_factory=CitationConfig)
     review: ReviewConfig = Field(default_factory=ReviewConfig)
     chat: ChatConfig = Field(default_factory=ChatConfig)
@@ -459,8 +495,11 @@ def _cmd_hash_prompts(path: Path, write: bool) -> int:
     for name, digest in cfg.prompt_hashes.items():
         print(f"{name}: {digest}")
         ref = getattr(cfg.prompts, name)
-        if write and ref.sha256 and ref.sha256 != digest:
-            text = text.replace(ref.sha256, digest)
+        if write and ref.sha256 != digest:
+            if ref.sha256:
+                text = text.replace(ref.sha256, digest)
+            else:
+                text = text.replace(f"path: {ref.path}\n    sha256: \"\"", f"path: {ref.path}\n    sha256: {digest}")
     if write:
         path.write_text(text, encoding="utf-8")
         print(f"Đã cập nhật sha256 trong {path}")

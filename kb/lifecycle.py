@@ -202,6 +202,9 @@ def soft_delete_document(session: Session, doc: Document, actor: str) -> dict[st
             prev.superseded_by_id = None
             activate_document(session, prev)
             reactivated = prev.id
+    from analytics.tables import set_tables_active
+
+    set_tables_active(session, doc.id, False)
     bump_kb_version(session)
     log_event(logger, "document_soft_deleted", document_id=doc.id, actor=actor, records=len(recs), reactivated=reactivated)
     return {"document_id": doc.id, "records": len(recs), "reactivated": reactivated}
@@ -221,6 +224,9 @@ def restore_document(session: Session, doc: Document, actor: str) -> dict[str, A
                 r.status = "active"
     _sync(session, recs)
     summary = activate_document(session, doc)
+    from analytics.tables import set_tables_active
+
+    set_tables_active(session, doc.id, True)
     log_event(logger, "document_restored", document_id=doc.id, actor=actor)
     return {"document_id": doc.id, **summary}
 

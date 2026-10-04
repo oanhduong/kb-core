@@ -87,7 +87,7 @@ def account(env):
     from core.db import session_scope
 
     with session_scope() as s:
-        user = accounts.create_user(s, email="owner@test.local", password="owner-pass-123", name="Owner")
+        user = accounts.create_user(s, email="owner@example.com", password="owner-pass-123", name="Owner")
         ws = accounts.create_workspace(s, user, name="Test retail", domain_pack="retail")
         return {"user_id": user.id, "email": user.email, "password": "owner-pass-123", "workspace_id": ws.id}
 

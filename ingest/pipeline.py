@@ -47,7 +47,7 @@ from worker.queue import JobBlocked, enqueue_job, update_progress
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_KINDS = ("docx", "xlsx", "pdf", "image", "audio", "video")
+SUPPORTED_KINDS = ("docx", "xlsx", "csv", "pdf", "image", "audio", "video")
 MAX_OCR_PAGES = 20
 
 

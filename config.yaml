@@ -9,8 +9,8 @@
 #   4. `make config-snapshot` (chép sang config/versions/<version>.yaml) rồi restart api + worker.
 # Rollback: đặt RETAILKB_CONFIG_VERSION=<bản cũ> trong .env rồi `make restart` (xem docs/OPERATIONS.md).
 
-config_version: "2026.10.03-1"
-description: "Bản đầu tiên: hybrid + rerank + graph AGE, citation bắt buộc, review tiền."
+config_version: "2026.10.04-1"
+description: "Nền tảng khai phá tài liệu tổng quát: workspace, analytics DuckDB, knowledge graph mở, assistant, báo cáo."
 
 models:
   answer: claude-sonnet-4-6
@@ -21,6 +21,12 @@ models:
   contextual_retrieval: claude-haiku-4-5
   metadata_fallback: claude-haiku-4-5
   doc_classification: claude-haiku-4-5
+  nl2sql: claude-sonnet-4-6            # câu hỏi -> SQL (cần chính xác)
+  table_describe: claude-haiku-4-5
+  document_profile: claude-haiku-4-5
+  knowledge_extract: claude-haiku-4-5
+  assistant: claude-sonnet-4-6         # agent tổng quát (tool use)
+  report: claude-sonnet-4-6
   vision: claude-sonnet-4-6
   ingest_agent: claude-sonnet-4-6
 
@@ -30,6 +36,7 @@ llm:
   backoff_base_seconds: 1.0
   backoff_max_seconds: 8.0
   answer_max_tokens: 1024
+  assistant_max_tokens: 2048
   pricing:                    # USD / 1M token — dùng để tính cost trên trace và alert chi phí ngày
     claude-sonnet-4-6: {input: 3.0, output: 15.0}
     claude-haiku-4-5: {input: 1.0, output: 5.0}
@@ -109,6 +116,25 @@ graph:
     max_retries: 2
     max_chunks_per_document: 60
 
+analytics:                    # bảng số liệu trong file -> parquet + DuckDB, SQL read-only do LLM sinh
+  enabled: true
+  storage_dir: ${TABLES_DIR:-data/tables}
+  min_rows: 2
+  max_rows_per_table: 500000
+  max_result_rows: 500
+  chart_max_points: 2000
+  query_timeout_seconds: 20
+  describe_with_llm: true     # Haiku mô tả bảng + vai trò cột (đo lường/chiều/thời gian) sau khi trích
+  sql_max_retries: 2
+
+knowledge:                    # knowledge graph mở + hồ sơ ngữ nghĩa tài liệu (LLM)
+  enabled: true
+  entity_extraction: true
+  max_chunks_per_document: 80
+  window_chars: 2500
+  min_confidence: 0.5
+  summary_max_chars: 12000
+
 citation:
   required: true
   min_sentence_coverage: 0.0  # 0 = chỉ cần >= 1 citation hợp lệ; 0.6 = >= 60% câu khẳng định có citation
@@ -141,6 +167,24 @@ prompts:
   doc_classify:
     path: prompts/doc_classify.v1.md
     sha256: cfd8a0b58c243d41243dc51b7bed01cff07d20773f1c7faaa1bba6d1fb396f05
+  nl2sql:
+    path: prompts/nl2sql.v1.md
+    sha256: 18e4d445ec8f93ae5593a563176d5aeff72a2b14e1cad03c624e145f7858b661
+  table_describe:
+    path: prompts/table_describe.v1.md
+    sha256: 9a20811ffe49517039e0bd8e7045d984306ffa6c954e46dc56cc4593171712e7
+  document_profile:
+    path: prompts/document_profile.v1.md
+    sha256: 89f827f5aac4348a34d16c06dbc782581f4dad2b811f6c2c67d3960f0cfb7022
+  knowledge_extract:
+    path: prompts/knowledge_extract.v1.md
+    sha256: 4dd1027925c852ed21fdcda346eec71eab0e72bfc9fbc4b3b8fad635703e19ee
+  assistant_system:
+    path: prompts/assistant_system.v1.md
+    sha256: e81b6ebfacd03b95600e46d5f4426311c57ab041a17d048676cb8c5f59fe8e5c
+  report_plan:
+    path: prompts/report_plan.v1.md
+    sha256: 6c947023d5b368f44407ac739e14951322d46860a3959850c00e670fa72e59ec
 
 auth:
   jwt_algorithm: HS256

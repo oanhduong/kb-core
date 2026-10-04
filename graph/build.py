@@ -256,10 +256,10 @@ class BuildResult:
 def load_units(doc: DocumentInput) -> list[RecordUnit]:
     if doc.units is not None:
         return doc.units
-    if doc.source_type == "xlsx":
-        from ingest.parsers import parse_xlsx
+    if doc.source_type in ("xlsx", "csv"):
+        from ingest.parsers import parse_csv, parse_xlsx
 
-        doc.units = units_from_xlsx(parse_xlsx(doc.path))
+        doc.units = units_from_xlsx(parse_csv(doc.path) if doc.source_type == "csv" else parse_xlsx(doc.path))
     elif doc.source_type == "docx":
         from ingest.parsers import parse_docx
 
@@ -272,7 +272,7 @@ def load_units(doc: DocumentInput) -> list[RecordUnit]:
 def detect_builder(doc: DocumentInput, units: list[RecordUnit]) -> str | None:
     """Chọn builder theo cột thật của file (xlsx) hoặc doc_type (docx/media) — file khách đặt doc_type
     sai vẫn build đúng nếu header nói rõ."""
-    if doc.source_type == "xlsx":
+    if doc.source_type in ("xlsx", "csv"):
         keys: set[str] = set()
         for u in units[:20]:
             if u.kind == "row":
@@ -558,7 +558,7 @@ def build_document(doc: DocumentInput, ctx: BuildContext, *, extractor: Any = No
     extraction trên văn bản tự do (policy/training) — None = chỉ rule (không tốn LLM)."""
     acc = GraphAccumulator(document_id=doc.document_id)
     warnings: list[str] = []
-    units = load_units(doc) if doc.source_type in ("xlsx", "docx") else []
+    units = load_units(doc) if doc.source_type in ("xlsx", "csv", "docx") else []
     builder = builder or detect_builder(doc, units)
     if builder is None:
         return BuildResult(builder="none", acc=acc, warnings=[f"Không có builder graph cho {doc.filename} "

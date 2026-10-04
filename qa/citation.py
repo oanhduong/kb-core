@@ -68,6 +68,9 @@ def format_citation(title: str, source_type: str, location: str, meta: dict[str,
             row = m.group("row")
             return f"{name}, Sheet {m.group('sheet')} dòng {row}"
         return f"{name}, {loc}" if loc else name
+    if source_type == "csv":
+        m = re.match(r"^CSV!A(\d+)", loc)
+        return f"{name}, dòng {m.group(1)}" if m else name
     if source_type == "pdf":
         m = _PDF_RE.match(loc)
         if m:

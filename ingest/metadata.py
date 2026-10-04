@@ -129,6 +129,9 @@ def record_fields(unit: RecordUnit, *, doc_type: str, doc_store: str | None) -> 
 
 
 def short_location(source_type: str, location: str) -> str:
+    if source_type == "csv":
+        m = re.match(r"^CSV!A(\d+)", location)
+        return f"dòng {m.group(1)}" if m else location
     if source_type == "docx":
         parts = [p for p in location.split(" > ") if p]
         return " › ".join(parts[-2:]) if len(parts) > 1 else (parts[0] if parts else "")

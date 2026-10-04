@@ -118,7 +118,7 @@ def rebuild_full(session: Session, store: GraphStore, workspace_id: str, *, llm:
     planned: list[tuple[int, Document]] = []
     for d in docs:
         di = document_input(session, d)
-        units = load_units(di) if d.source_type in ("xlsx", "docx") else []
+        units = load_units(di) if d.source_type in ("xlsx", "csv", "docx") else []
         b = detect_builder(di, units)
         planned.append((BUILD_ORDER.index(b) if b in BUILD_ORDER else 99, d))
     planned.sort(key=lambda x: (x[0], x[1].created_at))

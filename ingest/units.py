@@ -149,7 +149,7 @@ def units_from_media(parsed: dict[str, Any]) -> list[RecordUnit]:
 def make_units(kind: str, parsed: dict[str, Any]) -> list[RecordUnit]:
     if kind == "docx":
         return units_from_docx(parsed)
-    if kind == "xlsx":
+    if kind in ("xlsx", "csv"):
         return units_from_xlsx(parsed)
     if kind == "pdf":
         return units_from_pdf(parsed)

@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-SourceType = Literal["docx", "xlsx", "pdf", "image", "audio", "video"]
+SourceType = Literal["docx", "xlsx", "pdf", "image", "audio", "video", "csv"]
 DocType = Literal["policy", "price_list", "promotion", "catalog", "training", "contract", "inventory", "supplier", "unknown"]
 
 
