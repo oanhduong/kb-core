@@ -320,7 +320,9 @@ def parse_pdf(file_path, ocr_threshold_chars_per_page=20):
     except ImportError as e:
         raise ImportError("Thiếu thư viện docling. Cài đặt: pip install docling") from e
 
-    pipeline_options = PdfPipelineOptions()
+    # DOCLING_ARTIFACTS_PATH: model layout/table tải sẵn (container parser không có mạng, xem docker/app/Dockerfile)
+    artifacts = os.environ.get("DOCLING_ARTIFACTS_PATH")
+    pipeline_options = PdfPipelineOptions(artifacts_path=artifacts) if artifacts else PdfPipelineOptions()
     pipeline_options.do_ocr = False  # chỉ đo text layer sẵn có, không tự chạy OCR
     converter = DocumentConverter(format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)})
 
@@ -528,9 +530,21 @@ def _for_display(result):
 
 
 def main(argv=None):
+    """python -m ingest.parsers <file> [--json-out <path>]
+
+    --json-out: ghi kết quả ĐẦY ĐỦ (kể cả base64 ảnh) ra file JSON — dùng khi parser chạy trong sandbox
+    Docker không network (security/sandbox.py): /input mount read-only, chỉ /output ghi được."""
     argv = sys.argv[1:] if argv is None else argv
+    json_out = None
+    if "--json-out" in argv:
+        i = argv.index("--json-out")
+        if i + 1 >= len(argv):
+            print("Thiếu đường dẫn sau --json-out", file=sys.stderr)
+            return 2
+        json_out = argv[i + 1]
+        argv = argv[:i] + argv[i + 2:]
     if len(argv) != 1:
-        print("Cách dùng: python -m ingest.parsers <file>", file=sys.stderr)
+        print("Cách dùng: python -m ingest.parsers <file> [--json-out <path>]", file=sys.stderr)
         return 2
 
     file_path = argv[0]
@@ -542,6 +556,10 @@ def main(argv=None):
         print(f"Lỗi: {e}", file=sys.stderr)
         return 1
 
+    if json_out:
+        with open(json_out, "w", encoding="utf-8") as f:
+            json.dump({"kind": kind, **result}, f, ensure_ascii=False, default=str)
+        return 0
     print(json.dumps(_for_display(result), ensure_ascii=False, indent=2))
     return 0
 

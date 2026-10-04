@@ -36,6 +36,9 @@ POLICY_MAP = {
     "extract_image_content": ToolCategory.READ,
     "transcribe_media": ToolCategory.READ,
     "write_kb_record": ToolCategory.WRITE_REVERSIBLE,
+    # Pipeline ingest production (ingest/pipeline.py) — cũng đi qua gateway như agent:
+    "parse_file_raw": ToolCategory.READ,  # parse + kiểm invariant (in-process hoặc sandbox không network)
+    "kb_write_records": ToolCategory.WRITE_REVERSIBLE,  # upsert KBRecord vào Postgres (ghi đè theo record_id, soft-delete được)
     "delete_kb_record": ToolCategory.WRITE_IRREVERSIBLE,
     "publish_to_chatbot": ToolCategory.WRITE_IRREVERSIBLE,
 }

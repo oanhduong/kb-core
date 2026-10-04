@@ -160,3 +160,15 @@ def content_hash(text):
     """Hash ổn định (sha256, rút gọn 16 hex) cho một đoạn nội dung — dùng khi cần tham chiếu tới
     nội dung untrusted trong log/audit mà không chép nguyên văn (vd nội dung dài hoặc nhạy cảm)."""
     return hashlib.sha256((text or "").encode("utf-8")).hexdigest()[:16]
+
+
+_WRAPPED_RE = re.compile(r"^\s*<" + re.escape(UNTRUSTED_TAG) + r"\b[^>]*>\n?(.*?)\n?</" + re.escape(UNTRUSTED_TAG) + r">\s*$", re.DOTALL)
+
+
+def unwrap_untrusted(text):
+    """Ngược của wrap_untrusted — lấy lại nội dung gốc để LƯU vào KB (thẻ bọc chỉ dùng khi đưa vào
+    context của model; lúc đưa lại vào context QA sẽ được bọc mới). Không phải chuỗi đã bọc -> trả nguyên."""
+    m = _WRAPPED_RE.match(text or "")
+    if not m:
+        return text
+    return m.group(1).replace("<[escaped]" + UNTRUSTED_TAG, "<" + UNTRUSTED_TAG).replace("<[escaped]/" + UNTRUSTED_TAG, "</" + UNTRUSTED_TAG)

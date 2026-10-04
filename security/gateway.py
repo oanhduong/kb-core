@@ -534,7 +534,9 @@ class Gateway:
             outcome=outcome,
             reason=reason or decision.reason,
             requested_by=requested_by,
-            arguments=arguments,
+            # argument dài (vd toàn bộ record của 1 file qua kb_write_records) -> hash, không nhân bản
+            # dữ liệu khách hàng sang log; argument ngắn giữ nguyên văn để log còn đọc được.
+            arguments=security_audit._encode_arguments(arguments),
         )
         os.makedirs(os.path.dirname(self._audit_log_path) or ".", exist_ok=True)
         with open(self._audit_log_path, "a", encoding="utf-8") as f:
@@ -550,3 +552,26 @@ class Gateway:
                 result=result, policy_decision=outcome, approved_by=approved_by,
                 latency_seconds=latency if latency is not None else 0.0,
             )
+
+
+# =====================================================================================
+# GATEWAY CHO PIPELINE INGEST PRODUCTION (ingest/pipeline.py)
+#
+# Pipeline deterministic không có model chọn tool, nhưng vẫn KHÔNG chạm parser/DB trực tiếp: mọi thao
+# tác đi qua Gateway.call_tool -> cùng policy (READ auto, WRITE_REVERSIBLE dry-run rồi commit) và cùng
+# audit trail append-only như agent. Implementation do pipeline cung cấp (parse_file_raw có thể chạy
+# trong sandbox Docker không network; kb_write_records ghi Postgres trong transaction của job).
+# =====================================================================================
+
+def build_pipeline_gateway(*, parse_file_raw, kb_write_dry_run, kb_write_commit, client=None, audit_log=None,
+                           audit_log_path=None):
+    agent_registry = agent_tools.build_registry(client)
+    registry = {
+        "detect_file_type": agent_registry["detect_file_type"]["function"],
+        "extract_image_content": agent_registry["extract_image_content"]["function"],
+        "parse_file_raw": parse_file_raw,
+        "kb_write_records": {"dry_run": kb_write_dry_run, "commit": kb_write_commit},
+    }
+    if audit_log is None:
+        audit_log = security_audit.AppendOnlyAuditLog()
+    return Gateway(tool_registry=registry, audit_log=audit_log or None, audit_log_path=audit_log_path)
