@@ -80,6 +80,9 @@ def compute_confidence(*, top_score: float | None, score_kind: str, coverage: fl
     elif score_kind == "dense" and top_score is not None:
         base = min(0.75, max(0.0, top_score))
         reasons.append(f"tương đồng ngữ nghĩa cao nhất {top_score:.2f} (không rerank)")
+    elif coverage > 0:
+        base = 0.65  # nguồn là metadata/tóm tắt tài liệu, kết quả tính toán... (không có điểm retrieval để so)
+        reasons.append("căn cứ trên dữ liệu có cấu trúc/tóm tắt tài liệu, không qua xếp hạng điểm")
     else:
         base = 0.3
         reasons.append("không có điểm retrieval")

@@ -123,7 +123,7 @@ def register_upload(session: Session, cfg: AppConfig, *, workspace_id: str, src:
         doc_type=opts.doc_type or "unknown", store_code=opts.store_code, effective_date=opts.effective_date,
         version=opts.version, content_hash=digest, storage_path=dest, size_bytes=written, status="pending",
         is_active=False, replace_mode=opts.replace_mode, uploaded_by=uploaded_by,
-        meta={"doc_type_source": "user" if opts.doc_type else "auto",
+        meta={"doc_type_source": "user" if opts.doc_type else "auto", "title_source": "user" if opts.title else "auto",
               "effective_date_source": "user" if opts.effective_date else "auto"},
     )
     session.add(doc)

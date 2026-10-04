@@ -226,7 +226,14 @@ class AssistantService:
                 tool_uses = [{"id": b.id, "name": b.name, "input": dict(b.input or {})} for b in final.content if getattr(b, "type", None) == "tool_use"]
                 call = self.llm._finish_call("assistant", kwargs["model"], final.usage, latency, "ok",  # noqa: SLF001
                                              {"messages": len(messages), "tools": len(tool_uses)}, text[:2000] or json.dumps([t["name"] for t in tool_uses]))
-                content = [b.model_dump() if hasattr(b, "model_dump") else b for b in final.content]
+                # dựng lại block THỦ CÔNG — model_dump() của SDK có thêm field (parsed_output, citations...) mà API từ chối
+                content: list[dict[str, Any]] = []
+                for b in final.content:
+                    btype = getattr(b, "type", None)
+                    if btype == "text" and getattr(b, "text", ""):
+                        content.append({"type": "text", "text": b.text})
+                    elif btype == "tool_use":
+                        content.append({"type": "tool_use", "id": b.id, "name": b.name, "input": dict(b.input or {})})
                 return {"text": text, "tool_uses": tool_uses, "content": content, "call": call}
             except Exception as e:
                 from core.llm import _is_retryable
@@ -274,10 +281,13 @@ class AssistantService:
         dtrace.understood.update({"question_type": intent, "route": "agent", "tools_used": [t["tool"] for t in run.tool_calls], "turns": run.turns})
         coverage = pc.coverage if pc and pc.ok else (1.0 if status == "answered_general" else 0.0)
         if status in ("answered", "pending_review", "answered_general"):
-            conf = compute_confidence(top_score=run.top_score, score_kind=run.score_kind if run.score_kind != "sql" else "graph",
-                                      coverage=coverage, conflicts=0, degraded=len(dtrace.degraded))
-            if run.score_kind == "sql":
-                conf["explanation"] = "số liệu tính trực tiếp bằng SQL trên bảng đã trích; " + conf.get("explanation", "")
+            if run.score_kind == "sql":  # số liệu do SQL tính trên bảng thật — không phụ thuộc điểm retrieval
+                score = max(0.0, min(1.0, 0.9 * (0.6 + 0.4 * coverage) - 0.1 * min(len(dtrace.degraded), 2)))
+                conf = {"level": "cao" if score >= 0.7 else "trung bình", "score": round(score, 3),
+                        "explanation": "số liệu tính trực tiếp bằng SQL trên bảng đã trích" + ("" if coverage >= 0.8 else f"; {coverage:.0%} câu khẳng định có trích dẫn")}
+            else:
+                conf = compute_confidence(top_score=run.top_score, score_kind=run.score_kind, coverage=coverage, conflicts=0,
+                                          degraded=len(dtrace.degraded))
             if status == "answered_general":
                 conf = {"level": "không áp dụng", "score": None, "explanation": "trả lời chung, không dựa trên tài liệu"}
         else:

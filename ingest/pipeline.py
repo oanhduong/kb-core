@@ -293,6 +293,11 @@ class IngestPipeline:
                     updates["effective_date"] = date.fromisoformat(eff) if eff else None
                 if not doc.version:
                     updates["version"] = extract_version(head_text)
+                if (doc.meta or {}).get("title_source") != "user" and kind in ("docx", "pdf") and units:
+                    heading = units[0].content.split("\n")[0].strip()
+                    if 4 <= len(heading) <= 120 and not heading.lower().startswith(("trang ", "page ")):
+                        # tiêu đề thật của văn bản (vd "CHÍNH SÁCH ĐỔI TRẢ HÀNG HÓA") thay cho tên file không dấu
+                        updates["title"] = heading.title() if heading.isupper() else heading
                 doc = self._apply_doc_updates(document_id, updates)
                 records = self._build_records(doc, units)
 

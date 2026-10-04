@@ -135,6 +135,8 @@ def _is_claim(sentence: str) -> bool:
     s = _MARKER_RE.sub("", sentence).strip(" -*•\t")
     if len(s) < 15 or not re.search(r"[A-Za-zÀ-ỹ]", s):
         return False
+    if s.startswith("|") or s.startswith("#") or set(s) <= set("|-: "):
+        return False  # dòng bảng Markdown / tiêu đề: citation đặt sau bảng, không đếm từng dòng
     return not _NON_CLAIM_RE.match(s)
 
 
