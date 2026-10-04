@@ -58,7 +58,7 @@ def test_signup_login_and_workspace_creation(client):
     # chuyển workspace sang pack retail để test luồng review/scope
     r = client.patch(f"/w/{S['ws']}", json={"domain_pack": "retail"}, headers=h(S["owner"]))
     assert r.status_code == 200 and r.json()["domain_pack"] == "retail"
-    assert client.post("/ask", json={"question": "x"}).status_code in (401, 404, 405)
+    assert client.post("/ask", json={"mode": "strict", "question": "x"}).status_code in (401, 404, 405)
 
 
 def test_members_roles_and_scope(client):
@@ -112,17 +112,17 @@ def test_workspace_isolation(client):
     other = r.json()["id"]
     assert client.get(f"/w/{other}/documents", headers=h(S["outsider"])).json()["total"] == 0
     assert client.get(f"/w/{other}/documents/{S['price_doc']}", headers=h(S["outsider"])).status_code == 404
-    a = client.post(f"/w/{other}/ask", json={"question": "Thời hạn đổi trả theo ngành hàng?"}, headers=h(S["outsider"])).json()
+    a = client.post(f"/w/{other}/ask", json={"mode": "strict", "question": "Thời hạn đổi trả theo ngành hàng?"}, headers=h(S["outsider"])).json()
     assert a["status"] in ("abstained", "no_citation") and a["citations"] == []
 
 
 def test_scope_enforced_for_viewer_with_store(client):
-    r = client.post(f"/w/{S['ws']}/ask", json={"question": "Thời hạn đổi trả theo ngành hàng?", "scope": "GM-HCM01"}, headers=h(S["staff"]))
+    r = client.post(f"/w/{S['ws']}/ask", json={"mode": "strict", "question": "Thời hạn đổi trả theo ngành hàng?", "scope": "GM-HCM01"}, headers=h(S["staff"]))
     assert r.status_code == 403 and "GM-HN01" in r.json()["error"]["message"]
 
 
 def test_ask_citations_chunk_link_and_feedback(client):
-    r = client.post(f"/w/{S['ws']}/ask", json={"question": "Thời hạn đổi trả theo ngành hàng được quy định thế nào?"}, headers=h(S["staff"]))
+    r = client.post(f"/w/{S['ws']}/ask", json={"mode": "strict", "question": "Thời hạn đổi trả theo ngành hàng được quy định thế nào?"}, headers=h(S["staff"]))
     body = r.json()
     assert r.status_code == 200 and body["status"] == "answered", body
     cit = body["citations"][0]
@@ -136,7 +136,7 @@ def test_ask_citations_chunk_link_and_feedback(client):
 
 
 def test_chat_sse_stream_and_session_ownership(client):
-    with client.stream("POST", f"/w/{S['ws']}/chat", json={"question": "Thời hạn đổi trả theo ngành hàng được quy định thế nào?"},
+    with client.stream("POST", f"/w/{S['ws']}/chat", json={"mode": "strict", "question": "Thời hạn đổi trả theo ngành hàng được quy định thế nào?"},
                        headers=h(S["staff"])) as r:
         assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
         raw = "".join(r.iter_text())
@@ -151,7 +151,7 @@ def test_chat_sse_stream_and_session_ownership(client):
 
 
 def test_money_question_review_flow(client):
-    r = client.post(f"/w/{S['ws']}/ask", json={"question": "Giá bán ĐT-018 là bao nhiêu?"}, headers=h(S["staff"])).json()
+    r = client.post(f"/w/{S['ws']}/ask", json={"mode": "strict", "question": "Giá bán ĐT-018 là bao nhiêu?"}, headers=h(S["staff"])).json()
     assert r["status"] == "pending_review" and r["review_id"]
     assert client.get(f"/w/{S['ws']}/answers/{r['trace_id']}", headers=h(S["staff"])).json()["answer"] is None
     assert client.get(f"/w/{S['ws']}/review", headers=h(S["staff"])).status_code == 403
@@ -162,7 +162,7 @@ def test_money_question_review_flow(client):
     final = client.get(f"/w/{S['ws']}/answers/{r['trace_id']}", headers=h(S["staff"])).json()
     assert final["status"] == "answered" and final["answer"].startswith("Giá ĐT-018")
     # editor (supervisor) hỏi thì không cần duyệt
-    assert client.post(f"/w/{S['ws']}/ask", json={"question": "Giá bán ĐT-018 là bao nhiêu?"}, headers=h(S["sup"])).json()["status"] == "answered"
+    assert client.post(f"/w/{S['ws']}/ask", json={"mode": "strict", "question": "Giá bán ĐT-018 là bao nhiêu?"}, headers=h(S["sup"])).json()["status"] == "answered"
 
 
 def test_records_patch_delete_restore_roles(client):

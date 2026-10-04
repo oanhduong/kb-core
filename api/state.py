@@ -18,6 +18,7 @@ from graph.store import GraphStore, get_graph_store
 from index.bm25_cache import BM25Cache
 from index.embeddings import get_embedder
 from index.kb_store import KBVectorStore
+from assistant.agent import AssistantService
 from qa.answer import QAService
 from qa.retrieval import VectorRetriever
 
@@ -34,6 +35,7 @@ class Services:
     bm25: BM25Cache
     retriever: VectorRetriever
     qa: QAService
+    assistant: AssistantService
 
     def graph_store(self, workspace_id: str) -> GraphStore | None:
         return get_graph_store(workspace_id) if self.cfg.graph.enabled else None
@@ -56,7 +58,8 @@ def build_services(*, warmup: bool = True) -> Services:
     bm25 = BM25Cache(sm, cfg.retrieval.bm25_refresh_seconds)
     retriever = VectorRetriever(cfg, KBVectorStore(sm, embedder.model_name, embedder.dim), bm25.get, embedder)
     qa = QAService(cfg, sm, llm, retriever, lambda ws: get_graph_store(ws) if cfg.graph.enabled else None)
-    services = Services(cfg, settings, sm, llm, embedder, bm25, retriever, qa)
+    assistant = AssistantService(cfg, sm, llm, retriever)
+    services = Services(cfg, settings, sm, llm, embedder, bm25, retriever, qa, assistant)
     if warmup:
         retriever.warmup_reranker()
 

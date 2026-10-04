@@ -17,6 +17,7 @@ from core.errors import ForbiddenError, NotFoundError
 from core.models import ChatSession, Feedback, QATrace
 from core.principal import WorkspaceContext
 from observability.tracing import trace_url
+from assistant.agent import AssistantRequest, AssistantResponse
 from qa.answer import QARequest, QAResponse
 
 router = APIRouter(prefix="/w/{workspace_id}", tags=["qa"])
@@ -27,6 +28,9 @@ class ChatBody(BaseModel):
     session_id: str | None = Field(default=None, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")
     scope: str | None = Field(default=None, max_length=32, description="Pack retail: mã cửa hàng")
     document_ids: list[str] | None = Field(default=None, max_length=50, description="Chỉ hỏi trong các tài liệu này")
+    # agent (mặc định): trợ lý tổng quát dùng tool (tìm KB, bảng số liệu, đồ thị, tóm tắt) — strict: pipeline hỏi đáp
+    # cổ điển (router -> hybrid/graph rule-based -> trả lời có citation), nhanh/rẻ hơn cho tra cứu thuần tuý
+    mode: Literal["agent", "strict"] = "agent"
 
     @field_validator("question")
     @classmethod
@@ -47,15 +51,25 @@ def _request(body: ChatBody, ctx: WorkspaceContext, channel: str, **extra: Any) 
                      session_id=getattr(body, "session_id", None), document_ids=body.document_ids, **extra)
 
 
-@router.post("/chat", summary="Chat nhiều lượt — SSE: meta, delta*, [replace], citations, conflicts, trace, done")
+def _agent_request(body: ChatBody, ctx: WorkspaceContext, channel: str, **extra: Any) -> AssistantRequest:
+    return AssistantRequest(question=body.question, ctx=ctx, scope=effective_scope(ctx, body.scope), channel=channel,
+                            session_id=getattr(body, "session_id", None), document_ids=body.document_ids, **extra)
+
+
+@router.post("/chat", summary="Chat nhiều lượt — SSE: meta, (status|artifact|delta)*, [replace], [pending_review], citations, [conflicts], trace, done")
 def chat(body: ChatBody, ctx: WorkspaceContext = Depends(workspace("viewer")), services: Any = Depends(get_services)):
-    req = _request(body, ctx, "chat")
-    return sse_response(lambda: services.qa.stream(req))
+    if body.mode == "strict":
+        req = _request(body, ctx, "chat")
+        return sse_response(lambda: services.qa.stream(req))
+    areq = _agent_request(body, ctx, "chat")
+    return sse_response(lambda: services.assistant.stream(areq))
 
 
-@router.post("/ask", response_model=QAResponse, summary="Hỏi one-shot (không session)")
-def ask(body: AskBody, ctx: WorkspaceContext = Depends(workspace("viewer")), services: Any = Depends(get_services)) -> QAResponse:
-    return services.qa.answer(_request(body, ctx, "ask", as_of=body.as_of))
+@router.post("/ask", summary="Hỏi one-shot (không session). mode=agent (mặc định) | strict", response_model=None)
+def ask(body: AskBody, ctx: WorkspaceContext = Depends(workspace("viewer")), services: Any = Depends(get_services)) -> QAResponse | AssistantResponse:
+    if body.mode == "strict":
+        return services.qa.answer(_request(body, ctx, "ask", as_of=body.as_of))
+    return services.assistant.answer(_agent_request(body, ctx, "ask", as_of=body.as_of))
 
 
 class FeedbackBody(BaseModel):

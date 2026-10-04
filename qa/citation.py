@@ -243,6 +243,11 @@ class StreamingCitationGate:
         self.emitted += out
         return out
 
+    def reset_pending(self) -> None:
+        """Bỏ text đang giữ (chưa có căn cứ) — gọi đầu mỗi lượt model mới trong agent để lời dẫn trung gian
+        ("Để tôi xem catalog…") không lọt ra khi gate mở ở lượt sau."""
+        self._pending = ""
+
     def flush(self) -> str:
         if not self._opened:
             return ""
