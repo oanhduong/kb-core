@@ -1,4 +1,4 @@
-# Runtime RetailKB Copilot (api, worker, admin-ui, parser sidecar). Dev/test/sinh dữ liệu mẫu: requirements-dev.txt.
+# Runtime RetailKB Copilot (api, worker, parser sidecar). Web app: web/ (Node, build riêng). Dev/test/sinh dữ liệu mẫu: requirements-dev.txt.
 # torch cài riêng bản CPU trong Dockerfile (--index-url https://download.pytorch.org/whl/cpu) trước file này.
 
 # --- Parse tài liệu (ingest/parsers.py). ffmpeg là phụ thuộc hệ thống (apt), không qua pip.
@@ -42,11 +42,15 @@ python-multipart==0.0.32
 PyJWT==2.15.1
 httpx==0.28.1
 
+# --- Analytics (bảng số liệu -> parquet/DuckDB, SQL chỉ đọc) + báo cáo (chart PNG, PDF, DOCX)
+duckdb==1.5.6
+pyarrow==25.0.1
+vl-convert-python==1.9.0.post1
+weasyprint==69.0
+
 # --- Observability
 langfuse==2.60.10
 
-# --- Admin UI
-streamlit==1.65.0
 pandas==3.0.5
 
 # --- Sandbox parser kiểu docker run (security/sandbox.py, ingest.sandbox_mode=docker)

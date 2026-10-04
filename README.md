@@ -1,8 +1,14 @@
-# RetailKB Copilot
+# KB Explorer (RetailKB Copilot)
 
-Biến file thô của khách hàng ngành bán lẻ (docx, xlsx, pdf, ảnh, audio, video) thành knowledge base có
-cấu trúc + metadata graph, phục vụ chatbot hỗ trợ nhân viên cửa hàng: trả lời **có trích dẫn bắt buộc**,
-từ chối khi không đủ căn cứ, nêu rõ mâu thuẫn giữa các nguồn, câu hỏi liên quan tiền qua supervisor duyệt.
+Nền tảng **khai phá dữ liệu từ file tải lên**: người dùng tải mọi loại tài liệu (Excel/CSV, Word, PDF kể cả
+scan, PowerPoint, ảnh, audio/video, text) vào **workspace** của mình; hệ thống tự trích nội dung, **bảng số
+liệu** (DuckDB), **tóm tắt + hồ sơ ngữ nghĩa** từng file và **đồ thị tri thức** (thực thể/quan hệ, schema mở).
+Trên web app người dùng hỏi đáp mọi kiểu câu hỏi (tổng quan, tra cứu, tóm tắt, thống kê/so sánh, mối liên hệ)
+với **trích dẫn bắt buộc**, truy vấn số liệu bằng ngôn ngữ tự nhiên hoặc SQL, duyệt đồ thị tương tác và **tạo
+báo cáo** (AI soạn từ dữ liệu thật, ghim kết quả chat, xuất PDF/DOCX/XLSX).
+
+Lõi là generic; **domain pack** (hiện có `generic` và `retail`) thêm phân loại tài liệu, câu hỏi gợi ý, chính sách
+duyệt câu trả lời liên quan tiền và graph quy tắc (Apache AGE) cho ngành bán lẻ.
 
 ## Khởi động nhanh
 
@@ -16,74 +22,94 @@ cp .env.example .env
 make up
 ```
 
-```bash
-make ingest
-```
+Mở **http://localhost:3000**, đăng nhập bằng `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` (superadmin) hoặc
+**Đăng ký** tài khoản mới (tạo workspace đầu tiên ngay trong màn hình đăng ký) → *Tài liệu* → **Tải tài liệu**.
+Mỗi file là một job nền; xong bước nào UI cập nhật bước đó (nội dung → bảng số liệu → tóm tắt → thực thể).
 
-`make up` build + chạy toàn bộ (migration Alembic tự chạy trước api/worker). `make ingest` nạp bộ dữ liệu
-mẫu `data/raw` (25 file GreenMart) và chờ tới khi xử lý xong — audio/video chạy speech-to-text trên CPU
-nên mất thêm vài phút; muốn nhanh: `make ingest ONLY="xlsx docx"`. Sau đó:
+Muốn có dữ liệu mẫu (25 file GreenMart, pack retail): `make ingest` nạp vào workspace slug `default` (tạo nếu chưa có),
+`make ingest ONLY="xlsx docx"` để bỏ audio/video (speech-to-text CPU chậm). Thêm tài khoản của bạn vào workspace đó
+bằng *Cài đặt → Thành viên* khi đăng nhập superadmin.
 
 | Service | URL | Ghi chú |
 |---|---|---|
-| Chat UI (nhân viên) | http://localhost:3000 | Dev: đăng nhập nhanh bằng mã NV + cửa hàng (`APP_ENV=dev`) |
-| Admin UI (Streamlit) | http://localhost:8501 | Dùng `ADMIN_API_KEY`/`BOOTSTRAP_ADMIN_API_KEY` |
-| API + OpenAPI | http://localhost:8000/docs | `X-API-Key` hoặc `Authorization: Bearer <JWT>` |
-| Langfuse (trace) | http://localhost:3001 | Đăng nhập `LANGFUSE_ADMIN_EMAIL` / `LANGFUSE_ADMIN_PASSWORD` |
+| Web app | http://localhost:3000 | React + nginx, proxy `/api` → api (cùng origin) |
+| API + OpenAPI | http://localhost:8000/docs | `Authorization: Bearer <JWT>` (đăng nhập) hoặc `X-API-Key` (key theo workspace) |
+| Langfuse (trace LLM) | http://localhost:3001 | Đăng nhập `LANGFUSE_ADMIN_EMAIL` / `LANGFUSE_ADMIN_PASSWORD` |
 
-Ingest file của bạn: `make ingest FILE=duong/dan/bang_gia_thang_9.xlsx TITLE="Bảng giá tháng 9" EFFECTIVE_DATE=2026-09-01`.
-Kiểm tra: `make ps` (healthcheck), `curl -s localhost:8000/readyz`, `make kb-health`.
+Kiểm tra: `make ps` (healthcheck), `curl -s localhost:8000/readyz`, trang *Tổng quan* của workspace (KB health).
 
 ### Biến môi trường
 
 | Biến | Bắt buộc | Ý nghĩa |
 |---|---|---|
 | `POSTGRES_PASSWORD` | ✅ | Mật khẩu Postgres (DB `retailkb` + DB `langfuse`) |
-| `ANTHROPIC_API_KEY` | ✅ | Trả lời, router/entity khi rule không chắc, vision ảnh/PDF scan, LLM extraction graph |
+| `ANTHROPIC_API_KEY` | ✅ | Trợ lý trả lời/tool-use, NL→SQL, tóm tắt + hồ sơ tài liệu, trích thực thể, vision ảnh/PDF scan, lập dàn ý báo cáo |
 | `JWT_SECRET` | ✅ | Ký JWT cho user (≥ 32 ký tự ngẫu nhiên) |
-| `BOOTSTRAP_ADMIN_API_KEY` | ✅ | API key admin khởi tạo (`rk_...`), dùng tạo key/token khác + Admin UI |
+| `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | ✅ | Tài khoản superadmin đầu tiên (migration tạo khi DB trống) |
+| `BOOTSTRAP_ADMIN_API_KEY` | ✅ | API key hệ thống (`rk_...`, quyền superadmin) cho script/CI |
 | `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` | ✅ | Key project Langfuse (tự tạo khi Langfuse khởi động) |
 | `LANGFUSE_NEXTAUTH_SECRET`, `LANGFUSE_SALT`, `LANGFUSE_ADMIN_PASSWORD` | ✅ | Secret nội bộ + mật khẩu đăng nhập Langfuse UI |
-| `ADMIN_API_KEY` | | Key riêng cho Admin UI (mặc định = bootstrap key) |
 | `ALERT_CHANNEL`, `ALERT_WEBHOOK_URL` / `TELEGRAM_*` | | Kênh alert (Slack/Telegram/generic) — trống = alert chỉ ghi log + bảng `alert_events` |
 | `RETAILKB_CONFIG_VERSION` | | Chọn snapshot config để **rollback** (trống = `config.yaml`) |
-| `APP_ENV`, `DEV_LOGIN_ENABLED` | | `dev` + `true` bật đăng nhập nhanh ở chat UI. **Production: `APP_ENV=prod`** |
+| `APP_ENV`, `CORS_ORIGINS` | | **Production: `APP_ENV=prod`**; CORS chỉ cần khi web chạy khác origin với api |
+| `TABLES_DIR`, `UPLOAD_DIR` | | Thư mục parquet bảng số liệu / file upload (compose: volume) |
 | `EMBEDDING_PROVIDER`, `RERANK_ENABLED`, `GRAPH_ENABLED`, `INGEST_SANDBOX_MODE` | | Ghi đè nhanh tham số trong `config.yaml` |
 
 Mọi tham số ảnh hưởng kết quả (model từng vai trò, chunking, embedding, top_k, rerank, ngưỡng abstention,
-router, prompt + sha256) nằm trong [`config.yaml`](config.yaml) — xem `GET /config`. Secret chỉ ở `.env`.
+analytics, knowledge, prompt + sha256) nằm trong [`config.yaml`](config.yaml) có version — xem `GET /config`.
+Secret chỉ ở `.env`.
+
+## Người dùng làm được gì (web app)
+
+| Trang | Chức năng |
+|---|---|
+| Tổng quan | KB health (tài liệu/bảng/thực thể, câu hỏi bị từ chối, file blocked, xung đột), hỏi nhanh, gợi ý câu hỏi theo nội dung |
+| Hỏi đáp & khai phá | Chat nhiều lượt (SSE): trợ lý dùng công cụ thật (tìm tài liệu, đọc tổng quan, truy vấn bảng bằng SQL, tra đồ thị, đọc nguồn); hiển thị bước đang làm, biểu đồ/bảng kết quả, chip trích dẫn mở đoạn gốc, độ tin cậy, "hệ thống đã làm gì", 👍/👎, **ghim vào báo cáo**, lọc theo tài liệu; chế độ *Tra cứu* (pipeline cổ điển, nhanh/rẻ) |
+| Tài liệu | Tải nhiều file (kéo thả, metadata: loại, hiệu lực, phiên bản, thay thế bản cũ), trạng thái job, chi tiết: tóm tắt, hồ sơ ngữ nghĩa (bản chất, chủ đề, cấu trúc, đối tượng, độ nhạy cảm, lưu ý chất lượng), bảng trích được, thực thể, bản ghi, lịch sử xử lý; sửa/duyệt/xử lý lại/xoá mềm/khôi phục/phiên bản mới |
+| Bảng số liệu | Danh mục bảng (tên SQL, nguồn, mô tả AI, câu hỏi gợi ý), cột + kiểu + thống kê (null, distinct, min/max/avg), xem dữ liệu, export CSV/XLSX |
+| Phân tích số liệu | Hỏi bằng tiếng Việt → SQL (hiển thị để kiểm chứng) + kết quả + biểu đồ Vega-Lite; SQL editor chỉ đọc trên DuckDB; truy vấn đã lưu; export |
+| Đồ thị tri thức | Force-graph tổng quan theo loại, tìm thực thể, lân cận 1–2 bước, panel chi tiết (quan hệ vào/ra có bằng chứng, mention có trích dẫn), sửa/gộp/xoá thực thể, "hỏi về thực thể này" |
+| Báo cáo | Mô tả nhu cầu → AI lập dàn ý và viết từng mục bằng công cụ thật (trích dẫn, chart, bảng, nguồn); chỉnh sửa block (sửa/sắp xếp/xoá/thêm), ghim thêm từ chat, sinh lại, xuất PDF/DOCX/XLSX/HTML |
+| Giám sát & duyệt (editor+) | Việc nền (requeue), hàng chờ duyệt câu trả lời nhạy cảm (duyệt/sửa/từ chối), xung đột dữ liệu, câu hỏi không trả lời được, phản hồi 👎, lịch sử trace (link Langfuse), chi phí (owner) |
+| Cài đặt | Workspace (tên, domain pack, lưu trữ), thành viên & lời mời (viewer/editor/owner, thuộc tính theo pack), API key, tài khoản |
+| Quản trị hệ thống (superadmin) | Người dùng, workspaces, hàng đợi job toàn hệ thống, chi phí LLM theo vai trò/model, config đang chạy |
+
+Nguyên tắc không đổi: mọi khẳng định dựa trên tài liệu phải có `[n]` trỏ tới nguồn (code kiểm tra, không phải model);
+không đủ căn cứ → từ chối và ghi nhận để biết KB thiếu gì; mâu thuẫn giữa nguồn được nêu kèm ngày hiệu lực;
+câu hỏi về tiền (theo domain pack) qua người duyệt; số liệu luôn tính bằng SQL trên bảng thật, không để model "đoán".
 
 ## Kiến trúc
 
 ```
-                ┌────────── chat-ui (React, nginx /api proxy) ──┐   admin-ui (Streamlit)
- nhân viên ───► │  POST /chat (SSE) · /ask · /feedback          │──► api (FastAPI) ◄── API key / JWT, rate limit
-                └───────────────────────────────────────────────┘        │
-   router (rule → LLM) ─┬─ lookup ──► hybrid (pgvector dense ∥ BM25) → RRF → rerank bge-m3 ─┐
-                        ├─ multi_hop ─► graph local search (Apache AGE, ≤2 hop) ───────────┤
-                        └─ aggregation ► graph đếm/liệt kê (computed fact) ───────────────┤
-          parent chunk → context (nội dung bọc <untrusted_document>) → Claude → post-check citation (code)
-          → công bố mâu thuẫn → review queue (câu hỏi tiền) → decision trace → qa_traces + Langfuse
- upload ─► api ─► jobs (Postgres, SKIP LOCKED) ─► worker ─► gateway ─► parser sidecar (KHÔNG network)
-                                                   └► record → chunk → embed → replace/dedup → conflict → graph sync
- Postgres 16: pgvector + Apache AGE (graph `retail_kb`) + bảng KB/QA/jobs + DB Langfuse
+ web (React/Vite, nginx /api) ──► api (FastAPI: JWT/API key theo workspace, role viewer<editor<owner, rate limit)
+   │ /chat (SSE) · /ask · /analytics · /entities · /reports · /documents · /ingest · /ops …
+   ▼
+ assistant agent (Claude tool-use, stream): search_documents (hybrid pgvector+BM25 → RRF → rerank → abstention)
+   · get_document_overview · list_tables/query_tables (DuckDB read-only, Vega-Lite) · explore_graph · read_source
+   → post-check citation (code) → confidence → decision trace → qa_traces + Langfuse
+ upload ─► api ─► jobs (Postgres SKIP LOCKED) ─► worker ─► gateway ─► parser sidecar (KHÔNG network)
+   └► record → chunk → embed → replace/dedup → conflict → [graph_sync (pack retail, AGE)]
+   └► knowledge_extract: bảng → parquet + mô tả · tóm tắt + hồ sơ ngữ nghĩa · thực thể/quan hệ (schema mở)
+ report_generate: prompt → dàn ý (LLM) → mỗi mục chạy assistant → block (markdown+citation, chart, table, sources)
+ Postgres 16: pgvector + Apache AGE + bảng accounts/workspaces/KB/analytics/knowledge/reports/QA/jobs + DB Langfuse
 ```
 
 | Phần | Mã nguồn chính |
 |---|---|
-| A. Graph | `graph/build.py` (rule), `graph/extract.py` (LLM, schema cố định), `graph/resolve.py` (alias DB), `graph/query.py`, `graph/router.py`, `graph/sync.py` (incremental), `graph/store.py` (AGE) |
-| B. QA | `qa/answer.py` (pipeline + SSE), `qa/retrieval.py`, `qa/citation.py`, `qa/abstention.py`, `qa/conflicts.py`, `qa/trace.py`, `qa/review.py`, `qa/sessions.py` |
-| C. KB lifecycle | `ingest/pipeline.py`, `ingest/service.py`, `worker/`, `kb/lifecycle.py`, `kb/reindex.py`, `kb/health.py`, `kb/service.py` |
-| D. API & UI | `api/` (routes, auth, ratelimit, sse), `admin_ui/`, `chat_ui/` |
-| E. Observability | `observability/tracing.py` (Langfuse), `alerts.py`, `costs.py`, `retention.py` |
-| F. Vận hành | `config.yaml`, `config/`, `prompts/`, `docker-compose.yml`, `docker/`, `Makefile`, `scripts/backup.sh`, `scripts/restore.sh`, [`docs/OPERATIONS.md`](docs/OPERATIONS.md) |
-| Đã có từ trước | `ingest/parsers.py`, `ingest/chunkers.py`, `agent/` (ingest agent, `ingest.mode=agent`), `security/` (gateway, policy, sandbox, provenance, audit), `index/` (hybrid, rerank), `bench/` + `ops/docker-compose.yml` (bench pgvector/qdrant cũ, không dùng khi vận hành) |
+| Tài khoản, workspace, phân quyền | `accounts/`, `core/principal.py`, `api/auth.py`, `api/routes/accounts.py`, `domains/packs.py` |
+| Ingest & KB lifecycle | `ingest/`, `worker/`, `kb/` (lifecycle, reindex, health), `security/` (gateway, sandbox, audit) |
+| Bảng số liệu & phân tích | `analytics/tables.py` (trích bảng → parquet), `engine.py` (DuckDB, validate SQL), `nl2sql.py`, `charts.py`, `api/routes/analytics.py` |
+| Hồ sơ tài liệu & đồ thị tri thức | `knowledge/` (pipeline, profile, extract, service), `api/routes/knowledge.py` |
+| Trợ lý & QA | `assistant/` (agent, tools, sources), `qa/` (retrieval, citation, abstention, conflicts, trace, review, sessions, answer = pipeline strict) |
+| Graph quy tắc (pack retail) | `graph/` (build, extract, resolve, query, router, sync, store = AGE) |
+| Báo cáo | `reports/generator.py`, `reports/export.py`, `api/routes/reports.py` |
+| Observability & vận hành | `observability/` (Langfuse, alerts, costs, retention), `config.yaml` + `config/`, `prompts/`, `docker-compose.yml`, `docker/`, `Makefile`, `scripts/`, [`docs/OPERATIONS.md`](docs/OPERATIONS.md) |
+| Web app | `web/` (React 18 + TypeScript + Vite + Tailwind, TanStack Query, vega-embed, react-force-graph) |
 
-Bảo mật (giữ nguyên + mở rộng): mọi tool call của agent **và** pipeline ingest đi qua `security/gateway.py`
-(policy READ / WRITE_REVERSIBLE dry-run→commit / WRITE_IRREVERSIBLE cần duyệt), audit append-only xoay vòng
-theo tháng; parser chạy trong container `parser` không có mạng, rootfs read-only, non-root; nội dung tài
-liệu đưa vào context (cả ingest lẫn QA) bọc `<untrusted_document>`; nội dung nghi prompt injection → file
-bị chặn chờ admin duyệt.
+Bảo mật: mọi tool call của pipeline ingest đi qua `security/gateway.py` (policy + audit append-only xoay theo tháng);
+parser chạy trong container không mạng, rootfs read-only, non-root; nội dung tài liệu đưa vào context bọc
+`<untrusted_document>`; nội dung nghi prompt injection → file bị chặn chờ duyệt; SQL do model sinh chỉ chạy qua
+validator (một `SELECT`/`WITH`, denylist, DuckDB không truy cập ngoài, timeout); mọi dữ liệu scope theo workspace.
 
 ## Chạy test
 
@@ -95,15 +121,15 @@ python -m venv .venv && source .venv/bin/activate && pip install -r requirements
 make test
 ```
 
-Integration test (Postgres + pgvector + Apache AGE thật — ingest, thay thế/lịch sử, dedup, QA end-to-end,
-API, SSE, alert, retention) cần DSN tới Postgres có AGE, ví dụ container `postgres` của compose:
+Integration test (Postgres + pgvector + Apache AGE thật — tài khoản/workspace, ingest, lifecycle, analytics,
+knowledge graph, assistant, reports, API, SSE, alert, retention) cần DSN tới DB tên kết thúc `_test`:
 
 ```bash
 RETAILKB_TEST_PG_DSN=postgresql://retail:<mật_khẩu>@localhost:5432/retailkb_test make test-integration
 ```
 
-(Tạo DB trước: `docker compose exec postgres createdb -U retail retailkb_test`.) Test KHÔNG gọi LLM thật —
-model được giả lập; phần gọi LLM không có test theo yêu cầu.
+(Tạo DB trước: `docker compose exec postgres createdb -U retail retailkb_test`.) Test KHÔNG gọi LLM thật — model
+được giả lập; không có benchmark/eval theo yêu cầu.
 
-Phát triển local không Docker: chat UI `npm --prefix chat_ui run dev` (proxy `/api` → `localhost:8000`),
-admin UI `streamlit run admin_ui/app.py`, api `uvicorn api.main:app --reload`, worker `python -m worker.main`.
+Phát triển local không Docker: api `uvicorn api.main:app --reload`, worker `python -m worker.main`, web
+`make web-dev` (Vite :5173, proxy `/api` → `localhost:8000`).

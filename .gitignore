@@ -15,5 +15,9 @@ data/published/
 data/ingest_state.json
 backups/
 .env
-chat_ui/node_modules/
-chat_ui/dist/
+web/node_modules/
+web/dist/
+data/tables/
+
+# Cấu hình chạy preview của Claude desktop (đường dẫn máy cá nhân)
+.claude/launch.json

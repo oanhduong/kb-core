@@ -2,7 +2,7 @@
 #   cp .env.example .env   # điền biến BẮT BUỘC (xem README)
 #   make up                # = docker compose up -d --build
 #   make ingest            # nạp dữ liệu mẫu data/raw (hoặc make ingest FILE=duong/dan/file.xlsx)
-# Cổng: chat-ui :3000 · admin-ui :8501 · api :8000 (/docs) · langfuse :3001 · postgres 127.0.0.1:5432
+# Cổng: web :3000 (UI + proxy /api) · api :8000 (/docs) · langfuse :3001 · postgres 127.0.0.1:5432
 
 name: retailkb
 
@@ -16,11 +16,13 @@ x-app: &app
     LANGFUSE_PROJECT_ID: retailkb-prod
     LANGFUSE_DATABASE_URL: postgresql://${POSTGRES_USER:-retail}:${POSTGRES_PASSWORD}@postgres:5432/langfuse
     UPLOAD_DIR: /app/data/uploads
+    TABLES_DIR: /app/data/tables
     PARSER_WORK_DIR: /app/data/parsework
     AUDIT_LOG_DIR: /app/data/security/audit
     HF_HOME: /models/hf
   volumes: &app-volumes
     - uploads:/app/data/uploads
+    - tables:/app/data/tables
     - parsework:/app/data/parsework
     - audit:/app/data/security
     - models:/models
@@ -154,36 +156,21 @@ services:
       retries: 3
     logging: *logging
 
-  admin-ui:
-    <<: *app
-    command: ["streamlit", "run", "admin_ui/app.py", "--server.port", "8501", "--server.address", "0.0.0.0",
-              "--server.headless", "true", "--browser.gatherUsageStats", "false"]
-    environment:
-      <<: *app-env
-      API_BASE_URL: http://api:8000
-    depends_on:
-      api: {condition: service_healthy}
-    ports:
-      - "${ADMIN_UI_PORT:-8501}:8501"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8501/_stcore/health >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-
-  chat-ui:
-    build: chat_ui
-    image: retailkb-chat-ui:${APP_IMAGE_TAG:-latest}
+  # Web app (React) tĩnh + nginx proxy /api -> api (cùng origin, SSE không buffer, upload tới 200MB)
+  web:
+    build: web
+    image: retailkb-web:${APP_IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       api: {condition: service_healthy}
     ports:
-      - "${CHAT_UI_PORT:-3000}:80"
+      - "${WEB_PORT:-3000}:80"
     logging: *logging
 
 volumes:
   pgdata:
   uploads:
+  tables:
   parsework:
   audit:
   models:

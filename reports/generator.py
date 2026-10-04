@@ -134,7 +134,8 @@ def generate_report(cfg: AppConfig, sm: sessionmaker, llm: Any, report_id: str, 
     blocks.append({"id": new_id(), "type": "sources", "title": "Nguồn tham chiếu", "items": list(all_cits.values())})
     with session_scope() as s:
         rep = s.get(Report, report_id)
-        rep.title = plan.title if rep.title == rep.prompt or not rep.title else rep.title
+        if not rep.title or rep.title in (rep.prompt, (rep.prompt or "")[:120]):  # tiêu đề mặc định lấy từ prompt -> thay bằng tiêu đề AI đặt
+            rep.title = plan.title
         rep.blocks, rep.status, rep.updated_at = blocks, "ready", utcnow()
     progress(total, total, "done")
     log_event(logger, "report_generated", report_id=report_id, sections=total, blocks=len(blocks))

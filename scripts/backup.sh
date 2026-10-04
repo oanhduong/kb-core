@@ -21,8 +21,10 @@ $COMPOSE exec -T postgres pg_dump -U "$USER_" -d langfuse -Fc --no-owner > "$OUT
   || echo "  (bỏ qua langfuse: DB chưa tồn tại?)"
 # file gốc khách hàng (volume uploads) — đọc qua container api để không phụ thuộc đường dẫn volume trên host
 $COMPOSE exec -T api tar -C /app/data -czf - uploads > "$OUT/uploads-$TS.tar.gz"
+# parquet bảng số liệu (volume tables) — có thể dựng lại bằng "Xử lý lại" từng tài liệu nhưng backup nhanh hơn nhiều
+$COMPOSE exec -T api tar -C /app/data -czf - tables > "$OUT/tables-$TS.tar.gz"
 
-for f in "$OUT/retailkb-$TS.dump" "$OUT/uploads-$TS.tar.gz"; do
+for f in "$OUT/retailkb-$TS.dump" "$OUT/uploads-$TS.tar.gz" "$OUT/tables-$TS.tar.gz"; do
   [ -s "$f" ] || { echo "LỖI: $f rỗng — backup thất bại" >&2; exit 1; }
 done
 sha256sum "$OUT"/*-"$TS".* > "$OUT/SHA256SUMS-$TS" 2>/dev/null || shasum -a 256 "$OUT"/*-"$TS".* > "$OUT/SHA256SUMS-$TS"

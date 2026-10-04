@@ -37,6 +37,10 @@ if [ "$MODE" != "--db-only" ] && [ -f "$IN/uploads-$TS.tar.gz" ]; then
   echo "Restore file upload ..."
   $COMPOSE run --rm -T --no-deps --entrypoint sh api -c "rm -rf /app/data/uploads/* && tar -C /app/data -xzf -" < "$IN/uploads-$TS.tar.gz"
 fi
+if [ "$MODE" != "--db-only" ] && [ -f "$IN/tables-$TS.tar.gz" ]; then
+  echo "Restore bảng số liệu (parquet) ..."
+  $COMPOSE run --rm -T --no-deps --entrypoint sh api -c "rm -rf /app/data/tables/* && tar -C /app/data -xzf -" < "$IN/tables-$TS.tar.gz"
+fi
 echo "Khởi động lại ..."
 $COMPOSE up -d
 echo "Restore xong từ bộ $TS."

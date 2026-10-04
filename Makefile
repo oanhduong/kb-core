@@ -5,14 +5,15 @@ API := $(COMPOSE) exec -T api
 
 .DEFAULT_GOAL := help
 .PHONY: help up down restart ps logs build migrate ingest ingest-status reindex kb-health graph-rebuild backup restore \
-        token api-key config-check config-snapshot rollback-config test test-integration lint
+        web-dev web-build config-check config-snapshot rollback-config test test-integration lint
 
 help: ## Danh sách lệnh
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
-up: .env ## Build + khởi động toàn bộ (postgres, langfuse, api, worker, parser, admin-ui, chat-ui)
+up: .env ## Build + khởi động toàn bộ (postgres, langfuse, api, worker, parser, web)
 	$(COMPOSE) up -d --build
-	@echo "Chat UI: http://localhost:$${CHAT_UI_PORT:-3000} · Admin: http://localhost:$${ADMIN_UI_PORT:-8501} · API: http://localhost:$${API_PORT:-8000}/docs · Langfuse: http://localhost:$${LANGFUSE_PORT:-3001}"
+	@echo "Web: http://localhost:$${WEB_PORT:-3000} · API: http://localhost:$${API_PORT:-8000}/docs · Langfuse: http://localhost:$${LANGFUSE_PORT:-3001}"
+	@echo "Đăng nhập lần đầu: BOOTSTRAP_ADMIN_EMAIL / BOOTSTRAP_ADMIN_PASSWORD (superadmin) hoặc Đăng ký tài khoản mới trên web."
 
 .env:
 	@echo "Thiếu .env — tạo từ mẫu: cp .env.example .env rồi điền các biến BẮT BUỘC (xem README)"; exit 1
@@ -20,8 +21,8 @@ up: .env ## Build + khởi động toàn bộ (postgres, langfuse, api, worker, 
 down: ## Dừng (giữ dữ liệu trong volume)
 	$(COMPOSE) down
 
-restart: ## Restart api + worker + admin-ui (sau khi đổi config / rollback config)
-	$(COMPOSE) up -d --force-recreate api worker admin-ui
+restart: ## Restart api + worker (sau khi đổi config / rollback config)
+	$(COMPOSE) up -d --force-recreate api worker
 
 ps: ## Trạng thái + healthcheck các service
 	$(COMPOSE) ps
@@ -35,16 +36,16 @@ build: ## Build image
 migrate: ## Chạy migration Alembic (tự chạy khi `make up`)
 	$(COMPOSE) run --rm migrate
 
-ingest: ## Không có FILE: nạp dữ liệu mẫu data/raw. Có FILE=đường/dẫn: ingest 1 file (thêm DOC_TYPE, STORE, EFFECTIVE_DATE, TITLE, REPLACE_MODE)
+ingest: ## Không có FILE: nạp dữ liệu mẫu data/raw vào workspace WORKSPACE (mặc định slug `default`, pack retail). Có FILE=đường/dẫn: ingest 1 file (thêm DOC_TYPE, STORE, EFFECTIVE_DATE, TITLE, REPLACE_MODE)
 ifdef FILE
 	@test -f "$(FILE)" || (echo "Không thấy file $(FILE)"; exit 1)
 	$(COMPOSE) cp "$(FILE)" api:/tmp/
-	$(API) python -m ingest.cli upload "/tmp/$(notdir $(FILE))" --wait \
+	$(API) python -m ingest.cli upload "/tmp/$(notdir $(FILE))" --wait --workspace $(or $(WORKSPACE),default) \
 	  $(if $(DOC_TYPE),--doc-type $(DOC_TYPE)) $(if $(STORE),--store $(STORE)) \
 	  $(if $(EFFECTIVE_DATE),--effective-date $(EFFECTIVE_DATE)) $(if $(TITLE),--title "$(TITLE)") \
 	  $(if $(REPLACE_MODE),--replace-mode $(REPLACE_MODE))
 else
-	$(API) python -m ingest.cli seed --wait $(if $(ONLY),--only $(ONLY))
+	$(API) python -m ingest.cli seed --wait --workspace $(or $(WORKSPACE),default) $(if $(ONLY),--only $(ONLY))
 endif
 
 ingest-status: ## Trạng thái 1 job: make ingest-status JOB=<job_id>
@@ -66,11 +67,11 @@ backup: ## Backup Postgres + file upload vào ./backups (cron được: xem scri
 restore: ## Restore: make restore TS=<timestamp> [DB_ONLY=1]
 	./scripts/restore.sh $(TS) $(if $(DB_ONLY),--db-only)
 
-token: ## Phát JWT cho user: make token USER_ID=nv01 ROLE=staff STORE=GM-HN01
-	@$(API) python -m api.cli token --user $(or $(USER_ID),nv01) --role $(or $(ROLE),staff) $(if $(STORE),--store $(STORE))
+web-dev: ## Chạy web app dev (Vite, proxy /api -> localhost:8000)
+	cd web && npm install --no-audit --no-fund && npm run dev
 
-api-key: ## Tạo API key service: make api-key NAME=pos-gateway ROLE=staff [STORE=GM-HN01] [RATE=120]
-	@$(API) python -m api.cli api-key --name $(NAME) --role $(or $(ROLE),staff) $(if $(STORE),--store $(STORE)) $(if $(RATE),--rate $(RATE))
+web-build: ## Build web app tĩnh vào web/dist
+	cd web && npm ci --no-audit --no-fund && npm run build
 
 config-check: ## Validate config.yaml + sha256 prompt
 	$(API) python -m core.config check
