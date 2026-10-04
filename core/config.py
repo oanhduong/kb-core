@@ -243,12 +243,14 @@ class PromptsConfig(BaseModel):
     graph_extract: PromptRef
     chat_compaction: PromptRef
     doc_classify: PromptRef
-    nl2sql: PromptRef
-    table_describe: PromptRef
-    document_profile: PromptRef
-    knowledge_extract: PromptRef
-    assistant_system: PromptRef
-    report_plan: PromptRef
+    # Prompt thêm sau bản 2026.10.03-1 có mặc định (sha256 None = không kiểm) để snapshot config cũ vẫn
+    # rollback được; config hiện hành luôn khai báo tường minh kèm sha256.
+    nl2sql: PromptRef = Field(default_factory=lambda: PromptRef(path="prompts/nl2sql.v1.md"))
+    table_describe: PromptRef = Field(default_factory=lambda: PromptRef(path="prompts/table_describe.v1.md"))
+    document_profile: PromptRef = Field(default_factory=lambda: PromptRef(path="prompts/document_profile.v1.md"))
+    knowledge_extract: PromptRef = Field(default_factory=lambda: PromptRef(path="prompts/knowledge_extract.v1.md"))
+    assistant_system: PromptRef = Field(default_factory=lambda: PromptRef(path="prompts/assistant_system.v1.md"))
+    report_plan: PromptRef = Field(default_factory=lambda: PromptRef(path="prompts/report_plan.v1.md"))
 
 
 class AuthConfig(BaseModel):

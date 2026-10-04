@@ -21,8 +21,8 @@ def _copy_repo_config(tmp_path: Path) -> Path:
 def test_repo_config_loads_with_version_hash_and_prompt_hashes():
     cfg = load_config(ROOT / "config.yaml")
     assert cfg.config_version and len(cfg.config_hash) == 16
-    assert set(cfg.prompt_hashes) == {"answer_system", "router_classify", "entity_extract", "graph_extract",
-                                      "chat_compaction", "doc_classify"}
+    assert {"answer_system", "router_classify", "entity_extract", "graph_extract", "chat_compaction", "doc_classify",
+            "nl2sql", "assistant_system", "report_plan"} <= set(cfg.prompt_hashes)
     assert cfg.models.answer.startswith("claude-")
 
 
