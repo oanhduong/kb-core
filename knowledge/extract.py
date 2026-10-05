@@ -115,14 +115,46 @@ def build_windows(records: list[KBRecordRow], window_chars: int, max_windows: in
     return windows[:max_windows]
 
 
-def _extract_window(cfg: AppConfig, llm: Any, system: str, doc_title: str, w: Window) -> WindowResult:
+MIN_SPLIT_CHARS = 400
+MAX_SPLIT_DEPTH = 2
+
+
+def split_text(text: str) -> tuple[str, str]:
+    """Chia đôi theo ranh giới dòng gần giữa nhất (fallback: giữa chuỗi) — dùng khi output model bị cắt vì quá nhiều entity."""
+    lines = text.split("\n")
+    if len(lines) >= 2:
+        total, acc = len(text), 0
+        for i, ln in enumerate(lines[:-1]):
+            acc += len(ln) + 1
+            if acc >= total / 2:
+                return "\n".join(lines[: i + 1]), "\n".join(lines[i + 1:])
+    mid = len(text) // 2
+    return text[:mid], text[mid:]
+
+
+def _extract_window(cfg: AppConfig, llm: Any, system: str, doc_title: str, w: Window, depth: int = 0) -> WindowResult:
+    """Trích entity/quan hệ cho 1 window. Output JSON hỏng (thường do chạm max_tokens khi window dày đặc thực thể như
+    catalogue, ảnh chụp POS) -> chia đôi window và trích từng nửa thay vì bỏ cả window."""
     from core.llm import LLMOutputInvalid, LLMUnavailable
 
     user = f"Tài liệu: {doc_title} — vị trí: {w.location}\n" + wrap_untrusted(w.text, source=f"{doc_title} / {w.location}")
     try:
-        out = llm.complete_json("knowledge_extract", system=system, user=user, schema=ExtractOut, max_tokens=1800, max_retries=1)
+        out = llm.complete_json("knowledge_extract", system=system, user=user, schema=ExtractOut,
+                                max_tokens=cfg.knowledge.extract_max_tokens, max_retries=1)
         return WindowResult(w, out.entities, out.relations)
-    except (LLMOutputInvalid, LLMUnavailable) as e:
+    except LLMOutputInvalid as e:
+        if depth >= MAX_SPLIT_DEPTH or len(w.text) < MIN_SPLIT_CHARS:
+            return WindowResult(w, error=str(e)[:300])
+        log_event(logger, "knowledge_window_split", level=logging.WARNING, location=w.location, chars=len(w.text), depth=depth + 1)
+        merged = WindowResult(w)
+        for half in split_text(w.text):
+            r = _extract_window(cfg, llm, system, doc_title, Window(w.location, half, w.record_ids), depth + 1)
+            if r.error:
+                merged.error = r.error
+            merged.entities += r.entities
+            merged.relations += r.relations
+        return merged
+    except LLMUnavailable as e:
         return WindowResult(w, error=str(e)[:300])
 
 

@@ -314,6 +314,97 @@ def _table_item_text(table_item, doc):
     return "\n".join(" | ".join(rows_by_idx[idx]) for idx in sorted(rows_by_idx))
 
 
+_LAYOUT_ROW_TOL = 3.0      # pt: 2 ô cùng dòng nếu cạnh trên lệch <= 3pt
+_LAYOUT_COL_TOL = 8.0      # pt: ô thuộc cột nếu cạnh trái lệch <= 8pt so với cạnh trái header
+_LAYOUT_MIN_COLS = 3
+_LAYOUT_MIN_ROWS = 2       # dòng dữ liệu (không tính header)
+_LAYOUT_MAX_GAP_FACTOR = 2.5
+
+
+def reconstruct_layout_tables(boxes):
+    """Dựng lại bảng không kẻ khung từ toạ độ chữ (docling không nhận ra bảng -> mỗi ô thành 1 đoạn text rời,
+    mất quan hệ "mã SP ↔ giá" trong cùng hàng). boxes: [(l, t, r, b, text)] của 1 trang, toạ độ PDF (t lớn = cao hơn).
+
+    Quy tắc: gom ô thành dòng theo cạnh trên; dòng có >= 3 ô là ứng viên header; các dòng tiếp theo thuộc bảng khi mọi
+    ô có cạnh trái khớp một cột header (lệch <= 8pt), có >= 2 ô, và khoảng cách dọc không vượt 2.5 lần khoảng cách dòng
+    đầu. Dòng chỉ có ô ở cột sau (cột đầu trống) = phần xuống dòng của hàng trước -> nối vào ô tương ứng.
+    Trả về (tables, consumed): tables = [{"top": t, "rows": [[cell, ...], ...]}] (hàng 0 là header), consumed = set chỉ số box đã dùng.
+    """
+    order = sorted(range(len(boxes)), key=lambda i: (-boxes[i][1], boxes[i][0]))
+    lines = []  # [(top, [idx...])]
+    for i in order:
+        t = boxes[i][1]
+        if lines and abs(lines[-1][0] - t) <= _LAYOUT_ROW_TOL:
+            lines[-1][1].append(i)
+        else:
+            lines.append((t, [i]))
+    lines = [(t, sorted(ids, key=lambda i: boxes[i][0])) for t, ids in lines]
+
+    def col_of(starts, idx):
+        left = boxes[idx][0]
+        best = min(range(len(starts)), key=lambda c: abs(starts[c] - left))
+        return best if abs(starts[best] - left) <= _LAYOUT_COL_TOL else None
+
+    tables, consumed = [], set()
+    k = 0
+    while k < len(lines):
+        top, header = lines[k]
+        if len(header) < _LAYOUT_MIN_COLS:
+            k += 1
+            continue
+        starts = [boxes[i][0] for i in header]
+        rows, used, prev_top, step = [], list(header), top, None
+        j = k + 1
+        while j < len(lines):
+            t, ids = lines[j]
+            gap = prev_top - t
+            if step is not None and gap > step * _LAYOUT_MAX_GAP_FACTOR:
+                break
+            cols = [col_of(starts, i) for i in ids]
+            if any(c is None for c in cols) or len(set(cols)) != len(cols):
+                break
+            if len(ids) >= 2 and 0 in cols:
+                row = [""] * len(starts)
+                for i, c in zip(ids, cols):
+                    row[c] = boxes[i][4].strip()
+                rows.append(row)
+            elif rows and 0 not in cols:  # dòng nối tiếp ô của hàng trước
+                for i, c in zip(ids, cols):
+                    rows[-1][c] = (rows[-1][c] + " " + boxes[i][4].strip()).strip()
+            else:
+                break
+            used += ids
+            step = gap if step is None else step
+            prev_top = t
+            j += 1
+        if len(rows) >= _LAYOUT_MIN_ROWS:
+            tables.append({"top": top, "rows": [[boxes[i][4].strip() for i in header], *rows]})
+            consumed.update(used)
+            k = j
+        else:
+            k += 1
+    return tables, consumed
+
+
+def _layout_tables_for_pages(doc, pages):
+    """Áp reconstruct_layout_tables cho các trang docling không tìm thấy bảng. Trả về ({page: [table]}, set(id(text_item)))."""
+    by_page = {}
+    for item in doc.texts:
+        if not item.prov or not (item.text or "").strip():
+            continue
+        page_no = item.prov[0].page_no
+        if page_no in pages:
+            by_page.setdefault(page_no, []).append(item)
+    out, consumed_items = {}, set()
+    for page_no, items in by_page.items():
+        boxes = [(it.prov[0].bbox.l, it.prov[0].bbox.t, it.prov[0].bbox.r, it.prov[0].bbox.b, it.text) for it in items]
+        tables, consumed = reconstruct_layout_tables(boxes)
+        if tables:
+            out[page_no] = tables
+            consumed_items.update(id(items[i]) for i in consumed)
+    return out, consumed_items
+
+
 def parse_pdf(file_path, ocr_threshold_chars_per_page=20):
     _require_file(file_path)
     try:
@@ -340,6 +431,10 @@ def parse_pdf(file_path, ocr_threshold_chars_per_page=20):
     table_counters = {}
     chunks = []
 
+    pages_with_tables = {t.prov[0].page_no for t in doc.tables if t.prov}
+    layout_tables, layout_items = _layout_tables_for_pages(doc, set(range(1, page_count + 1)) - pages_with_tables)
+    layout_table_chars = layout_table_nonspace = 0
+
     for text_item in doc.texts:
         text = text_item.text.strip()
         if not text:
@@ -347,8 +442,18 @@ def parse_pdf(file_path, ocr_threshold_chars_per_page=20):
         page_no = text_item.prov[0].page_no if text_item.prov else None
         if page_no is not None:
             chars_per_page[page_no] = chars_per_page.get(page_no, 0) + len(text)
+        if id(text_item) in layout_items:  # đã nằm trong bảng dựng lại theo toạ độ -> không lặp thành đoạn rời
+            layout_table_chars += len(text)
+            layout_table_nonspace += len("".join(text.split()))
+            continue
         location = f"Trang {page_no}" if page_no is not None else "Không rõ trang"
         chunks.append({"text": text, "location": location, "kind": "text"})
+
+    for page_no in sorted(layout_tables):
+        for tbl in layout_tables[page_no]:
+            table_counters[page_no] = table_counters.get(page_no, 0) + 1
+            chunks.append({"text": "\n".join(" | ".join(c.replace("|", "/") for c in row) for row in tbl["rows"]),
+                           "location": f"Trang {page_no} > Bảng {table_counters[page_no]}", "kind": "table", "layout": True})
 
     for table_item in doc.tables:
         table_text = _table_item_text(table_item, doc)
@@ -368,7 +473,10 @@ def parse_pdf(file_path, ocr_threshold_chars_per_page=20):
         "needs_ocr": bool(pages_needing_ocr),
         "pages_needing_ocr": pages_needing_ocr,
         "ocr_threshold_chars_per_page": ocr_threshold_chars_per_page,
-        "table_count": len(doc.tables),
+        "table_count": len(doc.tables) + sum(len(v) for v in layout_tables.values()),
+        "layout_table_count": sum(len(v) for v in layout_tables.values()),
+        "layout_table_chars": layout_table_chars,
+        "layout_table_nonspace_chars": layout_table_nonspace,
         "chunk_count": len(chunks),
     }
     return {"chunks": chunks, "stats": stats}

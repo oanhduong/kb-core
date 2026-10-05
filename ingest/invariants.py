@@ -158,11 +158,21 @@ def _check_pdf(file_path, chunks, stats):
             f"({len(table_chunks)}) trong {file_path}"
         )
 
+    # ký tự của ô bảng dựng lại theo toạ độ (layout table) chuyển từ chunk text sang chunk table: kiểm tra chúng có mặt đủ
     text_char_total = sum(len(c["text"]) for c in chunks if c["kind"] == "text")
-    if text_char_total != stats.get("character_count"):
+    layout_chars = stats.get("layout_table_chars", 0)
+    if text_char_total + layout_chars != stats.get("character_count"):
         raise ParserError(
             f"Mất ký tự khi parse pdf {file_path}: stats.character_count={stats.get('character_count')} "
-            f"nhưng tổng ký tự các chunk kind=text chỉ có {text_char_total}. Đây là bug ở parse_pdf, không retry."
+            f"nhưng tổng ký tự các chunk kind=text ({text_char_total}) + ô bảng dựng lại ({layout_chars}) không khớp. "
+            f"Đây là bug ở parse_pdf, không retry."
+        )
+    # nội dung ô (bỏ khoảng trắng; "|" trong ô được đổi thành "/" nên bỏ mọi "|" là bỏ đúng dấu phân cách) phải đủ
+    layout_nonspace = sum(len("".join(c["text"].replace("|", "").split())) for c in table_chunks if c.get("layout"))
+    if layout_nonspace != stats.get("layout_table_nonspace_chars", 0):
+        raise ParserError(
+            f"Bảng dựng lại theo toạ độ trong {file_path} có {layout_nonspace} ký tự nội dung, khác "
+            f"{stats.get('layout_table_nonspace_chars', 0)} ký tự của các ô đã gom. Đây là bug ở parse_pdf, không retry."
         )
 
     for c in chunks:

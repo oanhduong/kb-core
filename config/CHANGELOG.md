@@ -3,6 +3,11 @@
 Mỗi lần đổi `config.yaml`: bump `config_version`, thêm 1 mục ở ĐẦU file này, chạy `make config-snapshot`.
 Rollback: `RETAILKB_CONFIG_VERSION=<version>` trong `.env` rồi `make restart`.
 
+## 2026.10.05-1
+- `knowledge.extract_max_tokens: 4096` (trước đây cố định 1800 trong code). Tài liệu dày đặc thực thể (catalogue,
+  ảnh chụp POS, biên bản liệt kê hàng) làm output JSON bị cắt -> mất toàn bộ entity của window; nay nâng giới hạn và
+  window lỗi được chia đôi trích lại.
+
 ## 2026.10.04-1
 - Nền tảng tổng quát: thêm `analytics.*` (bảng -> DuckDB, SQL read-only, chart), `knowledge.*` (knowledge graph mở,
   hồ sơ ngữ nghĩa), model cho vai trò nl2sql/table_describe/document_profile/knowledge_extract/assistant/report,

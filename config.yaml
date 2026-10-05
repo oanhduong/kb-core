@@ -9,7 +9,7 @@
 #   4. `make config-snapshot` (chép sang config/versions/<version>.yaml) rồi restart api + worker.
 # Rollback: đặt RETAILKB_CONFIG_VERSION=<bản cũ> trong .env rồi `make restart` (xem docs/OPERATIONS.md).
 
-config_version: "2026.10.04-1"
+config_version: "2026.10.05-1"
 description: "Nền tảng khai phá tài liệu tổng quát: workspace, analytics DuckDB, knowledge graph mở, assistant, báo cáo."
 
 models:
@@ -132,6 +132,7 @@ knowledge:                    # knowledge graph mở + hồ sơ ngữ nghĩa tà
   entity_extraction: true
   max_chunks_per_document: 80
   window_chars: 2500
+  extract_max_tokens: 4096    # output tối đa mỗi lần trích; JSON vẫn bị cắt -> window tự chia đôi (tối đa 2 cấp)
   min_confidence: 0.5
   summary_max_chars: 12000
 

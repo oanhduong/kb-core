@@ -201,6 +201,7 @@ class KnowledgeConfig(BaseModel):
     entity_extraction: bool = True
     max_chunks_per_document: int = 80
     window_chars: int = 2500
+    extract_max_tokens: int = 4096  # output tối đa 1 lần trích entity; vẫn bị cắt -> window được chia đôi
     min_confidence: float = 0.5
     summary_max_chars: int = 12000
 
