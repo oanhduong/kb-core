@@ -3,6 +3,7 @@ import clsx from "clsx";
 import {
   BarChart3, Boxes, Check, ChevronsUpDown, FileStack, Home, Languages, LogOut, Menu, MessageCircle, Network, Plus, Settings,
   Shield, ShieldCheck, SlidersHorizontal, UserRound, Workflow, X,
+  Info,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -137,6 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="px-3 pb-1.5 pt-6 text-[12px] font-medium text-ink-400">{t("nav.section.manage")}</div>
         {can("editor") && item("trust", ShieldCheck, t("nav.trust"))}
         {item("settings", Settings, t("nav.settings"))}
+        {item("about", Info, t("nav.about"))}
         {user?.is_superadmin && item("/admin", Shield, t("nav.admin"))}
       </nav>
       <div className="border-t border-white/[.08] p-3"><UserMenu onNavigate={() => setOpen(false)} /></div>

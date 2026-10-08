@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { AppShell } from "./layout/AppShell";
 import { Loading } from "./components/ui";
 import { auth } from "./lib/api";
+import { AboutPage } from "./pages/About";
 import { AdminPage } from "./pages/Admin";
 import { AnalyticsPage } from "./pages/Analytics";
 import { LoginPage, SignupPage } from "./pages/Auth";
@@ -59,6 +60,7 @@ function WorkspaceRoutes() {
           <Route path="trust/*" element={<TrustPage />} />
           <Route path="ops/*" element={<Navigate to="../trust" replace />} />
           <Route path="settings/*" element={<SettingsPage />} />
+          <Route path="about" element={<AboutPage />} />
           <Route path="*" element={<Navigate to="." replace />} />
         </Routes>
       </AppShell>
