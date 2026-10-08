@@ -61,18 +61,21 @@ Secret chỉ ở `.env`.
 
 ## Người dùng làm được gì (web app)
 
+Giao diện song ngữ **Tiếng Việt / English** (menu người dùng), viết cho người dùng nghiệp vụ; SQL, mã định danh, trace thô,
+việc nền, chi phí chỉ hiện khi bật **Chi tiết kỹ thuật**. Hướng dẫn thiết kế & viết chữ: [`web/DESIGN.md`](web/DESIGN.md).
+
 | Trang | Chức năng |
 |---|---|
-| Tổng quan | KB health (tài liệu/bảng/thực thể, câu hỏi bị từ chối, file blocked, xung đột), hỏi nhanh, gợi ý câu hỏi theo nội dung |
-| Hỏi đáp & khai phá | Chat nhiều lượt (SSE): trợ lý dùng công cụ thật (tìm tài liệu, đọc tổng quan, truy vấn bảng bằng SQL, tra đồ thị, đọc nguồn); hiển thị bước đang làm, biểu đồ/bảng kết quả, chip trích dẫn mở đoạn gốc, độ tin cậy, "hệ thống đã làm gì", 👍/👎, **ghim vào báo cáo**, lọc theo tài liệu; chế độ *Tra cứu* (pipeline cổ điển, nhanh/rẻ) |
-| Tài liệu | Tải nhiều file (kéo thả, metadata: loại, hiệu lực, phiên bản, thay thế bản cũ), trạng thái job, chi tiết: tóm tắt, hồ sơ ngữ nghĩa (bản chất, chủ đề, cấu trúc, đối tượng, độ nhạy cảm, lưu ý chất lượng), bảng trích được, thực thể, bản ghi, lịch sử xử lý; sửa/duyệt/xử lý lại/xoá mềm/khôi phục/phiên bản mới |
-| Bảng số liệu | Danh mục bảng (tên SQL, nguồn, mô tả AI, câu hỏi gợi ý), cột + kiểu + thống kê (null, distinct, min/max/avg), xem dữ liệu, export CSV/XLSX |
-| Phân tích số liệu | Hỏi bằng tiếng Việt → SQL (hiển thị để kiểm chứng) + kết quả + biểu đồ Vega-Lite; SQL editor chỉ đọc trên DuckDB; truy vấn đã lưu; export |
-| Đồ thị tri thức | Force-graph tổng quan theo loại, tìm thực thể, lân cận 1–2 bước, panel chi tiết (quan hệ vào/ra có bằng chứng, mention có trích dẫn), sửa/gộp/xoá thực thể, "hỏi về thực thể này" |
-| Báo cáo | Mô tả nhu cầu → AI lập dàn ý và viết từng mục bằng công cụ thật (trích dẫn, chart, bảng, nguồn); chỉnh sửa block (sửa/sắp xếp/xoá/thêm), ghim thêm từ chat, sinh lại, xuất PDF/DOCX/XLSX/HTML |
-| Giám sát & duyệt (editor+) | Việc nền (requeue), hàng chờ duyệt câu trả lời nhạy cảm (duyệt/sửa/từ chối), xung đột dữ liệu, câu hỏi không trả lời được, phản hồi 👎, lịch sử trace (link Langfuse), chi phí (owner) |
-| Cài đặt | Workspace (tên, domain pack, lưu trữ), thành viên & lời mời (viewer/editor/owner, thuộc tính theo pack), API key, tài khoản |
-| Quản trị hệ thống (superadmin) | Người dùng, workspaces, hàng đợi job toàn hệ thống, chi phí LLM theo vai trò/model, config đang chạy |
+| Trang chủ | Ô hỏi trung tâm; **dải truy vết** câu trả lời gần nhất (hiểu → tra ở đâu → tìm được gì → kiểm chứng → tin cậy); các lớp bảo đảm đo trên dữ liệu thật (tỉ lệ có nguồn, số lần từ chối đoán, câu trả lời có số liệu tính bằng SQL, kết hợp nhiều nguồn, người duyệt, mâu thuẫn, tốc độ); kho tri thức theo loại nguồn |
+| Hỏi đáp | Chat nhiều lượt (SSE): trợ lý dùng công cụ thật (tài liệu: tìm từ khoá + ngữ nghĩa; bảng: tính bằng SQL; bản đồ tri thức); chip trích dẫn mở đoạn gốc; dải truy vết từng câu; 👍/👎; thêm vào báo cáo; giới hạn theo file; chế độ *Kỹ lưỡng* / *Tra nhanh* |
+| Nguồn dữ liệu | Tải nhiều file; "những gì đã tìm thấy trong file" (tóm tắt, bảng, đối tượng, đoạn nội dung, thời lượng chép lời); phiên bản, duyệt, xử lý lại, xoá mềm/khôi phục |
+| **Mô hình dữ liệu** | Workbook → mỗi sheet 1 bảng Postgres → quan hệ + logic từng cột (đọc công thức Excel/pivot, dò trên dữ liệu, AI đề xuất — tất cả kiểm chứng trên dữ liệu) → người dùng duyệt bằng câu nghiệp vụ / mô tả bằng lời / form có hướng dẫn → view tính lại cho BI (Superset) + đối chiếu từng dòng với Excel + tài liệu quan hệ (Word/PDF/Markdown, vi/en) — xem mục 15 trong [OPERATIONS](docs/OPERATIONS.md) |
+| Khám phá số liệu | Hỏi số liệu bằng lời → biểu đồ + giải thích; duyệt bảng (cột, độ đầy, khoảng giá trị); export; câu hỏi đã lưu |
+| Báo cáo | AI lập dàn ý và viết từng mục bằng công cụ thật; chỉnh sửa kiểu trình soạn thảo; xuất PDF/DOCX/XLSX/HTML |
+| Bản đồ tri thức | Người, tổ chức, sản phẩm, địa điểm… và liên kết giữa chúng; nơi được nhắc tới kèm đoạn trích; sửa/gộp/xoá |
+| Trung tâm tin cậy (editor+) | Các lớp bảo đảm đang hoạt động; duyệt câu trả lời nhạy cảm; nguồn mâu thuẫn; câu hỏi thiếu tài liệu; phản hồi; (kỹ thuật) nhật ký hỏi đáp, việc nền, chi phí AI |
+| Cài đặt | Workspace, thành viên & quyền, kết nối hệ thống khác (API key), tài khoản (ngôn ngữ, chi tiết kỹ thuật) |
+| Quản trị hệ thống (superadmin) | Người dùng, workspaces, việc nền toàn hệ thống, chi phí AI, config đang chạy |
 
 Nguyên tắc không đổi: mọi khẳng định dựa trên tài liệu phải có `[n]` trỏ tới nguồn (code kiểm tra, không phải model);
 không đủ căn cứ → từ chối và ghi nhận để biết KB thiếu gì; mâu thuẫn giữa nguồn được nêu kèm ngày hiệu lực;
@@ -103,6 +106,8 @@ câu hỏi về tiền (theo domain pack) qua người duyệt; số liệu luô
 | Trợ lý & QA | `assistant/` (agent, tools, sources), `qa/` (retrieval, citation, abstention, conflicts, trace, review, sessions, answer = pipeline strict) |
 | Graph quy tắc (pack retail) | `graph/` (build, extract, resolve, query, router, sync, store = AGE) |
 | Báo cáo | `reports/generator.py`, `reports/export.py`, `api/routes/reports.py` |
+| Mô hình dữ liệu | `modeling/` (workbook, excel_formula, expr, infer, ai, compile, evaluate, warehouse, validate, explain, document, service), `api/routes/models.py` |
+| Số liệu năng lực/tin cậy | `api/routes/insights.py` |
 | Observability & vận hành | `observability/` (Langfuse, alerts, costs, retention), `config.yaml` + `config/`, `prompts/`, `docker-compose.yml`, `docker/`, `Makefile`, `scripts/`, [`docs/OPERATIONS.md`](docs/OPERATIONS.md) |
 | Web app | `web/` (React 18 + TypeScript + Vite + Tailwind, TanStack Query, vega-embed, react-force-graph) |
 

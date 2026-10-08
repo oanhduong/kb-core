@@ -4,7 +4,9 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { ToastProvider } from "./components/ui";
+import { I18nProvider } from "./i18n";
 import { AuthProvider } from "./state/auth";
+import { PrefsProvider } from "./state/prefs";
 import "./styles.css";
 
 const qc = new QueryClient({
@@ -13,14 +15,18 @@ const qc = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </BrowserRouter>
-      </ToastProvider>
-    </QueryClientProvider>
+    <I18nProvider>
+      <PrefsProvider>
+        <QueryClientProvider client={qc}>
+          <ToastProvider>
+            <BrowserRouter>
+              <AuthProvider>
+                <App />
+              </AuthProvider>
+            </BrowserRouter>
+          </ToastProvider>
+        </QueryClientProvider>
+      </PrefsProvider>
+    </I18nProvider>
   </React.StrictMode>,
 );

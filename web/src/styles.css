@@ -3,54 +3,76 @@
 @tailwind utilities;
 
 @layer base {
-  html { font-feature-settings: "cv11", "ss01"; }
-  body { @apply bg-slate-50 text-slate-800; }
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { @apply rounded-full bg-slate-300; }
+  html { font-feature-settings: "ss01", "cv11"; -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-paper text-ink-900; }
+  h1, h2, h3 { @apply font-display; letter-spacing: -0.015em; }
+  ::selection { background: #FDE68A; color: #1E1B4B; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(91, 76, 245, .35); border-radius: 8px; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #D5D3E6; border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
   ::-webkit-scrollbar-track { background: transparent; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 }
 
 @layer components {
-  .card { @apply rounded-xl border border-slate-200 bg-white shadow-card; }
-  .input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:bg-slate-100; }
-  .label { @apply mb-1 block text-xs font-medium text-slate-600; }
-  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40; }
-  .btn-secondary { @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50; }
-  .btn-ghost { @apply btn text-slate-600 hover:bg-slate-100; }
-  .btn-danger { @apply btn border border-red-200 bg-white text-red-600 hover:bg-red-50; }
-  .btn-sm { @apply px-2.5 py-1.5 text-xs; }
-  .badge { @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium; }
-  .th { @apply whitespace-nowrap border-b border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
-  .td { @apply border-b border-slate-100 px-3 py-2 text-sm text-slate-700; }
-  .nav-item { @apply flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900; }
-  .nav-item-active { @apply bg-brand-50 text-brand-700 hover:bg-brand-50; }
-  .kpi-value { @apply text-2xl font-semibold tracking-tight text-slate-900; }
+  /* bề mặt: panel = vùng nội dung chính (bo 20), card = mục trong danh sách (bo 14) */
+  .panel { @apply rounded-2xl border border-ink-100 bg-white shadow-card; }
+  .card { @apply rounded-xl border border-ink-100 bg-white shadow-card; }
+  .well { @apply rounded-xl bg-ink-100/40; }
+  .input { @apply w-full rounded-[10px] border border-ink-100 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 transition focus:border-brand-400 focus:outline-none focus:shadow-focus disabled:bg-ink-100/40 disabled:text-ink-400; }
+  .label { @apply mb-1.5 block text-[13px] font-medium text-ink-700; }
+  .btn { @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[10px] px-3.5 py-2 text-sm font-medium transition active:translate-y-px disabled:pointer-events-none disabled:opacity-45; }
+  .btn-primary { @apply btn bg-brand-600 text-white shadow-[0_1px_0_rgba(255,255,255,.2)_inset,0_6px_14px_-6px_rgba(91,76,245,.7)] hover:bg-brand-700; }
+  .btn-ink { @apply btn bg-ink-900 text-white hover:bg-ink-800; }
+  .btn-secondary { @apply btn border border-ink-100 bg-white text-ink-800 hover:border-ink-300 hover:bg-paper; }
+  .btn-ghost { @apply btn text-ink-600 hover:bg-ink-100/60 hover:text-ink-900; }
+  .btn-danger { @apply btn border border-alert-500/30 bg-white text-alert-700 hover:bg-alert-50; }
+  .btn-sm { @apply rounded-lg px-2.5 py-1.5 text-xs; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  .badge { @apply chip; }
+  .th { @apply whitespace-nowrap border-b border-ink-100 bg-paper px-3 py-2.5 text-left text-xs font-semibold text-ink-600; }
+  .td { @apply border-b border-ink-100/70 px-3 py-2.5 text-sm text-ink-800; }
+  .nav-item { @apply flex items-center gap-3 rounded-xl px-3 py-2 text-[14px] font-medium text-ink-300 transition hover:bg-white/[.06] hover:text-white; }
+  .nav-item-active { @apply bg-white/10 text-white; }
+  .kpi-value { @apply font-display text-3xl font-semibold tracking-tight text-ink-900; }
+  /* dạ quang: đánh dấu bằng chứng */
+  .marker { background: linear-gradient(transparent 55%, #FDE68A 55%, #FDE68A 92%, transparent 92%); padding: 0 .1em; }
+  .marker-strong { @apply rounded bg-marker-200 px-1 text-ink-900; }
+  .seg { @apply flex rounded-[10px] border border-ink-100 bg-white p-0.5 text-xs; }
+  .seg > button { @apply rounded-lg px-2.5 py-1 font-medium text-ink-600 transition; }
+  .seg > button[aria-pressed="true"] { @apply bg-ink-900 text-white; }
+  .link { @apply font-medium text-brand-700 underline-offset-2 hover:underline; }
 }
 
 /* Markdown */
-.prose-kb { @apply text-[15px] leading-7 text-slate-800; }
+.prose-kb { @apply text-[15px] leading-7 text-ink-900; }
 .prose-kb p { @apply my-2; }
-.prose-kb h1, .prose-kb h2, .prose-kb h3, .prose-kb h4 { @apply mb-2 mt-4 font-semibold text-slate-900; }
+.prose-kb h1, .prose-kb h2, .prose-kb h3, .prose-kb h4 { @apply mb-2 mt-5 font-display font-semibold text-ink-900; }
 .prose-kb h1 { @apply text-xl; }
 .prose-kb h2 { @apply text-lg; }
 .prose-kb h3 { @apply text-base; }
-.prose-kb ul { @apply my-2 list-disc pl-6; }
-.prose-kb ol { @apply my-2 list-decimal pl-6; }
-.prose-kb li { @apply my-0.5; }
-.prose-kb table { @apply my-3 w-full border-collapse text-sm; }
-.prose-kb th { @apply border border-slate-200 bg-slate-50 px-2 py-1 text-left font-semibold; }
-.prose-kb td { @apply border border-slate-200 px-2 py-1; }
-.prose-kb code { @apply rounded bg-slate-100 px-1 py-0.5 font-mono text-[13px]; }
-.prose-kb pre { @apply my-3 overflow-x-auto rounded-lg bg-slate-900 p-3 text-[13px] text-slate-100; }
+.prose-kb ul { @apply my-2 list-disc pl-6 marker:text-brand-400; }
+.prose-kb ol { @apply my-2 list-decimal pl-6 marker:text-ink-400; }
+.prose-kb li { @apply my-1; }
+.prose-kb table { @apply my-3 w-full border-collapse overflow-hidden rounded-lg text-sm; }
+.prose-kb th { @apply border border-ink-100 bg-paper px-2.5 py-1.5 text-left font-semibold; }
+.prose-kb td { @apply border border-ink-100 px-2.5 py-1.5; }
+.prose-kb code { @apply rounded bg-ink-100/60 px-1 py-0.5 font-mono text-[13px]; }
+.prose-kb pre { @apply my-3 overflow-x-auto rounded-xl bg-ink-950 p-3 text-[13px] text-ink-100; }
 .prose-kb pre code { @apply bg-transparent p-0 text-inherit; }
-.prose-kb blockquote { @apply my-2 border-l-4 border-slate-200 pl-3 text-slate-600; }
+.prose-kb blockquote { @apply my-2 border-l-4 border-marker-200 pl-3 text-ink-700; }
 .prose-kb a { @apply text-brand-700 underline; }
-.prose-kb hr { @apply my-4 border-slate-200; }
-.cite-chip { @apply mx-0.5 inline-flex h-5 min-w-5 cursor-pointer items-center justify-center rounded-md bg-brand-50 px-1.5 align-text-top text-[11px] font-semibold text-brand-700 hover:bg-brand-100; }
+.prose-kb hr { @apply my-4 border-ink-100; }
+.cite-chip { @apply mx-0.5 inline-flex h-[18px] min-w-[18px] cursor-pointer items-center justify-center rounded-md bg-marker-200 px-1 align-[2px] text-[11px] font-bold text-ink-900 transition hover:bg-marker-300 hover:shadow-[0_0_0_3px_rgba(253,230,138,.45)]; }
 
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
 .caret::after { content: "▍"; @apply ml-0.5 text-brand-600; animation: blink 1s infinite; }
 
 .vega-embed summary { display: none !important; }
 .vega-embed { width: 100%; }
+
+/* nền chấm cho canvas sơ đồ */
+.dotgrid { background-image: radial-gradient(#D9D7EA 1px, transparent 1px); background-size: 18px 18px; }
+
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

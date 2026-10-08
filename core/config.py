@@ -59,6 +59,7 @@ class ModelsConfig(BaseModel):
     report: str = "claude-sonnet-4-6"
     vision: str = "claude-sonnet-4-6"
     ingest_agent: str = "claude-sonnet-4-6"
+    data_model: str = "claude-sonnet-4-6"
 
 
 class ModelPrice(BaseModel):
@@ -252,6 +253,7 @@ class PromptsConfig(BaseModel):
     knowledge_extract: PromptRef = Field(default_factory=lambda: PromptRef(path="prompts/knowledge_extract.v1.md"))
     assistant_system: PromptRef = Field(default_factory=lambda: PromptRef(path="prompts/assistant_system.v1.md"))
     report_plan: PromptRef = Field(default_factory=lambda: PromptRef(path="prompts/report_plan.v1.md"))
+    data_model_rules: PromptRef = Field(default_factory=lambda: PromptRef(path="prompts/data_model_rules.v1.md"))
 
 
 class AuthConfig(BaseModel):
@@ -283,6 +285,17 @@ class AlertsConfig(BaseModel):
     review_queue_max: int = 30
 
 
+class ModelingConfig(BaseModel):
+    """Mô hình dữ liệu nghiệp vụ (modeling/): file -> bảng warehouse -> quan hệ/logic -> view cho BI."""
+    enabled: bool = True
+    max_rows_per_table: int = 1_000_000
+    schema_prefix: str = "dm_"           # mỗi mô hình 1 schema Postgres: <prefix><id 10 ký tự>
+    reader_role: str | None = None       # role read-only cho BI (Superset) — được GRANT USAGE/SELECT nếu tồn tại
+    ai_suggestions: bool = True
+    ai_max_tokens: int = 6000
+    publish_to_analytics: bool = True    # sau khi build: view -> bảng số liệu để hỏi đáp/khám phá trong app
+
+
 class WorkerConfig(BaseModel):
     poll_interval_seconds: float = 2.0
     max_attempts: int = 3
@@ -312,6 +325,7 @@ class AppConfig(BaseModel):
     observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
     alerts: AlertsConfig = Field(default_factory=AlertsConfig)
     worker: WorkerConfig = Field(default_factory=WorkerConfig)
+    modeling: ModelingConfig = Field(default_factory=ModelingConfig)
 
     # Tính lúc load, không đọc từ YAML.
     config_hash: str = ""
@@ -360,6 +374,10 @@ class Settings(BaseModel):
     public_base_url: str = "http://localhost:8000"
     langfuse_public_url: str | None = None
     langfuse_project_id: str | None = None
+    # warehouse cho mô hình dữ liệu (Superset đọc ở đây); trống = dùng chung DATABASE_URL
+    warehouse_url: str | None = None
+    # chuỗi kết nối hiển thị cho người dùng BI (không chứa mật khẩu), vd postgresql://bi_reader@db.internal:5432/retailkb
+    warehouse_public_dsn: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -382,6 +400,8 @@ class Settings(BaseModel):
             public_base_url=env.get("PUBLIC_BASE_URL", "http://localhost:8000"),
             langfuse_public_url=env.get("LANGFUSE_PUBLIC_URL") or env.get("LANGFUSE_HOST") or None,
             langfuse_project_id=env.get("LANGFUSE_PROJECT_ID") or None,
+            warehouse_url=env.get("WAREHOUSE_URL") or None,
+            warehouse_public_dsn=env.get("WAREHOUSE_PUBLIC_DSN") or None,
         )
 
     @property

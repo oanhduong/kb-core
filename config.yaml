@@ -9,7 +9,7 @@
 #   4. `make config-snapshot` (chép sang config/versions/<version>.yaml) rồi restart api + worker.
 # Rollback: đặt RETAILKB_CONFIG_VERSION=<bản cũ> trong .env rồi `make restart` (xem docs/OPERATIONS.md).
 
-config_version: "2026.10.05-1"
+config_version: "2026.10.05-2"
 description: "Nền tảng khai phá tài liệu tổng quát: workspace, analytics DuckDB, knowledge graph mở, assistant, báo cáo."
 
 models:
@@ -29,6 +29,7 @@ models:
   report: claude-sonnet-4-6
   vision: claude-sonnet-4-6
   ingest_agent: claude-sonnet-4-6
+  data_model: claude-sonnet-4-6        # đề xuất quy tắc cho mô hình dữ liệu (luôn kiểm chứng trên dữ liệu)
 
 llm:
   timeout_seconds: 60
@@ -186,6 +187,9 @@ prompts:
   report_plan:
     path: prompts/report_plan.v1.md
     sha256: 6c947023d5b368f44407ac739e14951322d46860a3959850c00e670fa72e59ec
+  data_model_rules:
+    path: prompts/data_model_rules.v1.md
+    sha256: a83b95b816aa128b706889476dc01177e500c1e3811ab403e31286bf91bc449e
 
 auth:
   jwt_algorithm: HS256
@@ -212,6 +216,15 @@ alerts:
   abstention_min_questions: 20
   abstention_baseline_days: 7
   review_queue_max: 30
+
+modeling:                     # mô hình dữ liệu: file -> bảng warehouse -> quan hệ/logic (người duyệt) -> view cho BI
+  enabled: true
+  max_rows_per_table: 1000000
+  schema_prefix: dm_
+  reader_role: null           # vd bi_reader: được GRANT USAGE/SELECT trên schema của mô hình sau mỗi lần build
+  ai_suggestions: true
+  ai_max_tokens: 6000
+  publish_to_analytics: true
 
 worker:
   poll_interval_seconds: 2.0

@@ -112,6 +112,17 @@ class Worker:
         return generate_report(self.cfg, self.sm, self.llm, job.payload["report_id"],
                                progress=lambda d, t, note=None: queue.update_progress(job.id, d, t, note=note))
 
+    def _model_analyze(self, job: Job) -> dict[str, Any]:
+        from modeling.service import run_analyze
+
+        return run_analyze(self.cfg, self.llm, job.payload["model_id"], main_override=job.payload.get("main_table"),
+                           progress=lambda d, t, note=None: queue.update_progress(job.id, d, t, note=note))
+
+    def _model_build(self, job: Job) -> dict[str, Any]:
+        from modeling.service import run_build
+
+        return run_build(self.cfg, job.payload["model_id"], progress=lambda d, t, note=None: queue.update_progress(job.id, d, t, note=note))
+
     def _reindex(self, job: Job) -> dict[str, Any]:
         from kb.reindex import run_reindex
 
@@ -135,6 +146,7 @@ class Worker:
         "ingest_file": _ingest, "graph_sync": _graph_sync, "graph_rebuild": _graph_rebuild,
         "reindex": _reindex, "document_lifecycle": _document_lifecycle,
         "knowledge_extract": _knowledge_extract, "report_generate": _report_generate,
+        "model_analyze": _model_analyze, "model_build": _model_build,
     }
 
     # ------------------------------------------------------------------ loop

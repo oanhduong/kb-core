@@ -21,3 +21,6 @@ data/tables/
 
 # Cấu hình chạy preview của Claude desktop (đường dẫn máy cá nhân)
 .claude/launch.json
+
+# Thông tin đăng nhập dev local
+.dev-login.md

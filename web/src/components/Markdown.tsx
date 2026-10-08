@@ -18,7 +18,7 @@ function withChips(children: ReactNode, onCite: (n: number) => void, valid: Set<
         if (valid && !valid.has(n)) continue;
         parts.push(child.slice(last, m.index));
         parts.push(
-          <button key={`${m.index}-${n}`} type="button" className="cite-chip" title={`Nguồn ${n}`} onClick={(e) => { e.stopPropagation(); onCite(n); }}>
+          <button key={`${m.index}-${n}`} type="button" className="cite-chip" title={`[${n}]`} onClick={(e) => { e.stopPropagation(); onCite(n); }}>
             {n}
           </button>,
         );

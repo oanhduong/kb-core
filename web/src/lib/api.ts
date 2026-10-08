@@ -6,6 +6,9 @@ import type {
   TableDetail, TableInfo, TraceSummary, User, Workspace,
 } from "./types";
 
+import { getLang } from "@/i18n";
+import type { DataModel, DataModelDetail, Insights, ModelConnection, RuleSpec, RuleTest } from "./types";
+
 export const BASE = "/api";
 const TOKEN_KEY = "kbx.token";
 const WS_KEY = "kbx.workspace";
@@ -52,7 +55,7 @@ async function parseError(res: Response): Promise<ApiError> {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = auth.token();
-  const headers: Record<string, string> = { ...(init.headers as Record<string, string> | undefined) };
+  const headers: Record<string, string> = { "Accept-Language": getLang(), ...(init.headers as Record<string, string> | undefined) };
   if (!(init.body instanceof FormData)) headers["Content-Type"] = headers["Content-Type"] || "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(BASE + path, { ...init, headers });
@@ -203,6 +206,32 @@ export const api = {
   pinToReport: (ws: string, id: string, b: { trace_id: string; heading?: string; include_answer?: boolean; include_artifacts?: boolean }) => post<Report>(`/w/${ws}/reports/${id}/pin`, b),
   regenerateReport: (ws: string, id: string) => post<Report>(`/w/${ws}/reports/${id}/regenerate`),
   exportReportPath: (ws: string, id: string, fmt: string) => `/w/${ws}/reports/${id}/export?fmt=${fmt}`,
+
+  // ---------------------------------------------------------------- data models
+  models: (ws: string) => get<DataModel[]>(`/w/${ws}/models`),
+  model: (ws: string, id: string) => get<DataModelDetail>(`/w/${ws}/models/${id}`),
+  createModel: (ws: string, b: { document_ids: string[]; name?: string; description?: string }) => post<DataModel>(`/w/${ws}/models`, b),
+  updateModel: (ws: string, id: string, b: { name?: string; description?: string }) => patch<DataModel>(`/w/${ws}/models/${id}`, b),
+  deleteModel: (ws: string, id: string) => del<unknown>(`/w/${ws}/models/${id}`),
+  reanalyzeModel: (ws: string, id: string, main_table?: string) => post<DataModel>(`/w/${ws}/models/${id}/reanalyze`, { main_table }),
+  setModelParams: (ws: string, id: string, as_of_date: string | null) => request<DataModelDetail>(`/w/${ws}/models/${id}/parameters`, { method: "PUT", body: JSON.stringify({ as_of_date }) }),
+  patchModelColumn: (ws: string, id: string, name: string, b: { rule?: RuleSpec; status?: string; note?: string; alternative?: number }) =>
+    patch<DataModelDetail>(`/w/${ws}/models/${id}/columns/${encodeURIComponent(name)}`, b),
+  testModelColumn: (ws: string, id: string, name: string, rule: RuleSpec) => post<RuleTest>(`/w/${ws}/models/${id}/columns/${encodeURIComponent(name)}/test`, { rule }),
+  describeModelColumn: (ws: string, id: string, name: string, text: string) =>
+    post<RuleTest & { rule: RuleSpec; why: string | null; new_relationships: string[] }>(`/w/${ws}/models/${id}/columns/${encodeURIComponent(name)}/describe`, { text }),
+  confirmModel: (ws: string, id: string, columns?: string[]) => post<{ confirmed: number; model: DataModelDetail }>(`/w/${ws}/models/${id}/confirm`, { columns }),
+  patchModelRelationship: (ws: string, id: string, rid: string, b: { status?: string; keys?: unknown[] }) => patch<DataModelDetail>(`/w/${ws}/models/${id}/relationships/${rid}`, b),
+  addModelRelationship: (ws: string, id: string, b: { source_table: string; keys: unknown[] }) => post<DataModelDetail>(`/w/${ws}/models/${id}/relationships`, b),
+  patchModelTable: (ws: string, id: string, key: string, role: "source" | "ignored") => patch<DataModelDetail>(`/w/${ws}/models/${id}/tables/${key}`, { role }),
+  buildModel: (ws: string, id: string) => post<DataModel>(`/w/${ws}/models/${id}/build`),
+  modelPreview: (ws: string, id: string, p: { limit?: number; offset?: number; live?: boolean }) =>
+    get<{ columns: string[]; rows: unknown[][]; source: string; total: number }>(`/w/${ws}/models/${id}/preview${qs(p)}`),
+  modelTableRows: (ws: string, id: string, key: string, p: { limit?: number; offset?: number }) =>
+    get<{ columns: string[]; rows: unknown[][]; total: number }>(`/w/${ws}/models/${id}/tables/${key}/rows${qs(p)}`),
+  modelDocumentPath: (ws: string, id: string, fmt: string, lang: string) => `/w/${ws}/models/${id}/document?fmt=${fmt}&lang=${lang}`,
+  modelConnection: (ws: string, id: string) => get<ModelConnection>(`/w/${ws}/models/${id}/connection`),
+  insights: (ws: string, days = 30) => get<Insights>(`/w/${ws}/insights${qs({ days })}`),
 
   // ---------------------------------------------------------------- ops
   abstentions: (ws: string, days = 7) => get<{ trace_id: string; question: string; reason: string; top_score: number | null; created_at: string }[]>(`/w/${ws}/ops/abstentions${qs({ days })}`),

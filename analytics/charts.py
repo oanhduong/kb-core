@@ -13,7 +13,7 @@ TEMPORAL = ("date", "timestamp", "timestamp with time zone", "time")
 MAX_CATEGORIES_PIE = 8
 MAX_CATEGORIES_BAR = 60
 
-PALETTE = ["#0f766e", "#2563eb", "#d97706", "#dc2626", "#7c3aed", "#059669", "#db2777", "#4b5563", "#ca8a04", "#0891b2"]
+PALETTE = ["#5B4CF5", "#0E9F6E", "#F59E0B", "#E5484D", "#3A3680", "#14B8A6", "#EC4899", "#8C89B8", "#B45309", "#0891B2"]  # khớp web/tailwind.config.js
 
 
 def _kind(col_type: str) -> str:

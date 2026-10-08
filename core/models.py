@@ -133,6 +133,34 @@ class DataTable(Base):
                       Index("ix_data_tables_document", "document_id"))
 
 
+class DataModel(Base):
+    """Mô hình dữ liệu nghiệp vụ (modeling/): spec JSON (bảng, quan hệ, logic từng cột — người dùng duyệt) + kết quả build
+    (schema/view trong warehouse, đối chiếu với file gốc)."""
+    __tablename__ = "data_models"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    # draft | analyzing | review | building | ready | error
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    document_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    spec: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    schema_name: Mapped[str] = mapped_column(String(63), nullable=False)
+    validation: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    build_info: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    job_id: Mapped[str | None] = mapped_column(String(32))
+    error: Mapped[str | None] = mapped_column(Text)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_by: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
+    built_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (Index("ix_data_models_ws", "workspace_id", "updated_at"),)
+
+
 class SavedQuery(Base):
     __tablename__ = "saved_queries"
 

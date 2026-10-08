@@ -227,3 +227,26 @@ Có hai lớp graph:
 - **Báo cáo:** job `report_generate` (worker) → `reports.blocks`; mỗi mục là một lượt hỏi trợ lý (có trace riêng, xem ở *Lịch sử hỏi đáp*).
   Báo cáo lỗi (`status=error`) ghi lý do ở block đầu; **Sinh lại** ghi đè toàn bộ block. Xuất PDF cần WeasyPrint + Pango
   (đã có trong image `docker/app/Dockerfile`); nếu máy chủ thiếu → API trả lỗi 422 gợi ý xuất DOCX/HTML.
+
+## 15. Mô hình dữ liệu (Excel → warehouse → view cho BI)
+
+- **Luồng:** *Mô hình dữ liệu → Mô hình mới* (chọn/tải workbook) → job `model_analyze` (worker): mỗi sheet → bảng trong schema
+  `dm_<id 10 ký tự>` (cột `_row` = số dòng Excel, COMMENT = nhãn gốc), dò sheet chính, quan hệ (khoá + chuẩn hoá khoá như
+  "chỉ phần số" STE0870→870), logic từng cột theo thứ tự bằng chứng: công thức Excel → pivot table → mẫu dữ liệu → AI
+  (`modeling.ai_suggestions`, model `data_model`). Người dùng duyệt ở 5 bước; mọi chỉnh sửa được kiểm chứng ngay trên DuckDB
+  (parquet ở `TABLES_DIR/<ws>/models/<id>/`). **Dựng view** → job `model_build`: tạo view `dm_<id>.vw_<sheet chính>`
+  (tính lại từ sheet phụ, không chép số cuối), đọc view so từng dòng với Excel (`data_models.validation`), xuất view sang
+  bảng số liệu của workspace để hỏi đáp/khám phá.
+- **Superset/BI:** tạo role chỉ-đọc rồi khai báo `modeling.reader_role` — mỗi lần build hệ thống tự `GRANT USAGE/SELECT` trên
+  schema của mô hình:
+  ```sql
+  CREATE ROLE bi_reader LOGIN PASSWORD '…';
+  ```
+  Trong Superset: Database = Postgres (host/DB của `WAREHOUSE_URL` hoặc `DATABASE_URL`), user `bi_reader`; Dataset = schema
+  `dm_…`, bảng `vw_…`. Đặt `WAREHOUSE_PUBLIC_DSN` để màn *Chia sẻ* hiện đúng chuỗi kết nối cho người dùng.
+- **Ngày báo cáo:** cột kiểu "số ngày kể từ…" dùng `AS_OF()`; hệ thống tự suy ra từ chính số liệu trong file khi có thể,
+  người dùng đổi được (ngày cố định để tái tạo đúng báo cáo, hoặc "hôm nay" để luôn cập nhật).
+- **Phân tích lại** (đổi sheet chính, file mới cùng cấu trúc) giữ các quyết định người dùng đã xác nhận nếu cột/quan hệ còn tồn tại.
+- **Xoá mô hình** xoá schema `dm_…` (dashboard BI dùng view sẽ lỗi) và tắt bảng số liệu đã xuất; file nguồn giữ nguyên.
+- **Giới hạn:** công thức Excel kết hợp nhiều phép tra cứu/gộp trong 1 ô (vd `=SUMIFS(..)-SUMIFS(..)`) chưa dịch tự động —
+  giữ làm bằng chứng, người dùng mô tả lại bằng lời hoặc form; khoá nối đa cột chỉ đến từ công thức hoặc người dùng.

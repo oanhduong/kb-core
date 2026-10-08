@@ -3,6 +3,13 @@
 Mỗi lần đổi `config.yaml`: bump `config_version`, thêm 1 mục ở ĐẦU file này, chạy `make config-snapshot`.
 Rollback: `RETAILKB_CONFIG_VERSION=<version>` trong `.env` rồi `make restart`.
 
+## 2026.10.05-2
+- Mô hình dữ liệu nghiệp vụ (`modeling.*`): file Excel/CSV -> mỗi sheet 1 bảng trong schema `dm_<id>` của warehouse ->
+  quan hệ + logic từng cột (công thức Excel, pivot, mẫu dữ liệu, AI đề xuất — đều kiểm chứng trên dữ liệu) -> người dùng
+  duyệt -> view tính lại + đối chiếu với file gốc + tài liệu quan hệ. Model `data_model` (sonnet) + prompt
+  `data_model_rules.v1`. Env mới (tuỳ chọn): `WAREHOUSE_URL`, `WAREHOUSE_PUBLIC_DSN`.
+- `analytics/charts.py`: bảng màu biểu đồ theo hệ màu mới của web.
+
 ## 2026.10.05-1
 - `knowledge.extract_max_tokens: 4096` (trước đây cố định 1800 trong code). Tài liệu dày đặc thực thể (catalogue,
   ảnh chụp POS, biên bản liệt kê hàng) làm output JSON bị cắt -> mất toàn bộ entity của window; nay nâng giới hạn và
