@@ -43,6 +43,15 @@ def test_frame_from_raw_coerces_types_and_keeps_original_names():
     assert by["ghi_chu"]["type"] == "text"
 
 
+def test_frame_from_raw_duplicate_headers_become_separate_columns():
+    # vd sheet "IRT Study at a Glance": 2 cột cùng tên "Site Number" (mã STE8612 và số 8612)
+    raw = RawTable("t", "Sheet t", ["Site Number", "Site Number", "Dosed"], [["STE8612", 8612, 2], ["STE6976", 6976, 2]])
+    df, cols = frame_from_raw(raw)
+    assert [(c["name"], c["original"], c["type"]) for c in cols] == [
+        ("site_number", "Site Number", "text"), ("site_number_2", "Site Number", "integer"), ("dosed", "Dosed", "integer")]
+    assert df["site_number_2"].tolist() == [8612, 6976]
+
+
 def test_xlsx_sample_price_list_extracts_300_rows_with_numeric_price():
     [raw] = raw_tables_from_xlsx("data/raw/xlsx/01_bang_gia_sku.xlsx")
     df, cols = frame_from_raw(raw)

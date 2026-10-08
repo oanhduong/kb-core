@@ -134,11 +134,12 @@ def frame_from_raw(raw: RawTable) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
     used: set[str] = set()
     cols: list[dict[str, Any]] = []
     out = pd.DataFrame(index=df.index)
-    for original in df.columns:
+    for pos, original in enumerate(df.columns):
         name = sql_identifier(original, used)
-        series, kind = _coerce(df[original])
+        raw_col = df.iloc[:, pos]  # theo vị trí: header trùng tên (vd 2 cột "Site Number") thì df[original] là DataFrame
+        series, kind = _coerce(raw_col)
         out[name] = series
-        examples = [str(v)[:60] for v in df[original].dropna().astype(str).unique()[:3]]
+        examples = [str(v)[:60] for v in raw_col.dropna().astype(str).unique()[:3]]
         cols.append({"name": name, "original": str(original), "type": kind, "examples": examples,
                      "nullable": bool(series.isna().any())})
     return out.reset_index(drop=True), cols
