@@ -38,6 +38,8 @@ class DomainPack:
     member_attributes: tuple[MemberAttribute, ...] = ()
     doc_types: tuple[str, ...] = ("policy", "report", "contract", "manual", "data", "presentation", "correspondence", "other")
     suggested_questions: tuple[str, ...] = ()
+    # kiến thức nghiệp vụ nối vào system prompt của trợ lý (cách dữ liệu lĩnh vực này liên kết với nhau)
+    assistant_hints: tuple[str, ...] = ()
 
     @property
     def scope_attribute(self) -> MemberAttribute | None:
@@ -69,6 +71,11 @@ RETAIL = DomainPack(
     ),
     member_attributes=(MemberAttribute("store_code", "Mã cửa hàng", "Thành viên chỉ thấy dữ liệu cửa hàng này + dữ liệu toàn hệ thống", scope_filter=True),),
     doc_types=("policy", "price_list", "promotion", "catalog", "training", "contract", "inventory", "supplier", "unknown"),
+    assistant_hints=(
+        "Chương trình khuyến mãi áp dụng theo NGÀNH HÀNG (hoặc toàn ngành hàng) và khoảng ngày, hiếm khi theo từng SKU: "
+        "khi hỏi khuyến mãi/ưu đãi của 1 sản phẩm, tra SKU để biết ngành hàng, rồi tìm lịch khuyến mãi của ngành hàng đó "
+        "và của 'toàn ngành hàng', so ngày áp dụng với hôm nay (đang chạy / sắp tới / đã kết thúc).",
+    ),
     suggested_questions=(
         "Thời hạn đổi trả hàng điện tử là bao lâu?",
         "Loa ĐT-018 đang có khuyến mãi nào?",

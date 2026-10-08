@@ -137,6 +137,8 @@ class AssistantService:
     def _system(self, req: AssistantRequest) -> list[dict[str, Any]]:
         pack = get_pack(req.ctx.domain_pack)
         extra = f"\n\nWorkspace: {req.ctx.workspace_name} (lĩnh vực: {pack.name}). Hôm nay: {date.today().isoformat()}."
+        if pack.assistant_hints:
+            extra += "\nKiến thức nghiệp vụ:\n" + "\n".join(f"- {h}" for h in pack.assistant_hints)
         if req.scope:
             extra += f" Người hỏi thuộc phạm vi {req.scope}: chỉ dùng dữ liệu của phạm vi đó hoặc toàn hệ thống."
         if req.document_ids:

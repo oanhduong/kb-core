@@ -154,3 +154,16 @@ def test_decision_trace_summary_is_human_readable():
     assert lines[0].startswith("Đã hiểu: câu hỏi nối nhiều thực thể; thực thể: SKU ĐT-018")
     assert any(line.startswith("Dựa vào: [1] chính sách đổi trả, Điều 5") for line in lines)
     assert any("dự phòng" in line for line in lines)
+
+
+@pytest.mark.parametrize("pack,expect_hint", [("retail", True), ("generic", False)])
+def test_assistant_system_prompt_carries_pack_hints(pack, expect_hint):
+    from assistant.agent import AssistantRequest, AssistantService
+    from core.config import get_config
+    from core.principal import Principal, WorkspaceContext
+
+    svc = AssistantService.__new__(AssistantService)
+    svc.cfg = get_config()
+    ctx = WorkspaceContext("ws1", "Test", pack, "viewer", {}, {}, Principal(subject="u1"))
+    text = "".join(b["text"] for b in svc._system(AssistantRequest(question="?", ctx=ctx)))
+    assert ("Kiến thức nghiệp vụ" in text and "NGÀNH HÀNG" in text) is expect_hint
