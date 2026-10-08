@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from core.i18n import detect_lang, output_language_rule
 from core.config import AppConfig, read_prompt
 from core.db import session_scope
 from core.logging import log_event
@@ -137,10 +138,9 @@ def _extract_window(cfg: AppConfig, llm: Any, system: str, doc_title: str, w: Wi
     catalogue, ảnh chụp POS) -> chia đôi window và trích từng nửa thay vì bỏ cả window."""
     from core.llm import LLMOutputInvalid, LLMUnavailable
 
-    user = (f"Tài liệu: {doc_title} — vị trí: {w.location}\n" + wrap_untrusted(w.text, source=f"{doc_title} / {w.location}")
-            + "\n\nNgôn ngữ đầu ra: nhãn quan hệ và mô tả viết bằng ngôn ngữ của đoạn tài liệu; tên đối tượng giữ nguyên như trong tài liệu.")
+    user = (f"Tài liệu: {doc_title} — vị trí: {w.location}\n" + wrap_untrusted(w.text, source=f"{doc_title} / {w.location}"))
     try:
-        out = llm.complete_json("knowledge_extract", system=system, user=user, schema=ExtractOut,
+        out = llm.complete_json("knowledge_extract", system=system + output_language_rule(detect_lang(w.text), "This passage"), user=user, schema=ExtractOut,
                                 max_tokens=cfg.knowledge.extract_max_tokens, max_retries=1)
         return WindowResult(w, out.entities, out.relations)
     except LLMOutputInvalid as e:

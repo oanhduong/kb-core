@@ -12,7 +12,7 @@ from analytics.charts import build_chart
 from analytics.engine import QueryResult, TableInfo, catalog_prompt, run_query
 from core.config import AppConfig, read_prompt
 from core.errors import ValidationFailed
-from core.i18n import L, language_name
+from core.i18n import L, detect_lang, get_lang, output_language_rule
 from core.llm import LLMClient, LLMOutputInvalid, LLMUnavailable
 from core.logging import log_event
 from observability import tracing
@@ -59,9 +59,10 @@ def _tables_in_sql(sql: str, tables: list[TableInfo]) -> list[str]:
 def answer_with_sql(cfg: AppConfig, llm: LLMClient, tables: list[TableInfo], question: str, *, context: str | None = None) -> AnalyticsAnswer:
     if not tables:
         return AnalyticsAnswer(None, None, None, L("Workspace chưa có bảng số liệu nào để truy vấn.", "This workspace has no data tables to query yet."), error="no_tables")
-    system = read_prompt("nl2sql", cfg) + "\n\n" + catalog_prompt(tables)
+    system = (read_prompt("nl2sql", cfg) + "\n\n" + catalog_prompt(tables)
+              + output_language_rule(detect_lang(question, default=get_lang()), "The question").replace("free-text value", "chart title and explanation"))
     user = ((f"Ngữ cảnh: {context}\n" if context else "") + f"Câu hỏi: {question}"
-            + f"\n\nTiêu đề biểu đồ và phần giải thích viết bằng ngôn ngữ của câu hỏi (không rõ thì dùng {language_name()}).")
+)
     messages = [{"role": "user", "content": user}]
     last_err = ""
     attempts = 0

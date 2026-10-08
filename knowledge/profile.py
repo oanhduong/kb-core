@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
+from core.i18n import detect_lang, output_language_rule
 from core.config import AppConfig, read_prompt
 from core.db import session_scope
 from core.logging import log_event
@@ -50,9 +51,6 @@ class ProfileOut(BaseModel):
     sensitivity: str = "none"
     quality_notes: str | None = None
 
-
-# nội dung do AI sinh theo ngôn ngữ của tài liệu (không theo giao diện): tài liệu Anh -> hồ sơ tiếng Anh
-_OUTPUT_LANG = "\n\nNgôn ngữ đầu ra: viết mọi trường văn bản bằng ngôn ngữ chính của nội dung tài liệu (tài liệu tiếng Anh -> tiếng Anh, tiếng Việt -> tiếng Việt); giữ nguyên tên riêng, mã và số."
 
 
 def _structure_stats(records: list[KBRecordRow], source_type: str, tables: list[DataTable]) -> dict[str, Any]:
@@ -111,9 +109,10 @@ def build_document_profile(cfg: AppConfig, sm: sessionmaker, llm: Any, document_
 
         user = (f"Tên file: {filename}\nLoại file: {stype} (doc_type hiện tại: {doc_type}, tên hiển thị: {title})\n"
                 f"Thống kê cấu trúc: {stats}\n" + (f"Bảng số liệu:\n{table_lines}\n" if table_lines else "")
-                + "Trích đoạn nội dung:\n" + wrap_untrusted(excerpt, source=filename, doc_type=doc_type) + _OUTPUT_LANG)
+                + "Trích đoạn nội dung:\n" + wrap_untrusted(excerpt, source=filename, doc_type=doc_type))
         try:
-            out = llm.complete_json("document_profile", system=read_prompt("document_profile", cfg), user=user, schema=ProfileOut,
+            system = read_prompt("document_profile", cfg) + output_language_rule(detect_lang(excerpt), "The document")
+            out = llm.complete_json("document_profile", system=system, user=user, schema=ProfileOut,
                                     max_tokens=1200, max_retries=1)
             summary = out.summary.strip()
             profile.update({"generated_by": "llm", "kind": out.kind, "topics": out.topics,
