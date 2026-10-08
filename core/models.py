@@ -711,3 +711,16 @@ class ConfigVersionRow(Base):
     content: Mapped[dict] = mapped_column(JSONB, nullable=False)
     first_loaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
     last_loaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class ContentTranslation(Base):
+    """Bản dịch nội dung do AI sinh (tóm tắt, mô tả bảng, nhãn quan hệ...) sang ngôn ngữ giao diện còn lại.
+    Khoá theo hash chuỗi gốc nên chuỗi lặp giữa các tài liệu chỉ dịch 1 lần; API thay chuỗi khi trả (knowledge/translate.py)."""
+
+    __tablename__ = "content_translations"
+
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), primary_key=True)
+    lang: Mapped[str] = mapped_column(String(8), primary_key=True)
+    source_hash: Mapped[str] = mapped_column(String(40), primary_key=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)

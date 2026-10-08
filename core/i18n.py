@@ -62,8 +62,8 @@ _TEMPLATE_WORDS = re.compile(r"\b(là|dòng|trang|bảng)\b", re.IGNORECASE)
 def detect_lang(text: str | None, default: Lang = DEFAULT_LANG) -> Lang:
     """Ngôn ngữ của một đoạn nội dung: đủ chữ cái mà gần như không có dấu tiếng Việt -> 'en'."""
     letters = [c for c in _TEMPLATE_WORDS.sub(" ", text or "").lower() if c.isalpha()]
-    if len(letters) < 20:
-        return default
+    if len(letters) < 20:  # chuỗi ngắn (nhãn, tiêu đề): có dấu tiếng Việt là đủ để biết
+        return "vi" if any(c in _VI_CHARS for c in letters) else default
     vi_ratio = sum(c in _VI_CHARS for c in letters) / len(letters)
     return "vi" if vi_ratio >= 0.01 else "en"
 

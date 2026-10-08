@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from core.config import AppConfig, read_prompt
 from core.errors import AppError
-from core.i18n import L, get_lang, language_name
+from core.i18n import L, language_name
 from core.llm import LLMClient, LLMUnavailable
 from core.logging import log_context, log_event
 from core.models import QATrace, new_id
@@ -322,8 +322,9 @@ class QAService:
             conflicts_block=conflict_prompt_block(prep.conflicts, sid_by_record) if prep.conflicts else None,
             computed_facts=prep.computed_facts, graph_paths=prep.graph_paths)
         system = [{"type": "text", "text": read_prompt("answer_system", self.cfg), "cache_control": {"type": "ephemeral"}},
-                  {"type": "text", "text": f"Ngôn ngữ giao diện của người hỏi: {language_name()}. Trả lời bằng ngôn ngữ của câu hỏi "
-                                           f"(không rõ thì dùng {language_name()}); giữ nguyên trích dẫn [S#], tên riêng và mã."}]
+                  {"type": "text", "text": f"OUTPUT LANGUAGE (overrides any language rule above): write the whole answer in {language_name()}, "
+                                           f"the language the user reads the app in, even if the question or sources use another language; "
+                                           f"keep [S#] citations, proper names and codes as they are."}]
         return system, [*prep.history, {"role": "user", "content": user_prompt}]
 
     def _postcheck(self, prep: Prepared, raw: str) -> cit.PostCheckResult:

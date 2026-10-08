@@ -11,6 +11,7 @@ from api.auth import workspace
 from api.deps import audit_action, get_db
 from core.principal import WorkspaceContext
 from knowledge import service as ks
+from knowledge.translate import localize
 
 router = APIRouter(prefix="/w/{workspace_id}", tags=["knowledge"])
 
@@ -18,18 +19,18 @@ router = APIRouter(prefix="/w/{workspace_id}", tags=["knowledge"])
 @router.get("/entities", summary="Thực thể trong workspace (tìm theo tên, lọc loại/tài liệu, xếp theo số lần nhắc)")
 def list_entities(q: str | None = None, type: str | None = None, document_id: str | None = None, limit: int = Query(100, le=500),
                   offset: int = Query(0, ge=0), ctx: WorkspaceContext = Depends(workspace("viewer")), db: Session = Depends(get_db)) -> dict:
-    return ks.list_entities(db, ctx.workspace_id, q=q, type_=type, document_id=document_id, limit=limit, offset=offset)
+    return localize(db, ctx.workspace_id, ks.list_entities(db, ctx.workspace_id, q=q, type_=type, document_id=document_id, limit=limit, offset=offset))
 
 
 @router.get("/entities/{entity_id}", summary="Chi tiết thực thể: nguồn nhắc tới (bấm ra đoạn gốc), quan hệ vào/ra")
 def entity_detail(entity_id: str, ctx: WorkspaceContext = Depends(workspace("viewer")), db: Session = Depends(get_db)) -> dict:
-    return ks.entity_detail(db, ctx.workspace_id, entity_id)
+    return localize(db, ctx.workspace_id, ks.entity_detail(db, ctx.workspace_id, entity_id))
 
 
 @router.get("/entities/{entity_id}/neighborhood", summary="Đồ thị con quanh thực thể (depth 1–2)")
 def entity_neighborhood(entity_id: str, depth: int = Query(1, ge=1, le=2), limit: int = Query(120, le=400),
                         ctx: WorkspaceContext = Depends(workspace("viewer")), db: Session = Depends(get_db)) -> dict:
-    return ks.neighborhood(db, ctx.workspace_id, [entity_id], depth=depth, limit_nodes=limit)
+    return localize(db, ctx.workspace_id, ks.neighborhood(db, ctx.workspace_id, [entity_id], depth=depth, limit_nodes=limit))
 
 
 class NeighborhoodBody(BaseModel):
@@ -40,12 +41,12 @@ class NeighborhoodBody(BaseModel):
 
 @router.post("/graph/neighborhood", summary="Đồ thị con quanh nhiều thực thể")
 def multi_neighborhood(body: NeighborhoodBody, ctx: WorkspaceContext = Depends(workspace("viewer")), db: Session = Depends(get_db)) -> dict:
-    return ks.neighborhood(db, ctx.workspace_id, body.entity_ids, depth=body.depth, limit_nodes=body.limit)
+    return localize(db, ctx.workspace_id, ks.neighborhood(db, ctx.workspace_id, body.entity_ids, depth=body.depth, limit_nodes=body.limit))
 
 
 @router.get("/graph/overview", summary="Tổng quan knowledge graph: loại thực thể, loại quan hệ, đồ thị top entity")
 def graph_overview(top: int = Query(40, le=150), ctx: WorkspaceContext = Depends(workspace("viewer")), db: Session = Depends(get_db)) -> dict:
-    return ks.overview(db, ctx.workspace_id, top=top)
+    return localize(db, ctx.workspace_id, ks.overview(db, ctx.workspace_id, top=top))
 
 
 class EntityPatch(BaseModel):

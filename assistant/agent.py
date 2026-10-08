@@ -29,7 +29,7 @@ from assistant.sources import SourceRegistry
 from assistant.tools import TOOL_SCHEMAS, TOOL_STATUS_VI, ToolContext, ToolOutcome, run_tool
 from core.config import AppConfig, read_prompt
 from core.errors import AppError
-from core.i18n import L, get_lang, language_name
+from core.i18n import L, language_name
 from core.llm import LLMClient, LLMUnavailable
 from core.logging import log_context, log_event
 from core.models import QATrace, new_id
@@ -144,8 +144,9 @@ class AssistantService:
     def _system(self, req: AssistantRequest) -> list[dict[str, Any]]:
         pack = get_pack(req.ctx.domain_pack)
         extra = f"\n\nWorkspace: {req.ctx.workspace_name} (lĩnh vực: {pack.name}). Hôm nay: {date.today().isoformat()}."
-        extra += (f"\nNgôn ngữ giao diện của người hỏi: {language_name()}. Trả lời bằng ngôn ngữ của câu hỏi; "
-                  f"nếu câu hỏi không rõ ngôn ngữ thì dùng {language_name()}. Giữ nguyên tên riêng, mã và trích dẫn từ tài liệu.")
+        extra += (f"\nOUTPUT LANGUAGE (overrides any language rule above): the user reads the app in {language_name()}. "
+                  f"Write the whole answer in {language_name()}, even if the question or the documents use another language; "
+                  f"keep proper names, codes, numbers and citation markers as they are.")
         if pack.assistant_hints:
             extra += "\nKiến thức nghiệp vụ:\n" + "\n".join(f"- {h}" for h in pack.assistant_hints)
         if req.scope:

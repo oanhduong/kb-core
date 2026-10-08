@@ -7,6 +7,7 @@ import { ToastProvider } from "./components/ui";
 import { I18nProvider } from "./i18n";
 import { AuthProvider } from "./state/auth";
 import { PrefsProvider } from "./state/prefs";
+import { LangRefetch } from "./state/langRefetch";
 import "./styles.css";
 
 const qc = new QueryClient({
@@ -21,6 +22,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <ToastProvider>
             <BrowserRouter>
               <AuthProvider>
+                <LangRefetch />
                 <App />
               </AuthProvider>
             </BrowserRouter>

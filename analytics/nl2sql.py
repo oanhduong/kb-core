@@ -12,7 +12,7 @@ from analytics.charts import build_chart
 from analytics.engine import QueryResult, TableInfo, catalog_prompt, run_query
 from core.config import AppConfig, read_prompt
 from core.errors import ValidationFailed
-from core.i18n import L, detect_lang, get_lang, output_language_rule
+from core.i18n import L, get_lang, output_language_rule
 from core.llm import LLMClient, LLMOutputInvalid, LLMUnavailable
 from core.logging import log_event
 from observability import tracing
@@ -60,7 +60,7 @@ def answer_with_sql(cfg: AppConfig, llm: LLMClient, tables: list[TableInfo], que
     if not tables:
         return AnalyticsAnswer(None, None, None, L("Workspace chưa có bảng số liệu nào để truy vấn.", "This workspace has no data tables to query yet."), error="no_tables")
     system = (read_prompt("nl2sql", cfg) + "\n\n" + catalog_prompt(tables)
-              + output_language_rule(detect_lang(question, default=get_lang()), "The question").replace("free-text value", "chart title and explanation"))
+              + output_language_rule(get_lang(), "The user's app").replace("free-text value", "chart title and explanation"))
     user = ((f"Ngữ cảnh: {context}\n" if context else "") + f"Câu hỏi: {question}"
 )
     messages = [{"role": "user", "content": user}]

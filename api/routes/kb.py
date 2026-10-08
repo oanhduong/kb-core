@@ -24,6 +24,7 @@ from kb.health import kb_health
 from kb.lifecycle import restore_document, restore_record, soft_delete_document, soft_delete_record
 from qa.citation import format_citation
 from worker.queue import enqueue_job, job_view
+from knowledge.translate import localize
 
 router = APIRouter(prefix="/w/{workspace_id}", tags=["kb"])
 
@@ -105,7 +106,7 @@ def list_documents(status: str | None = None, doc_type: str | None = None, q: st
         query = query.where(or_(Document.filename.ilike(f"%{q}%"), Document.title.ilike(f"%{q}%"), Document.summary.ilike(f"%{q}%")))
     total = db.execute(select(func.count()).select_from(query.subquery())).scalar_one()
     rows = db.execute(query.order_by(Document.created_at.desc()).offset((page - 1) * page_size).limit(page_size)).scalars()
-    return {"total": total, "page": page, "page_size": page_size, "items": [doc_view(d) for d in rows]}
+    return localize(db, ctx.workspace_id, {"total": total, "page": page, "page_size": page_size, "items": [doc_view(d) for d in rows]})
 
 
 @router.get("/documents/{document_id}", summary="Chi tiết tài liệu: hồ sơ ngữ nghĩa, bảng, thực thể, job")
@@ -118,10 +119,10 @@ def document_detail(document_id: str, ctx: WorkspaceContext = Depends(workspace(
                       .order_by(func.count(EntityMention.id).desc()).limit(50)).all()
     rec_count = db.execute(select(func.count()).select_from(KBRecordRow).where(KBRecordRow.document_id == document_id,
                                                                                KBRecordRow.deleted_at.is_(None))).scalar_one()
-    return {**doc_view(d), "jobs": [job_view(j) for j in jobs], "record_count_live": rec_count,
+    return localize(db, ctx.workspace_id, {**doc_view(d), "jobs": [job_view(j) for j in jobs], "record_count_live": rec_count,
             "tables": [{"id": t.id, "name": t.name, "title": t.title, "row_count": t.row_count, "columns": t.columns,
                         "description": t.description, "source_location": t.source_location} for t in tables],
-            "entities": [{"id": e.id, "type": e.type, "name": e.name, "mentions": n, "description": e.description} for e, n in ents]}
+            "entities": [{"id": e.id, "type": e.type, "name": e.name, "mentions": n, "description": e.description} for e, n in ents]})
 
 
 @router.get("/documents/{document_id}/records", summary="Record của 1 tài liệu (đọc nội dung đã trích)")

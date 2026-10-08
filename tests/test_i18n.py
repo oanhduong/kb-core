@@ -12,7 +12,8 @@ def test_normalize_and_use_lang():
 def test_detect_lang_from_content():
     assert detect_lang("Site Summary, Country Name, Protocol #, Principal Investigator Name, SDV Backlog") == "en"
     assert detect_lang("Điều 5. Thời hạn đổi trả theo ngành hàng được quy định khác nhau") == "vi"
-    assert detect_lang("ĐT-018", default="en") == "en"  # quá ít chữ -> mặc định
+    assert detect_lang("PRJ7718", default="en") == "en"  # quá ít chữ, không dấu -> mặc định
+    assert detect_lang("có giá", default="en") == "vi"  # nhãn ngắn có dấu tiếng Việt
     # dòng Excel tiếng Anh được lưu theo khuôn "Cột là giá trị" -> vẫn là tiếng Anh
     assert detect_lang("Region là Sector A, Country Name là Country 001, Protocol # là PRJ3977, Site # là STE8701") == "en"
 

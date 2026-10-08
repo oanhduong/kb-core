@@ -30,7 +30,7 @@ def extract_document_knowledge(cfg: AppConfig, sm: sessionmaker, llm: Any, embed
             return {"skipped": "tài liệu không tồn tại/đã xoá"}
         if doc.status != "active":
             return {"skipped": f"tài liệu ở trạng thái {doc.status}"}
-    steps = only or ["tables", "profile", "entities"]
+    steps = only or ["tables", "profile", "entities", "translate"]
     out: dict[str, Any] = {"document_id": document_id, "steps": {}}
     total = len(steps)
     for i, step in enumerate(steps):
@@ -48,6 +48,10 @@ def extract_document_knowledge(cfg: AppConfig, sm: sessionmaker, llm: Any, embed
                 from knowledge.extract import extract_entities_for_document
 
                 out["steps"]["entities"] = extract_entities_for_document(cfg, sm, llm, document_id, force=force)
+            elif step == "translate":
+                from knowledge.translate import translate_document
+
+                out["steps"]["translate"] = translate_document(cfg, sm, llm, document_id, force=force)
             elif step == "chunks_meta":
                 out["steps"]["chunks_meta"] = {"ok": True}
         except Exception as e:  # bước nào lỗi ghi lại, các bước khác vẫn chạy

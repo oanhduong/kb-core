@@ -21,6 +21,7 @@ from core.errors import NotFoundError
 from core.i18n import L
 from core.models import SavedQuery
 from core.principal import WorkspaceContext
+from knowledge.translate import localize
 
 router = APIRouter(prefix="/w/{workspace_id}", tags=["analytics"])
 
@@ -34,7 +35,7 @@ def _table(db: Session, ctx: WorkspaceContext, table_id: str) -> engine.TableInf
 
 @router.get("/tables", summary="Catalog bảng số liệu của workspace")
 def list_tables(document_id: str | None = None, ctx: WorkspaceContext = Depends(workspace("viewer")), db: Session = Depends(get_db)) -> list[dict]:
-    return [t.to_dict() for t in engine.catalog(db, ctx.workspace_id, document_ids=[document_id] if document_id else None)]
+    return localize(db, ctx.workspace_id, [t.to_dict() for t in engine.catalog(db, ctx.workspace_id, document_ids=[document_id] if document_id else None)])
 
 
 @router.get("/tables/{table_id}", summary="Schema + thống kê cột + xem trước")
@@ -45,7 +46,7 @@ def table_detail(table_id: str, ctx: WorkspaceContext = Depends(workspace("viewe
         stats = engine.column_stats(services.cfg, t)
     except Exception as e:  # thống kê lỗi (cột lạ) không chặn xem bảng
         stats = {"error": str(e)[:200]}
-    return {**t.to_dict(), "stats": stats, "preview": engine.preview(services.cfg, t, limit=20).to_dict()}
+    return {**localize(db, ctx.workspace_id, t.to_dict()), "stats": stats, "preview": engine.preview(services.cfg, t, limit=20).to_dict()}
 
 
 @router.get("/tables/{table_id}/rows", summary="Dữ liệu bảng (phân trang)")

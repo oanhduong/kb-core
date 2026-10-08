@@ -61,6 +61,7 @@ class ModelsConfig(BaseModel):
     vision: str = "claude-sonnet-4-6"
     ingest_agent: str = "claude-sonnet-4-6"
     data_model: str = "claude-sonnet-4-6"
+    translate: str = "claude-haiku-4-5"     # dịch nội dung AI sinh sang ngôn ngữ giao diện còn lại
 
 
 class ModelPrice(BaseModel):
