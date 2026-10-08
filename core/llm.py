@@ -24,6 +24,7 @@ from typing import Any, Callable, Iterator, TypeVar
 import anthropic
 from pydantic import BaseModel, ValidationError
 
+from core.claude_cli import ClaudeCLIClient, ClaudeCLIError
 from core.config import AppConfig, Settings, get_config, get_settings
 from core.errors import UpstreamUnavailable
 from core.logging import get_log_context, log_event
@@ -92,6 +93,8 @@ def compute_cost(cfg: AppConfig, model: str, input_tokens: int, output_tokens: i
 
 
 def _is_retryable(exc: BaseException) -> bool:
+    if isinstance(exc, ClaudeCLIError):
+        return exc.retryable
     if isinstance(exc, (anthropic.APITimeoutError, anthropic.APIConnectionError, anthropic.RateLimitError,
                         anthropic.InternalServerError)):
         return True
@@ -123,9 +126,14 @@ class LLMClient:
                  sleep: Callable[[float], None] = time.sleep) -> None:
         self.cfg = cfg or get_config()
         settings = settings or get_settings()
+        if client is None and settings.llm_provider == "claude_cli":
+            # CLI tốn thêm vài giây khởi động mỗi lượt -> nới timeout
+            client = ClaudeCLIClient(binary=settings.claude_cli_path, timeout=self.cfg.llm.timeout_seconds * 3)
         self._client = client or anthropic.Anthropic(
             api_key=settings.anthropic_api_key, timeout=self.cfg.llm.timeout_seconds, max_retries=0,
         )
+        # subscription (Claude CLI) không tính tiền theo token -> cost 0, không kích hoạt alert chi phí
+        self._billed = not getattr(self._client, "subscription", False)
         self._usage_sink = usage_sink
         self._sleep = sleep
 
@@ -148,7 +156,7 @@ class LLMClient:
         c_write = int(getattr(usage, "cache_creation_input_tokens", 0) or 0)
         call = LLMCall(
             role=role, model=model, input_tokens=in_tok, output_tokens=out_tok, cache_read_tokens=c_read,
-            cache_write_tokens=c_write, cost_usd=compute_cost(self.cfg, model, in_tok, out_tok, c_read, c_write),
+            cache_write_tokens=c_write, cost_usd=compute_cost(self.cfg, model, in_tok, out_tok, c_read, c_write) if self._billed else 0.0,
             latency_ms=latency_ms, status=status, trace_id=ctx.get("trace_id"), job_id=ctx.get("job_id"),
         )
         tracing.record_generation(

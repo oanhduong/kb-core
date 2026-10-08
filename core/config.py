@@ -344,6 +344,9 @@ class Settings(BaseModel):
 
     database_url: str = "postgresql+psycopg://retail:retail@localhost:5432/retailkb"
     anthropic_api_key: str | None = None
+    # anthropic (API key, mặc định) | claude_cli (gọi Claude Code CLI đăng nhập subscription — CHỈ cho máy dev)
+    llm_provider: str = "anthropic"
+    claude_cli_path: str | None = None
     jwt_secret: str | None = None
     bootstrap_admin_api_key: str | None = None
     langfuse_public_key: str | None = None
@@ -364,6 +367,8 @@ class Settings(BaseModel):
         return cls(
             database_url=env.get("DATABASE_URL", cls.model_fields["database_url"].default),
             anthropic_api_key=env.get("ANTHROPIC_API_KEY") or None,
+            llm_provider=(env.get("LLM_PROVIDER") or "anthropic").strip().lower(),
+            claude_cli_path=env.get("CLAUDE_CLI_PATH") or None,
             jwt_secret=env.get("JWT_SECRET") or None,
             bootstrap_admin_api_key=env.get("BOOTSTRAP_ADMIN_API_KEY") or None,
             langfuse_public_key=env.get("LANGFUSE_PUBLIC_KEY") or None,
