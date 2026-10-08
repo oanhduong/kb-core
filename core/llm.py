@@ -27,6 +27,7 @@ from pydantic import BaseModel, ValidationError
 from core.claude_cli import ClaudeCLIClient, ClaudeCLIError
 from core.config import AppConfig, Settings, get_config, get_settings
 from core.errors import UpstreamUnavailable
+from core.i18n import L
 from core.logging import get_log_context, log_event
 from observability import tracing
 
@@ -212,7 +213,8 @@ class LLMClient:
             call = self._finish_call(role, model, resp.usage, latency, "ok", self._summarize_input(system, messages), text)
             return LLMResult(text=text, model=model, stop_reason=getattr(resp, "stop_reason", None), call=call)
         raise LLMUnavailable(
-            f"Mô hình AI ({role}) không phản hồi sau {attempts} lần thử: {type(last_exc).__name__}",
+            L(f"Mô hình AI ({role}) không phản hồi sau {attempts} lần thử: {type(last_exc).__name__}",
+              f"The AI model ({role}) did not respond after {attempts} attempts: {type(last_exc).__name__}"),
             context={"role": role, "model": model, "error": str(last_exc)},
         ) from last_exc
 
@@ -256,7 +258,8 @@ class LLMClient:
                         break
                     self._sleep(self._backoff(attempt))
             raise LLMUnavailable(
-                f"Mô hình AI ({role}) lỗi khi stream câu trả lời: {type(last_exc).__name__}",
+                L(f"Mô hình AI ({role}) lỗi khi stream câu trả lời: {type(last_exc).__name__}",
+                  f"The AI model ({role}) failed while streaming the answer: {type(last_exc).__name__}"),
                 context={"role": role, "model": model, "error": str(last_exc)},
             ) from last_exc
 

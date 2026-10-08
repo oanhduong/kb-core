@@ -22,6 +22,7 @@ from analytics.tables import sql_identifier
 from core.config import AppConfig
 from core.db import session_scope
 from core.errors import NotFoundError, ValidationFailed
+from core.i18n import L
 from core.logging import log_event
 from core.models import DataModel, DataTable, Document, Job
 from modeling import explain as X
@@ -69,7 +70,7 @@ def evaluator(cfg: AppConfig, model: DataModel, spec: ModelSpec) -> DuckEval:
             return ev
     frames = load_frames(cfg, model.workspace_id, model.id, [t.key for t in spec.tables])
     if spec.main_table not in frames:
-        raise ValidationFailed("Dữ liệu của mô hình chưa sẵn sàng — hãy chạy phân tích lại.")
+        raise ValidationFailed(L("Dữ liệu của mô hình chưa sẵn sàng — hãy chạy phân tích lại.", "The model data is not ready — please run the analysis again."))
     ev = DuckEval(frames)
     with _EVAL_LOCK:
         _EVALS[key] = ev
@@ -82,7 +83,7 @@ def evaluator(cfg: AppConfig, model: DataModel, spec: ModelSpec) -> DuckEval:
 def get_model(s: Session, ws_id: str, model_id: str) -> DataModel:
     m = s.get(DataModel, model_id)
     if m is None or m.workspace_id != ws_id or m.deleted_at is not None:
-        raise NotFoundError("Không có mô hình dữ liệu")
+        raise NotFoundError(L("Không có mô hình dữ liệu", "Data model not found"))
     return m
 
 
@@ -101,13 +102,13 @@ def create_model(s: Session, cfg: AppConfig, ws_id: str, user: str, *, name: str
     from worker.queue import enqueue_job
 
     if not document_ids:
-        raise ValidationFailed("Chọn ít nhất một file Excel/CSV")
+        raise ValidationFailed(L("Chọn ít nhất một file Excel/CSV", "Select at least one Excel/CSV file"))
     docs = s.execute(select(Document).where(Document.id.in_(document_ids), Document.workspace_id == ws_id, Document.deleted_at.is_(None))).scalars().all()
     if len(docs) != len(set(document_ids)):
-        raise ValidationFailed("Có file không thuộc workspace hoặc đã bị xoá")
+        raise ValidationFailed(L("Có file không thuộc workspace hoặc đã bị xoá", "Some files are not in this workspace or have been deleted"))
     bad = [d.filename for d in docs if d.source_type not in SUPPORTED]
     if bad:
-        raise ValidationFailed(f"Chỉ hỗ trợ Excel/CSV: {', '.join(bad)}")
+        raise ValidationFailed(L(f"Chỉ hỗ trợ Excel/CSV: {', '.join(bad)}", f"Only Excel/CSV is supported: {', '.join(bad)}"))
     order = {d: i for i, d in enumerate(document_ids)}
     docs = sorted(docs, key=lambda d: order[d.id])
     m = DataModel(workspace_id=ws_id, name=(name or docs[0].title or docs[0].filename)[:200], description=description,
@@ -236,7 +237,7 @@ def run_build(cfg: AppConfig, model_id: str, *, progress: Callable[[int, int, st
         step(0, "tables")
         frames = load_frames(cfg, ws_id, model_id, [t.key for t in spec.tables])
         if spec.main_table not in frames:
-            raise ValidationFailed("Thiếu dữ liệu đã đọc của mô hình — hãy phân tích lại")
+            raise ValidationFailed(L("Thiếu dữ liệu đã đọc của mô hình — hãy phân tích lại", "The model's loaded data is missing — please analyze again"))
         from sqlalchemy import inspect
 
         have = set(inspect(eng).get_table_names(schema=schema)) if schema in inspect(eng).get_schema_names() else set()
@@ -321,10 +322,10 @@ def set_column(cfg: AppConfig, m: DataModel, name: str, *, rule: Rule | None = N
     spec = spec_of(m)
     col = spec.column(name)
     if col is None:
-        raise NotFoundError("Không có cột")
+        raise NotFoundError(L("Không có cột", "Column not found"))
     if alternative is not None:
         if not 0 <= alternative < len(col.alternatives):
-            raise ValidationFailed("Gợi ý không tồn tại")
+            raise ValidationFailed(L("Gợi ý không tồn tại", "This suggestion does not exist"))
         alt = col.alternatives.pop(alternative)
         col.alternatives.insert(0, Candidate(rule=col.rule, check=col.check, evidence=col.evidence, confidence=col.confidence))
         col.rule, col.check, col.evidence, col.confidence = alt.rule, alt.check, alt.evidence, alt.confidence
@@ -356,37 +357,37 @@ def _validate_rule(spec: ModelSpec, rule: Rule) -> None:
     if rule.kind in ("lookup", "aggregate"):
         rel = spec.relationship(rule.relationship_id)
         if rel is None or rel.status == "rejected":
-            raise ValidationFailed("Chọn một liên kết (quan hệ) hợp lệ")
+            raise ValidationFailed(L("Chọn một liên kết (quan hệ) hợp lệ", "Choose a valid link (relationship)"))
         src = spec.table(rel.source_table)
         names = {c.name for c in src.columns}
         if rule.column and rule.column not in names:
-            raise ValidationFailed(f"Sheet “{src.title}” không có cột {rule.column}")
+            raise ValidationFailed(L(f"Sheet “{src.title}” không có cột {rule.column}", f"Sheet “{src.title}” has no column {rule.column}"))
         if rule.kind == "lookup" and not rule.column:
-            raise ValidationFailed("Chọn cột cần lấy")
+            raise ValidationFailed(L("Chọn cột cần lấy", "Choose the column to fetch"))
         if rule.kind == "aggregate" and (rule.func or "count") not in ("count",) and not rule.column:
-            raise ValidationFailed("Chọn cột cần tính")
+            raise ValidationFailed(L("Chọn cột cần tính", "Choose the column to calculate"))
         for f in rule.filters:
             if f.column not in names:
-                raise ValidationFailed(f"Sheet “{src.title}” không có cột {f.column}")
+                raise ValidationFailed(L(f"Sheet “{src.title}” không có cột {f.column}", f"Sheet “{src.title}” has no column {f.column}"))
     elif rule.kind == "formula":
         try:
             node = E.parse(rule.expression or "")
         except E.ExprError as e:
-            raise ValidationFailed(f"Công thức chưa đúng: {e}") from e
+            raise ValidationFailed(L(f"Công thức chưa đúng: {e}", f"The formula is not valid: {e}")) from e
         known = {c.label.strip().lower() for c in spec.columns} | {c.name for c in spec.columns}
         missing = [r for r in E.columns_used(node) if r.strip().lower() not in known and r not in known]
         if missing:
-            raise ValidationFailed("Không có cột: " + ", ".join(f"[{x}]" for x in missing))
+            raise ValidationFailed(L("Không có cột: " + ", ".join(f"[{x}]" for x in missing), "Missing columns: " + ", ".join(f"[{x}]" for x in missing)))
     elif rule.kind == "input":
         main = spec.main()
         if rule.column and main and rule.column not in {c.name for c in main.columns}:
-            raise ValidationFailed("Cột đầu vào không có trong sheet chính")
+            raise ValidationFailed(L("Cột đầu vào không có trong sheet chính", "Input column is not in the main sheet"))
 
 
 def test_rule(cfg: AppConfig, m: DataModel, name: str, rule: Rule) -> dict[str, Any]:
     spec = spec_of(m)
     if spec.column(name) is None:
-        raise NotFoundError("Không có cột")
+        raise NotFoundError(L("Không có cột", "Column not found"))
     _validate_rule(spec, rule)
     if rule.relationship_id:
         rule.table = spec.relationship(rule.relationship_id).source_table
@@ -399,13 +400,13 @@ def describe_column(cfg: AppConfig, llm: Any, m: DataModel, name: str, text: str
     from modeling.ai import rule_from_words
 
     if llm is None:
-        raise ValidationFailed("Chưa cấu hình model AI — hãy chọn quy tắc thủ công")
+        raise ValidationFailed(L("Chưa cấu hình model AI — hãy chọn quy tắc thủ công", "No AI model is configured — please choose a rule manually"))
     spec = spec_of(m)
     ev = evaluator(cfg, m, spec)
     before = {r.id for r in spec.relationships}
     cand, err = rule_from_words(cfg, llm, spec, ev, name, text)
     if cand is None:
-        raise ValidationFailed(f"Chưa dịch được mô tả thành quy tắc ({err}). Hãy mô tả cụ thể hơn: lấy từ sheet nào, đếm/tổng gì, điều kiện gì.")
+        raise ValidationFailed(L(f"Chưa dịch được mô tả thành quy tắc ({err}). Hãy mô tả cụ thể hơn: lấy từ sheet nào, đếm/tổng gì, điều kiện gì.", f"Could not turn the description into a rule ({err}). Please be more specific: which sheet to take from, what to count/sum, and under what conditions."))
     new_rels = [r for r in spec.relationships if r.id not in before]
     if new_rels:
         save_spec(m, spec)
@@ -444,7 +445,7 @@ def set_relationship(cfg: AppConfig, m: DataModel, rid: str, *, status: str | No
     spec = spec_of(m)
     rel = spec.relationship(rid)
     if rel is None:
-        raise NotFoundError("Không có quan hệ")
+        raise NotFoundError(L("Không có quan hệ", "Relationship not found"))
     if keys is not None:
         _check_keys(spec, rel.source_table, keys)
         rel.keys = keys
@@ -464,7 +465,7 @@ def add_relationship(cfg: AppConfig, m: DataModel, source_table: str, keys: list
 
     spec = spec_of(m)
     if spec.table(source_table) is None or source_table == spec.main_table:
-        raise ValidationFailed("Sheet nguồn không hợp lệ")
+        raise ValidationFailed(L("Sheet nguồn không hợp lệ", "Invalid source sheet"))
     _check_keys(spec, source_table, keys)
     rid = f"r_{source_table}"
     n = 2
@@ -486,11 +487,11 @@ def add_relationship(cfg: AppConfig, m: DataModel, source_table: str, keys: list
 def _check_keys(spec: ModelSpec, source_table: str, keys: list[KeyPair]) -> None:
     main, src = spec.main(), spec.table(source_table)
     if not keys or main is None or src is None:
-        raise ValidationFailed("Cần ít nhất một cặp khoá")
+        raise ValidationFailed(L("Cần ít nhất một cặp khoá", "At least one key pair is required"))
     mn, sn = {c.name for c in main.columns}, {c.name for c in src.columns}
     for kp in keys:
         if kp.base_column not in mn or kp.source_column not in sn:
-            raise ValidationFailed("Cột khoá không tồn tại")
+            raise ValidationFailed(L("Cột khoá không tồn tại", "Key column does not exist"))
 
 
 def set_parameters(cfg: AppConfig, m: DataModel, as_of_date: str | None) -> ModelSpec:
@@ -499,7 +500,7 @@ def set_parameters(cfg: AppConfig, m: DataModel, as_of_date: str | None) -> Mode
         try:
             datetime.strptime(as_of_date[:10], "%Y-%m-%d")
         except ValueError as e:
-            raise ValidationFailed("Ngày báo cáo phải có dạng YYYY-MM-DD") from e
+            raise ValidationFailed(L("Ngày báo cáo phải có dạng YYYY-MM-DD", "The report date must be in YYYY-MM-DD format")) from e
     spec.parameters = ModelParameters(as_of_date=(as_of_date or "today")[:10] if as_of_date != "today" else "today", as_of_source="user")
     _recheck(cfg, m, spec)
     save_spec(m, spec)
@@ -510,7 +511,7 @@ def set_table_role(m: DataModel, key: str, role: str) -> ModelSpec:
     spec = spec_of(m)
     t = spec.table(key)
     if t is None or key == spec.main_table:
-        raise ValidationFailed("Không đổi được vai trò sheet này")
+        raise ValidationFailed(L("Không đổi được vai trò sheet này", "This sheet's role cannot be changed"))
     t.role = role  # type: ignore[assignment]
     if role == "ignored":
         for r in spec.relationships:

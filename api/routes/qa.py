@@ -14,6 +14,7 @@ from api.auth import effective_scope, workspace
 from api.deps import get_db, get_services
 from api.sse import sse_response
 from core.errors import ForbiddenError, NotFoundError
+from core.i18n import L
 from core.models import ChatSession, Feedback, QATrace
 from core.principal import WorkspaceContext
 from observability.tracing import trace_url
@@ -37,7 +38,7 @@ class ChatBody(BaseModel):
     def _strip(cls, v: str) -> str:
         v = v.strip()
         if not v:
-            raise ValueError("câu hỏi không được rỗng")
+            raise ValueError(L("câu hỏi không được rỗng", "the question must not be empty"))
         return v
 
 
@@ -82,9 +83,9 @@ class FeedbackBody(BaseModel):
 def feedback(body: FeedbackBody, ctx: WorkspaceContext = Depends(workspace("viewer")), db: Session = Depends(get_db)) -> dict:
     trace = db.get(QATrace, body.trace_id)
     if trace is None or trace.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không tìm thấy câu trả lời (trace_id) — có thể đã quá hạn lưu trữ.")
+        raise NotFoundError(L("Không tìm thấy câu trả lời (trace_id) — có thể đã quá hạn lưu trữ.", "Answer not found (trace_id) — it may be past its retention period."))
     if trace.user_id != ctx.subject and not ctx.has_role("editor"):
-        raise ForbiddenError("Chỉ phản hồi được câu trả lời của chính bạn.")
+        raise ForbiddenError(L("Chỉ phản hồi được câu trả lời của chính bạn.", "You can only give feedback on your own answers."))
     rating = 1 if body.rating in ("up", 1) else -1
     db.execute(insert(Feedback).values(trace_id=body.trace_id, user_id=ctx.subject, rating=rating, comment=body.comment)
                .on_conflict_do_update(constraint="uq_feedback_trace_user", set_={"rating": rating, "comment": body.comment, "status": "new"}))
@@ -120,9 +121,9 @@ def delete_session(session_id: str, ctx: WorkspaceContext = Depends(workspace("v
 def get_answer(trace_id: str, ctx: WorkspaceContext = Depends(workspace("viewer")), db: Session = Depends(get_db)) -> dict:
     t = db.get(QATrace, trace_id)
     if t is None or t.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không tìm thấy trace")
+        raise NotFoundError(L("Không tìm thấy trace", "Trace not found"))
     if t.user_id != ctx.subject and not ctx.has_role("editor"):
-        raise ForbiddenError("Không có quyền xem câu trả lời này")
+        raise ForbiddenError(L("Không có quyền xem câu trả lời này", "You do not have permission to view this answer"))
     pending = t.status == "pending_review"
     return {"trace_id": t.trace_id, "status": t.status, "question": t.question,
             "answer": None if pending else t.answer, "citations": [] if pending else t.citations,

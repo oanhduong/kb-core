@@ -12,6 +12,7 @@ from analytics.charts import build_chart
 from analytics.engine import QueryResult, TableInfo, catalog_prompt, run_query
 from core.config import AppConfig, read_prompt
 from core.errors import ValidationFailed
+from core.i18n import L, language_name
 from core.llm import LLMClient, LLMOutputInvalid, LLMUnavailable
 from core.logging import log_event
 from observability import tracing
@@ -57,9 +58,10 @@ def _tables_in_sql(sql: str, tables: list[TableInfo]) -> list[str]:
 
 def answer_with_sql(cfg: AppConfig, llm: LLMClient, tables: list[TableInfo], question: str, *, context: str | None = None) -> AnalyticsAnswer:
     if not tables:
-        return AnalyticsAnswer(None, None, None, "Workspace chưa có bảng số liệu nào để truy vấn.", error="no_tables")
+        return AnalyticsAnswer(None, None, None, L("Workspace chưa có bảng số liệu nào để truy vấn.", "This workspace has no data tables to query yet."), error="no_tables")
     system = read_prompt("nl2sql", cfg) + "\n\n" + catalog_prompt(tables)
-    user = (f"Ngữ cảnh: {context}\n" if context else "") + f"Câu hỏi: {question}"
+    user = ((f"Ngữ cảnh: {context}\n" if context else "") + f"Câu hỏi: {question}"
+            + f"\n\nTiêu đề biểu đồ và phần giải thích viết bằng ngôn ngữ của câu hỏi (không rõ thì dùng {language_name()}).")
     messages = [{"role": "user", "content": user}]
     last_err = ""
     attempts = 0
@@ -73,14 +75,14 @@ def answer_with_sql(cfg: AppConfig, llm: LLMClient, tables: list[TableInfo], que
                 out = _NL2SQLOut.model_validate(extract_json_object(res.text))
             except (LLMUnavailable, LLMOutputInvalid) as e:
                 sp.update(level="ERROR", error=str(e)[:200])
-                return AnalyticsAnswer(None, None, None, "Không sinh được truy vấn.", attempts=attempts, error=str(e)[:300])
+                return AnalyticsAnswer(None, None, None, L("Không sinh được truy vấn.", "Could not generate a query."), attempts=attempts, error=str(e)[:300])
             except Exception as e:  # JSON lỗi -> cho model sửa
                 last_err = f"Output không phải JSON hợp lệ: {e}"
                 messages += [{"role": "assistant", "content": res.text}, {"role": "user", "content": last_err + ". Trả lại đúng 1 JSON."}]
                 continue
             if not out.sql:
                 sp.update(output={"sql": None, "reason": out.reason})
-                return AnalyticsAnswer(None, None, None, out.reason or "Câu hỏi không trả lời được bằng các bảng hiện có.",
+                return AnalyticsAnswer(None, None, None, out.reason or L("Câu hỏi không trả lời được bằng các bảng hiện có.", "This question cannot be answered with the available tables."),
                                        out.assumptions, attempts, error="not_answerable")
             try:
                 result = run_query(cfg, tables, out.sql)
@@ -94,4 +96,4 @@ def answer_with_sql(cfg: AppConfig, llm: LLMClient, tables: list[TableInfo], que
             sp.update(output={"sql": out.sql, "rows": result.row_count, "chart": chart["type"] if chart else None, "attempts": attempts})
             return AnalyticsAnswer(out.sql, result, chart, out.reason, out.assumptions, attempts, tables_used=_tables_in_sql(out.sql, tables))
         sp.update(level="WARNING", error=last_err[:200])
-    return AnalyticsAnswer(None, None, None, "Không tạo được truy vấn chạy được sau nhiều lần thử.", attempts=attempts, error=last_err[:300])
+    return AnalyticsAnswer(None, None, None, L("Không tạo được truy vấn chạy được sau nhiều lần thử.", "Could not produce a working query after several attempts."), attempts=attempts, error=last_err[:300])

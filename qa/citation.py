@@ -21,6 +21,8 @@ from dataclasses import dataclass, field
 from urllib.parse import quote
 from typing import Any
 
+from core.i18n import L
+
 _MARKER_RE = re.compile(r"\[(S\d+(?:\s*[,;]\s*S\d+)*)\]")
 _MARKER_ID_RE = re.compile(r"S\d+")
 _ARTICLE_RE = re.compile(r"Điều\s+(\d+)")
@@ -37,7 +39,7 @@ def display_title(title: str) -> str:
     """"CHÍNH SÁCH ĐỔI TRẢ HÀNG HÓA" -> "chính sách đổi trả hàng hóa"; giữ nguyên nếu đã viết thường/hoa
     hỗn hợp (tên riêng)."""
     t = re.sub(r"\s+", " ", title or "").strip()
-    if t.isupper():
+    if t.isupper() or t.istitle():  # "Chính Sách Đổi Trả" (tên hiển thị tự sinh) cũng hạ hết, tránh "chính Sách…"
         return t.lower()
     return t[:1].lower() + t[1:] if t[:1].isupper() and not t[1:2].isupper() else t
 
@@ -52,30 +54,30 @@ def _mmss(hms: str) -> str:
 
 def format_citation(title: str, source_type: str, location: str, meta: dict[str, Any] | None = None) -> str:
     meta = meta or {}
-    name = display_title(title) or "tài liệu"
+    name = display_title(title) or L("tài liệu", "document")
     loc = (location or "").strip()
     if source_type == "docx":
         arts = _ARTICLE_RE.findall(loc)
         if arts:
-            return f"{name}, Điều {arts[-1]}"
+            return L(f"{name}, Điều {arts[-1]}", f"{name}, Article {arts[-1]}")
         last = loc.split(" > ")[-1].strip() if loc else ""
         if last and display_title(last) != name and " > " in loc:
-            return f"{name}, mục \"{last}\""
+            return L(f"{name}, mục \"{last}\"", f"{name}, section \"{last}\"")
         return name
     if source_type == "xlsx":
         m = _XLSX_RE.match(loc)
         if m:
             row = m.group("row")
-            return f"{name}, Sheet {m.group('sheet')} dòng {row}"
+            return L(f"{name}, Sheet {m.group('sheet')} dòng {row}", f"{name}, sheet {m.group('sheet')} row {row}")
         return f"{name}, {loc}" if loc else name
     if source_type == "csv":
         m = re.match(r"^CSV!A(\d+)", loc)
-        return f"{name}, dòng {m.group(1)}" if m else name
+        return (L(f"{name}, dòng {m.group(1)}", f"{name}, row {m.group(1)}")) if m else name
     if source_type == "pdf":
         m = _PDF_RE.match(loc)
         if m:
-            out = f"{name}, trang {m.group('page')}"
-            return out + (f", bảng {m.group('table')}" if m.group("table") else "")
+            out = L(f"{name}, trang {m.group('page')}", f"{name}, page {m.group('page')}")
+            return out + (L(f", bảng {m.group('table')}", f", table {m.group('table')}") if m.group("table") else "")
         return name
     if source_type in ("audio", "video"):
         start = loc.split("-")[0].strip() if loc else ""

@@ -4,6 +4,7 @@
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useT } from "@/i18n";
+import { fmtNumber } from "@/lib/format";
 import type { ModelSpecView, RelationshipSpec, TableSpecView } from "@/lib/types";
 
 const NW = 236;
@@ -50,7 +51,7 @@ export function LineageMap({ spec, selected, onSelect, viewName, built }: {
         <circle cx={18} cy={NH / 2} r={5} fill={conf ? "#0E9F6E" : "#8E7CFB"} />
         <text x={32} y={22} className={clsx("text-[13px] font-semibold", active ? "fill-white" : "fill-ink-900")}>{trunc(tb.title, 26)}</text>
         <text x={32} y={39} className={clsx("text-[11px]", active ? "fill-ink-300" : "fill-ink-600")}>
-          {t("models.map.rows", { n: tb.row_count.toLocaleString() })}{rel && usedBy[rel.id] ? ` · ${t("models.map.feeds", { n: usedBy[rel.id] })}` : ""}
+          {t("models.map.rows", { n: fmtNumber(tb.row_count) })}{rel && usedBy[rel.id] ? ` · ${t("models.map.feeds", { n: usedBy[rel.id] })}` : ""}
         </text>
       </g>
     );

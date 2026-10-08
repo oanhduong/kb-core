@@ -18,6 +18,7 @@ from typing import Any, Callable
 
 from core.config import AppConfig
 from core.errors import UpstreamUnavailable
+from core.i18n import L
 from core.logging import log_event
 from index.hybrid import reciprocal_rank_fusion
 from index.store import Filters, VectorStore
@@ -121,7 +122,7 @@ class VectorRetriever:
                     out.degraded.append(f"Tìm kiếm từ khoá (BM25) lỗi: {type(e).__name__} -> chỉ dùng ngữ nghĩa")
                     log_event(logger, "retrieval_bm25_failed", level=logging.ERROR, error=f"{type(e).__name__}: {e}")
             if len(out.degraded) == 2:
-                raise RetrievalUnavailable("Hệ thống tìm kiếm tài liệu đang gặp sự cố, vui lòng thử lại sau.")
+                raise RetrievalUnavailable(L("Hệ thống tìm kiếm tài liệu đang gặp sự cố, vui lòng thử lại sau.", "Document search is having problems, please try again later."))
             out.dense_count, out.bm25_count = len(dense), len(bm25)
             out.dense_top = dense[0].score if dense else None
 

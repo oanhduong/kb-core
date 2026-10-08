@@ -29,6 +29,7 @@ from assistant.sources import SourceRegistry
 from assistant.tools import TOOL_SCHEMAS, TOOL_STATUS_VI, ToolContext, ToolOutcome, run_tool
 from core.config import AppConfig, read_prompt
 from core.errors import AppError
+from core.i18n import L, get_lang, language_name
 from core.llm import LLMClient, LLMUnavailable
 from core.logging import log_context, log_event
 from core.models import QATrace, new_id
@@ -45,9 +46,15 @@ from qa.trace import DecisionTrace, compute_confidence
 logger = logging.getLogger(__name__)
 
 MAX_TURNS = 8
-ERROR_MESSAGE = ("Xin lỗi, hệ thống đang gặp sự cố tạm thời nên chưa trả lời được. Vui lòng thử lại sau ít phút. "
-                 "(Mã tra cứu: {trace_id})")
-_NOT_FOUND_RE = re.compile(r"không (tìm thấy|có) (thông tin|dữ liệu|tài liệu)|chưa có (tài liệu|dữ liệu)|không đủ (thông tin|căn cứ)", re.IGNORECASE)
+def error_message(trace_id: str) -> str:
+    return L(f"Xin lỗi, hệ thống đang gặp sự cố tạm thời nên chưa trả lời được. Vui lòng thử lại sau ít phút. (Mã tra cứu: {trace_id})",
+             f"Sorry, the system is having a temporary problem and couldn't answer. Please try again in a few minutes. (Reference: {trace_id})")
+
+
+# câu trả lời "không tìm thấy" (vi/en) khi các công cụ không trả nguồn nào -> abstained thay vì trả lời chung
+_NOT_FOUND_RE = re.compile(r"không (tìm thấy|có) (thông tin|dữ liệu|tài liệu)|chưa có (tài liệu|dữ liệu)|không đủ (thông tin|căn cứ)"
+                           r"|(couldn't|could not|can't|cannot|didn't|did not) find|no (relevant )?(information|data|documents?) (was |were )?(found|available)"
+                           r"|not enough (information|evidence)", re.IGNORECASE)
 _INTENT_BY_TOOLS = {
     frozenset(): "general", frozenset({"search_documents"}): "qa", frozenset({"search_documents", "read_source"}): "qa",
     frozenset({"list_documents"}): "overview", frozenset({"get_document_overview"}): "summary",
@@ -137,6 +144,8 @@ class AssistantService:
     def _system(self, req: AssistantRequest) -> list[dict[str, Any]]:
         pack = get_pack(req.ctx.domain_pack)
         extra = f"\n\nWorkspace: {req.ctx.workspace_name} (lĩnh vực: {pack.name}). Hôm nay: {date.today().isoformat()}."
+        extra += (f"\nNgôn ngữ giao diện của người hỏi: {language_name()}. Trả lời bằng ngôn ngữ của câu hỏi; "
+                  f"nếu câu hỏi không rõ ngôn ngữ thì dùng {language_name()}. Giữ nguyên tên riêng, mã và trích dẫn từ tài liệu.")
         if pack.assistant_hints:
             extra += "\nKiến thức nghiệp vụ:\n" + "\n".join(f"- {h}" for h in pack.assistant_hints)
         if req.scope:
@@ -247,7 +256,8 @@ class AssistantService:
                 if not retryable or attempt == attempts - 1:
                     break
                 self.llm._sleep(self.llm._backoff(attempt))  # noqa: SLF001
-        raise LLMUnavailable(f"Mô hình AI không phản hồi sau {attempts} lần thử: {type(last_exc).__name__}",
+        raise LLMUnavailable(L(f"Mô hình AI không phản hồi sau {attempts} lần thử: {type(last_exc).__name__}",
+                               f"The AI model did not respond after {attempts} attempts: {type(last_exc).__name__}"),
                              context={"error": str(last_exc)}) from last_exc
 
     # ------------------------------------------------------------------ hoàn tất
@@ -256,20 +266,20 @@ class AssistantService:
         tools_used = frozenset(tc["tool"] for tc in run.tool_calls)
         intent = _INTENT_BY_TOOLS.get(tools_used, "mixed" if len(tools_used) > 1 else (next(iter(tools_used)) if tools_used else "general"))
         pc = cit.postcheck(raw_text, sources, min_coverage=self.cfg.citation.min_sentence_coverage,
-                           insufficient_message=self.cfg.citation.insufficient_message) if sources else None
+                           insufficient_message=self.cfg.citation.insufficient()) if sources else None
         if not run.tool_calls:
             status, answer = "answered_general", raw_text.strip()
             citations: list[dict[str, Any]] = []
         elif not sources:
             status = "abstained" if _NOT_FOUND_RE.search(raw_text or "") or not raw_text.strip() else "answered_general"
-            answer = raw_text.strip() or self.cfg.abstention.handoff_message
+            answer = raw_text.strip() or self.cfg.abstention.handoff()
             citations = []
             if status == "abstained":
                 run.dtrace.degrade("Các công cụ không trả về nguồn nào phù hợp")
         elif pc and pc.ok:
             status, answer, citations = "answered", pc.answer, [c.to_dict() for c in pc.citations]
         else:
-            status, answer, citations = "no_citation", (pc.answer if pc else self.cfg.citation.insufficient_message), []
+            status, answer, citations = "no_citation", (pc.answer if pc else self.cfg.citation.insufficient()), []
         if status == "answered" and run.money:
             status = "pending_review"
         return self._persist(run, status, answer, citations, pc, llm_result, intent)
@@ -286,7 +296,8 @@ class AssistantService:
             if run.score_kind == "sql":  # số liệu do SQL tính trên bảng thật — không phụ thuộc điểm retrieval
                 score = max(0.0, min(1.0, 0.9 * (0.6 + 0.4 * coverage) - 0.1 * min(len(dtrace.degraded), 2)))
                 conf = {"level": "cao" if score >= 0.7 else "trung bình", "score": round(score, 3),
-                        "explanation": "số liệu tính trực tiếp bằng SQL trên bảng đã trích" + ("" if coverage >= 0.8 else f"; {coverage:.0%} câu khẳng định có trích dẫn")}
+                        "explanation": L("số liệu tính trực tiếp bằng SQL trên bảng đã trích", "numbers computed directly with SQL on the extracted tables")
+                        + ("" if coverage >= 0.8 else L(f"; {coverage:.0%} câu khẳng định có trích dẫn", f"; {coverage:.0%} of claims cited"))}
             else:
                 conf = compute_confidence(top_score=run.top_score, score_kind=run.score_kind, coverage=coverage, conflicts=0,
                                           degraded=len(dtrace.degraded))
@@ -303,7 +314,7 @@ class AssistantService:
         in_tok = sum(c.input_tokens for c in run.llm_calls)
         out_tok = sum(c.output_tokens for c in run.llm_calls)
         review_id = message_id = None
-        user_answer = self.cfg.review.pending_message if status == "pending_review" else answer
+        user_answer = self.cfg.review.pending() if status == "pending_review" else answer
         with self.sm() as s:
             if req.channel == "chat" and run.session_id:
                 sess = self.sessions.get_owned(s, run.session_id, req.user_id, workspace_id=req.ctx.workspace_id)
@@ -315,7 +326,7 @@ class AssistantService:
             if status == "pending_review":
                 item = enqueue_review(s, trace_id=run.trace_id, session_id=run.session_id, message_id=message_id, user_id=req.user_id,
                                       store_code=req.scope, question=req.question, draft_answer=answer, citations=citations,
-                                      decision_trace=trace_dict, reason="Câu hỏi liên quan tiền: " + ", ".join(run.money_hits),
+                                      decision_trace=trace_dict, reason="money: " + ", ".join(run.money_hits),
                                       workspace_id=req.ctx.workspace_id)
                 review_id = item.id
             if status in ("abstained", "no_citation"):
@@ -341,9 +352,9 @@ class AssistantService:
                                  trace_url=tracing.trace_url(run.trace_id) if th is not None and th.enabled else None, tool_calls=run.tool_calls)
 
     def _error(self, req: AssistantRequest, trace_id: str, run: _Run | None, exc: BaseException) -> AssistantResponse:
-        msg = ERROR_MESSAGE.format(trace_id=trace_id)
+        msg = error_message(trace_id)
         if isinstance(exc, AppError) and exc.http_status == 503:
-            msg = f"{exc.message} (Mã tra cứu: {trace_id})"
+            msg = L(f"{exc.message} (Mã tra cứu: {trace_id})", f"{exc.message} (Reference: {trace_id})")
         run = run or _Run(trace_id=trace_id, req=req)
         run.dtrace.degrade(f"{type(exc).__name__}: {str(exc)[:200]}")
         try:

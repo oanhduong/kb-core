@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
+from core.i18n import L
 from modeling import expr as E
 from modeling import keys as K
 from modeling.spec import Condition, ModelSpec, OutputColumn, Relationship, Rule
@@ -64,7 +65,7 @@ def _col_type(spec: ModelSpec, table: str, column: str) -> str:
     t = spec.table(table)
     c = next((c for c in t.columns if c.name == column), None) if t else None
     if c is None:
-        raise CompileError(f"bảng {table} không có cột {column}")
+        raise CompileError(L(f"bảng {table} không có cột {column}", f"table {table} has no column {column}"))
     return c.type
 
 
@@ -130,7 +131,7 @@ def _source_cte(spec: ModelSpec, rel: Relationship, rule: Rule, qualify: Callabl
     sel_keys = ", ".join(f"{expr} AS {k}" for k, expr in keys_sql)
     if rule.kind == "lookup" and (rule.func in (None, "first")):
         if not rule.column:
-            raise CompileError("tra cứu thiếu cột kết quả")
+            raise CompileError(L("tra cứu thiếu cột kết quả", "the lookup is missing its result column"))
         _col_type(spec, src, rule.column)
         sql = (f"SELECT DISTINCT ON ({', '.join(knames)}) {', '.join(knames)}, v FROM ("
                f"SELECT {sel_keys}, s.{q(rule.column)} AS v, s._row AS _r FROM {qualify(src)} s WHERE {wsql}"
@@ -144,7 +145,7 @@ def _source_cte(spec: ModelSpec, rel: Relationship, rule: Rule, qualify: Callabl
         if ctype == "timestamp" and func in ("min", "max"):
             col = f"CAST({col} AS DATE)"
     elif func not in ("count",):
-        raise CompileError(f"phép {func} cần chọn cột")
+        raise CompileError(L(f"phép {func} cần chọn cột", f"the {func} operation needs a column"))
     sql = f"SELECT {sel_keys}, {_agg_sql(func, col)} AS v FROM {qualify(src)} s WHERE {wsql} GROUP BY {', '.join(str(i) for i in range(1, len(knames) + 1))}"
     return sql, knames
 
@@ -156,9 +157,9 @@ def _resolver(spec: ModelSpec, known: dict[str, str], alias: str) -> Callable[[s
     def resolve(ref: str) -> E.SqlCol:
         c = by_name.get(ref) or by_label.get(ref.strip().lower())
         if c is None:
-            raise E.ExprError(f"không có cột [{ref}]")
+            raise E.ExprError(L(f"không có cột [{ref}]", f"no column [{ref}]"))
         if c.name not in known:
-            raise E.ExprError(f"cột [{ref}] chưa tính được ở bước này")
+            raise E.ExprError(L(f"cột [{ref}] chưa tính được ở bước này", f"column [{ref}] cannot be calculated at this step yet"))
         return E.SqlCol(f"{alias}.{q(c.name)}", known[c.name])
 
     return resolve
@@ -172,7 +173,7 @@ def formula_deps(spec: ModelSpec, col: OutputColumn) -> list[str]:
     for ref in E.columns_used(node):
         n = ref if ref in names else by_label.get(ref.strip().lower())
         if n is None:
-            raise E.ExprError(f"không có cột [{ref}]")
+            raise E.ExprError(L(f"không có cột [{ref}]", f"no column [{ref}]"))
         out.append(n)
     return out
 
@@ -182,7 +183,7 @@ def compile_view(spec: ModelSpec, qualify: Callable[[str], str] = q, *, override
     """override: thay quy tắc tạm thời (thử ứng viên); only: chỉ tính các cột này (+ cột chúng phụ thuộc)."""
     main = spec.main()
     if main is None:
-        raise CompileError("chưa chọn sheet chính")
+        raise CompileError(L("chưa chọn sheet chính", "no main sheet selected"))
     main_cols = {c.name: c.type for c in main.columns}
     cols = []
     for c in spec.columns:
@@ -224,7 +225,7 @@ def compile_view(spec: ModelSpec, qualify: Callable[[str], str] = q, *, override
             if r.kind == "input":
                 src_col = r.column or c.name
                 if src_col not in main_cols:
-                    raise CompileError(f"sheet chính không có cột {src_col}")
+                    raise CompileError(L(f"sheet chính không có cột {src_col}", f"the main sheet has no column {src_col}"))
                 level1.append(f"base.{q(src_col)} AS {q(c.name)}")
                 known[c.name] = main_cols[src_col]
             elif r.kind == "constant":
@@ -233,18 +234,18 @@ def compile_view(spec: ModelSpec, qualify: Callable[[str], str] = q, *, override
             elif r.kind in ("lookup", "aggregate"):
                 rel = spec.relationship(r.relationship_id)
                 if rel is None or rel.status == "rejected":
-                    raise CompileError("quan hệ dùng cho cột này không còn hiệu lực")
+                    raise CompileError(L("quan hệ dùng cho cột này không còn hiệu lực", "the relationship used by this column is no longer valid"))
                 if rel.target_table != main.key:
-                    raise CompileError("quan hệ phải nối tới sheet chính")
+                    raise CompileError(L("quan hệ phải nối tới sheet chính", "the relationship must connect to the main sheet"))
                 if r.table and r.table != rel.source_table:
-                    raise CompileError("bảng nguồn không khớp quan hệ")
+                    raise CompileError(L("bảng nguồn không khớp quan hệ", "the source table does not match the relationship"))
                 sql, knames = _source_cte(spec, rel, r, qualify)
                 alias = f"x{i}"
                 ctes.append(f"{alias} AS ({sql})")
                 on = []
                 for kp, kn in zip(rel.keys, knames):
                     if kp.base_column not in main_cols:
-                        raise CompileError(f"sheet chính không có cột khoá {kp.base_column}")
+                        raise CompileError(L(f"sheet chính không có cột khoá {kp.base_column}", f"the main sheet has no key column {kp.base_column}"))
                     on.append(f"{alias}.{kn} = {K.to_sql(f'base.{q(kp.base_column)}', main_cols[kp.base_column], kp.base_transforms)}")
                 joins.append(f"LEFT JOIN {alias} ON {' AND '.join(on)}")
                 v = f"{alias}.v"
@@ -259,7 +260,7 @@ def compile_view(spec: ModelSpec, qualify: Callable[[str], str] = q, *, override
                 formulas.append(c)
                 continue
             else:
-                raise CompileError("chưa có quy tắc")
+                raise CompileError(L("chưa có quy tắc", "no rule yet"))
         except (CompileError, E.ExprError) as e:
             problems[c.name] = str(e)
             level1.append(f"CAST(NULL AS {ctype}) AS {q(c.name)}")
@@ -298,7 +299,7 @@ def compile_view(spec: ModelSpec, qualify: Callable[[str], str] = q, *, override
                 nxt.append(c)
         if not layer:  # vòng phụ thuộc
             for c in nxt:
-                problems[c.name] = "công thức phụ thuộc vòng tròn hoặc vào cột chưa tính được"
+                problems[c.name] = L("công thức phụ thuộc vòng tròn hoặc vào cột chưa tính được", "the formula has a circular dependency or depends on a column that cannot be calculated")
                 layer.append(f"CAST(NULL AS {SQL_TYPE.get(c.type, 'VARCHAR')}) AS {q(c.name)}")
                 newly[c.name] = c.type
             nxt = []

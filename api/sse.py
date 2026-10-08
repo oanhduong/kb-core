@@ -19,6 +19,8 @@ from typing import Any
 import anyio
 from fastapi.responses import StreamingResponse
 
+from core.i18n import L
+
 logger = logging.getLogger(__name__)
 _SENTINEL = object()
 HEARTBEAT_SECONDS = 15.0
@@ -38,7 +40,8 @@ def sse_response(gen_factory: Callable[[], Iterator[tuple[str, dict[str, Any]]]]
                 q.put((ev, data))
         except Exception:
             logger.exception("SSE producer lỗi")
-            q.put(("error", {"message": "Hệ thống gặp sự cố khi tạo câu trả lời, vui lòng thử lại."}))
+            q.put(("error", {"code": "internal_error", "message": L("Hệ thống gặp sự cố khi tạo câu trả lời, vui lòng thử lại.",
+                                                                     "Something went wrong while writing the answer. Please try again.")}))
             q.put(("done", {"status": "error"}))
         finally:
             q.put(_SENTINEL)

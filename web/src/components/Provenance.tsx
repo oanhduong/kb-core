@@ -112,7 +112,7 @@ export function ProvenanceTrail({ trace, status, confidence, citations, animate,
           {advanced && (
             <ol className="mt-2 space-y-1 rounded-xl bg-paper p-3 font-mono text-[11.5px] leading-5 text-ink-700">
               {(trace.summary || []).map((x, i) => <li key={i}>{x}</li>)}
-              {s.degraded.length > 0 && <li className="text-marker-700">degraded: {s.degraded.join("; ")}</li>}
+              {s.degraded.length > 0 && <li className="text-marker-700">{t("trail.degraded")}: {s.degraded.join("; ")}</li>}
             </ol>
           )}
         </div>

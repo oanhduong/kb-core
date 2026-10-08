@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from api.auth import workspace
 from api.deps import audit_action, get_db, get_services
 from core.errors import ForbiddenError, NotFoundError
+from core.i18n import L
 from core.models import ChunkRow, Conflict, DataTable, Document, Entity, EntityMention, Job, KBRecordRow
 from core.principal import WorkspaceContext
 from domains import get_pack
@@ -56,18 +57,18 @@ def doc_view(d: Document) -> dict:
 def get_document(db: Session, ctx: WorkspaceContext, document_id: str) -> Document:
     d = db.get(Document, document_id)
     if d is None or d.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có tài liệu")
+        raise NotFoundError(L("Không có tài liệu", "Document not found"))
     if not _scope_ok(ctx, d.store_code):
-        raise ForbiddenError("Tài liệu thuộc phạm vi khác")
+        raise ForbiddenError(L("Tài liệu thuộc phạm vi khác", "This document belongs to a different scope"))
     return d
 
 
 def get_record(db: Session, ctx: WorkspaceContext, record_id: str) -> KBRecordRow:
     r = db.get(KBRecordRow, record_id)
     if r is None or r.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có record")
+        raise NotFoundError(L("Không có record", "Passage not found"))
     if not _scope_ok(ctx, r.store_code):
-        raise ForbiddenError("Record thuộc phạm vi khác")
+        raise ForbiddenError(L("Record thuộc phạm vi khác", "This passage belongs to a different scope"))
     return r
 
 
@@ -168,7 +169,7 @@ def delete_document(document_id: str, request: Request, ctx: WorkspaceContext = 
 def restore_document_ep(document_id: str, request: Request, ctx: WorkspaceContext = Depends(workspace("editor")), db: Session = Depends(get_db)) -> dict:
     d = db.get(Document, document_id)
     if d is None or d.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có tài liệu")
+        raise NotFoundError(L("Không có tài liệu", "Document not found"))
     out = restore_document(db, d, ctx.subject)
     enqueue_job(db, "document_lifecycle", {"document_ids": [document_id, *out.get("superseded_documents", [])]},
                 document_id=document_id, created_by=ctx.subject, workspace_id=ctx.workspace_id)
@@ -182,7 +183,7 @@ def approve_document(document_id: str, request: Request, ctx: WorkspaceContext =
 
     d = get_document(db, ctx, document_id)
     if d.status != "blocked":
-        raise ForbiddenError(f"Chỉ duyệt được tài liệu đang blocked (hiện: {d.status})")
+        raise ForbiddenError(L(f"Chỉ duyệt được tài liệu đang blocked (hiện: {d.status})", f"Only blocked documents can be approved (current: {d.status})"))
     out = approve_blocked_document(db, d, ctx.subject)
     audit_action(request, ctx.principal, "document_approve", document_id, records=out.get("approved_records"))
     return out
@@ -285,9 +286,9 @@ def restore_record_ep(record_id: str, request: Request, ctx: WorkspaceContext = 
 def get_chunk(chunk_id: str, ctx: WorkspaceContext = Depends(workspace("viewer")), db: Session = Depends(get_db)) -> dict:
     c = db.get(ChunkRow, chunk_id)
     if c is None or c.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không tìm thấy đoạn nguồn (có thể đã được reindex lại)")
+        raise NotFoundError(L("Không tìm thấy đoạn nguồn (có thể đã được reindex lại)", "Source passage not found (it may have been reindexed)"))
     if not _scope_ok(ctx, c.store_code):
-        raise ForbiddenError("Đoạn nguồn thuộc phạm vi khác")
+        raise ForbiddenError(L("Đoạn nguồn thuộc phạm vi khác", "This source passage belongs to a different scope"))
     doc = db.get(Document, c.document_id)
     rec = db.get(KBRecordRow, c.record_id)
     parent = db.get(ChunkRow, c.parent_chunk_id) if c.parent_chunk_id else None
@@ -341,7 +342,7 @@ def resolve_conflict(conflict_id: str, body: ConflictResolveBody, request: Reque
                      db: Session = Depends(get_db)) -> dict:
     c = db.get(Conflict, conflict_id)
     if c is None or c.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có conflict")
+        raise NotFoundError(L("Không có conflict", "Conflict not found"))
     kb_service.resolve_conflict(db, c, action=body.action, actor=ctx.subject, note=body.note, keep_record_id=body.keep_record_id)
     audit_action(request, ctx.principal, "conflict_resolve", conflict_id, action=body.action, keep=body.keep_record_id)
     return {"id": c.id, "status": c.status, "resolution": c.resolution}

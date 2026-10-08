@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 
 from core.config import AppConfig
 from core.errors import ValidationFailed
+from core.i18n import L
 from core.models import DataTable, Document
 
 logger = logging.getLogger(__name__)
@@ -93,18 +94,18 @@ def catalog_prompt(tables: list[TableInfo]) -> str:
 def validate_sql(sql: str) -> str:
     s = (sql or "").strip().rstrip(";").strip()
     if not s:
-        raise SQLNotAllowed("SQL rỗng")
+        raise SQLNotAllowed(L("SQL rỗng", "Empty SQL"))
     if ";" in s:
-        raise SQLNotAllowed("Chỉ chấp nhận MỘT câu lệnh SQL")
+        raise SQLNotAllowed(L("Chỉ chấp nhận MỘT câu lệnh SQL", "Only ONE SQL statement is allowed"))
     no_strings = re.sub(r"'(?:[^']|'')*'", "''", s)
     if "--" in no_strings or "/*" in no_strings:
-        raise SQLNotAllowed("Không dùng comment trong SQL")
+        raise SQLNotAllowed(L("Không dùng comment trong SQL", "Comments are not allowed in SQL"))
     head = no_strings.lstrip().split(None, 1)[0].lower()
     if head not in ("select", "with"):
-        raise SQLNotAllowed("Chỉ chấp nhận câu SELECT (hoặc WITH ... SELECT)")
+        raise SQLNotAllowed(L("Chỉ chấp nhận câu SELECT (hoặc WITH ... SELECT)", "Only SELECT statements (or WITH ... SELECT) are allowed"))
     m = _FORBIDDEN_RE.search(no_strings)
     if m:
-        raise SQLNotAllowed(f"Từ khoá không được phép trong SQL read-only: {m.group(0)}")
+        raise SQLNotAllowed(L(f"Từ khoá không được phép trong SQL read-only: {m.group(0)}", f"Keyword not allowed in read-only SQL: {m.group(0)}"))
     return s
 
 
@@ -184,9 +185,9 @@ def run_query(cfg: AppConfig, tables: list[TableInfo], sql: str, *, limit: int |
         rows = cur.fetchall()
         cols = [{"name": d[0], "type": str(d[1]).lower()} for d in cur.description]
     except duckdb.InterruptException as e:
-        raise ValidationFailed(f"Truy vấn quá {cfg.analytics.query_timeout_seconds:.0f}s, đã dừng. Hãy thu hẹp phạm vi.") from e
+        raise ValidationFailed(L(f"Truy vấn quá {cfg.analytics.query_timeout_seconds:.0f}s, đã dừng. Hãy thu hẹp phạm vi.", f"The query took longer than {cfg.analytics.query_timeout_seconds:.0f}s and was stopped. Try narrowing it down.")) from e
     except (duckdb.Error, RuntimeError) as e:
-        raise ValidationFailed(f"SQL lỗi: {str(e).splitlines()[0][:300]}", context={"sql": sql}) from e
+        raise ValidationFailed(L(f"SQL lỗi: {str(e).splitlines()[0][:300]}", f"SQL error: {str(e).splitlines()[0][:300]}"), context={"sql": sql}) from e
     finally:
         timer.cancel()
         conn.close()

@@ -18,6 +18,7 @@ from sqlalchemy import and_, or_, select, text, update
 from sqlalchemy.orm import Session
 
 from core.db import session_scope
+from core.i18n import get_lang
 from core.logging import log_event
 from core.models import Job, utcnow
 
@@ -45,6 +46,8 @@ def enqueue_job(session: Session, job_type: str, payload: dict[str, Any], *, ide
         existing = session.execute(select(Job).where(Job.idempotency_key == idempotency_key)).scalar_one_or_none()
         if existing is not None:
             return existing
+    # ngôn ngữ giao diện của người tạo job -> worker chạy job trong use_lang() (thông báo, báo cáo, lỗi job)
+    payload = {**payload, "lang": payload.get("lang") or get_lang()}
     job = Job(type=job_type, payload=payload, idempotency_key=idempotency_key, document_id=document_id,
               batch_id=batch_id, created_by=created_by, max_attempts=max_attempts, workspace_id=workspace_id,
               run_after=utcnow() + timedelta(seconds=delay_seconds))

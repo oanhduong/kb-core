@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from api.auth import workspace
 from api.deps import audit_action, get_db, get_services
 from core.errors import NotFoundError, ValidationFailed
+from core.i18n import L
 from core.models import Job, new_id
 from core.principal import WorkspaceContext
 from ingest.service import UploadOptions, register_upload
@@ -26,9 +27,9 @@ def upload(request: Request, files: list[UploadFile] = File(...), doc_type: str 
            replace_mode: str = Form("document"), ctx: WorkspaceContext = Depends(workspace("editor")),
            db: Session = Depends(get_db), services: Any = Depends(get_services)) -> dict:
     if not files:
-        raise ValidationFailed("Cần ít nhất 1 file")
+        raise ValidationFailed(L("Cần ít nhất 1 file", "At least 1 file is required"))
     if title and len(files) > 1:
-        raise ValidationFailed("title chỉ dùng khi upload 1 file")
+        raise ValidationFailed(L("title chỉ dùng khi upload 1 file", "title can only be used when uploading 1 file"))
     batch_id = new_id()
     out = []
     for f in files:
@@ -61,7 +62,7 @@ def list_jobs(status: str | None = None, type: str | None = None, batch_id: str 
 def _job(db: Session, ctx: WorkspaceContext, job_id: str) -> Job:
     job = db.get(Job, job_id)
     if job is None or job.workspace_id != ctx.workspace_id:
-        raise NotFoundError(f"Không có job {job_id}")
+        raise NotFoundError(L(f"Không có job {job_id}", f"Job {job_id} not found"))
     return job
 
 
@@ -74,7 +75,7 @@ def get_job(job_id: str, ctx: WorkspaceContext = Depends(workspace("viewer")), d
 def requeue_job(job_id: str, request: Request, ctx: WorkspaceContext = Depends(workspace("editor")), db: Session = Depends(get_db)) -> dict:
     job = _job(db, ctx, job_id)
     if job.status not in ("blocked", "error"):
-        raise ValidationFailed(f"Chỉ requeue được job blocked/error (hiện: {job.status})")
+        raise ValidationFailed(L(f"Chỉ requeue được job blocked/error (hiện: {job.status})", f"Only blocked/error jobs can be requeued (current: {job.status})"))
     requeue(db, job_id, actor=ctx.subject)
     audit_action(request, ctx.principal, "job_requeue", job_id)
     return job_view(db.get(Job, job_id))

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from api.auth import workspace
 from api.deps import audit_action, get_db
 from core.errors import ForbiddenError, NotFoundError
+from core.i18n import L
 from core.models import ReviewItem
 from core.principal import WorkspaceContext
 from qa import review as review_svc
@@ -38,9 +39,9 @@ def list_review(status: str = "pending", overridden: bool | None = None, limit: 
 def _get_scoped(db: Session, review_id: str, ctx: WorkspaceContext) -> ReviewItem:
     item = db.get(ReviewItem, review_id)
     if item is None or item.workspace_id != ctx.workspace_id:
-        raise NotFoundError(f"Không có mục review {review_id}")
+        raise NotFoundError(L(f"Không có mục review {review_id}", f"Review item {review_id} not found"))
     if ctx.scope_value and item.store_code not in (ctx.scope_value, None):
-        raise ForbiddenError("Mục review thuộc phạm vi khác")
+        raise ForbiddenError(L("Mục review thuộc phạm vi khác", "This review item belongs to a different scope"))
     return item
 
 

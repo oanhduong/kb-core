@@ -241,7 +241,8 @@ def describe_table(cfg: AppConfig, llm: Any, doc_title: str, raw_title: str, col
     col_lines = "\n".join(f"- {c['name']} (gốc: {c['original']}, kiểu {c['type']}, ví dụ: {', '.join(c['examples'])})" for c in cols)
     sample_txt = "\n".join(" | ".join(f"{k}={v}" for k, v in row.items()) for row in sample[:5])
     user = (f"Tài liệu: {doc_title}\nVị trí bảng: {raw_title}\nCột:\n{col_lines}\n\nDòng mẫu:\n"
-            + wrap_untrusted(sample_txt, source=f"{doc_title} / {raw_title}", doc_type="table"))
+            + wrap_untrusted(sample_txt, source=f"{doc_title} / {raw_title}", doc_type="table")
+            + "\n\nNgôn ngữ đầu ra: viết mọi trường văn bản bằng ngôn ngữ chính của tên cột và dữ liệu trong bảng (tài liệu tiếng Anh -> tiếng Anh, tiếng Việt -> tiếng Việt); giữ nguyên tên riêng, mã và số.")
     try:
         out = llm.complete_json("table_describe", system=read_prompt("table_describe", cfg), user=user, schema=_TableDescription,
                                 max_tokens=700, max_retries=1)

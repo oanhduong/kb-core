@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { translate, useT } from "@/i18n";
 import { api } from "@/lib/api";
-import { fmtDate } from "@/lib/format";
+import { docStatus, fmtDate } from "@/lib/format";
 import type { Citation } from "@/lib/types";
 import { useWorkspace } from "@/state/auth";
 import { Advanced } from "@/state/prefs";
@@ -127,7 +127,7 @@ export function SourceDrawer({ citation, onClose }: { citation: Citation | null;
                   <span><DocType code={c.document.doc_type} /></span>
                   {c.location && <Meta icon={<MapPin className="h-3.5 w-3.5 text-ink-400" />}>{c.location}</Meta>}
                   {c.effective_date && <Meta icon={<CalendarDays className="h-3.5 w-3.5 text-ink-400" />}>{t("sources.inEffectFrom", { date: fmtDate(c.effective_date) })}</Meta>}
-                  {c.document.status !== "active" && <StatusBadge status={c.document.status} />}
+                  {c.document.status !== "active" && <StatusBadge status={docStatus(c.document.status)} />}
                 </div>
               </div>
               <Link to={`/w/${wsId}/documents/${c.document.document_id}`} className="btn-secondary btn-sm shrink-0 self-start sm:self-center" onClick={onClose}>

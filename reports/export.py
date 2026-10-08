@@ -9,6 +9,8 @@ import logging
 import re
 from typing import Any
 
+from core.i18n import L
+
 logger = logging.getLogger(__name__)
 
 _CITE_RE = re.compile(r"\[(\d+)\]")
@@ -108,8 +110,8 @@ def report_html(title: str, blocks: list[dict[str, Any]], *, workspace_name: str
         elif t == "sources":
             items = b.get("items") or []
             if items:
-                parts.append("<h2>Nguồn tham chiếu</h2><ol class='sources'>" + "".join(
-                    f"<li>{html.escape(it.get('label', ''))}" + (f" <span class='eff'>(hiệu lực {html.escape(str(it['effective_date']))})</span>" if it.get("effective_date") else "") + "</li>"
+                parts.append(f"<h2>{L('Nguồn tham chiếu', 'Sources')}</h2><ol class='sources'>" + "".join(
+                    f"<li>{html.escape(it.get('label', ''))}" + (f" <span class='eff'>({L('hiệu lực', 'effective')} {html.escape(str(it['effective_date']))})</span>" if it.get("effective_date") else "") + "</li>"
                     for it in items) + "</ol>")
     css = """
     body{font-family:'DejaVu Sans',Arial,sans-serif;font-size:11pt;color:#1c2430;line-height:1.5;margin:28px}
@@ -172,9 +174,9 @@ def export_docx(title: str, blocks: list[dict[str, Any]], *, workspace_name: str
                 for i, v in enumerate(r[:len(cols)]):
                     cells[i].text = "" if v is None else str(v)
         elif t == "sources" and b.get("items"):
-            doc.add_heading("Nguồn tham chiếu", level=1)
+            doc.add_heading(L("Nguồn tham chiếu", "Sources"), level=1)
             for i, it in enumerate(b["items"], 1):
-                doc.add_paragraph(f"[{i}] {it.get('label', '')}" + (f" (hiệu lực {it['effective_date']})" if it.get("effective_date") else ""))
+                doc.add_paragraph(f"[{i}] {it.get('label', '')}" + (f" ({L('hiệu lực', 'effective')} {it['effective_date']})" if it.get("effective_date") else ""))
     out = io.BytesIO()
     doc.save(out)
     return out.getvalue()
@@ -230,13 +232,13 @@ def export_xlsx(title: str, blocks: list[dict[str, Any]]) -> bytes:
 
     wb = Workbook()
     ws0 = wb.active
-    ws0.title = "Tổng quan"
+    ws0.title = L("Tổng quan", "Overview")
     ws0.append([title])
     n = 0
     for b in blocks:
         if b.get("type") == "table" and b.get("rows"):
             n += 1
-            name = re.sub(r"[\[\]\*\?/\\:]", " ", (b.get("title") or f"Bảng {n}"))[:28] or f"Bang {n}"
+            name = re.sub(r"[\[\]\*\?/\\:]", " ", (b.get("title") or L(f"Bảng {n}", f"Table {n}")))[:28] or f"Bang {n}"
             ws = wb.create_sheet(f"{n}. {name}"[:31])
             cols = [c["name"] if isinstance(c, dict) else str(c) for c in b.get("columns", [])]
             ws.append(cols)

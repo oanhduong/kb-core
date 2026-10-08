@@ -19,6 +19,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from core.errors import ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationFailed
+from core.i18n import L
 from core.logging import log_event
 from core.models import ApiKey, User, Workspace, WorkspaceInvite, WorkspaceMember, utcnow
 from core.principal import ROLES, Principal, WorkspaceContext
@@ -40,13 +41,13 @@ MIN_PASSWORD = 8
 def normalize_email(email: str) -> str:
     e = (email or "").strip().lower()
     if not _EMAIL_RE.match(e):
-        raise ValidationFailed("Email không hợp lệ")
+        raise ValidationFailed(L("Email không hợp lệ", "Invalid email"))
     return e
 
 
 def hash_password(pw: str) -> str:
     if len(pw or "") < MIN_PASSWORD:
-        raise ValidationFailed(f"Mật khẩu phải có ít nhất {MIN_PASSWORD} ký tự")
+        raise ValidationFailed(L(f"Mật khẩu phải có ít nhất {MIN_PASSWORD} ký tự", f"Password must be at least {MIN_PASSWORD} characters"))
     return bcrypt.hashpw(pw.encode("utf-8"), bcrypt.gensalt()).decode()
 
 
@@ -60,7 +61,7 @@ def verify_password(pw: str, hashed: str) -> bool:
 def create_user(session: Session, *, email: str, password: str, name: str, locale: str = "vi") -> User:
     email = normalize_email(email)
     if session.execute(select(User).where(User.email == email)).scalar_one_or_none():
-        raise ConflictError("Email đã được đăng ký")
+        raise ConflictError(L("Email đã được đăng ký", "This email is already registered"))
     first_user = session.execute(select(func.count()).select_from(User)).scalar_one() == 0
     bootstrap_email = (os.environ.get("BOOTSTRAP_ADMIN_EMAIL") or "").lower()
     user = User(email=email, password_hash=hash_password(password), name=(name or email.split("@")[0]).strip()[:120],
@@ -76,9 +77,9 @@ def authenticate_user(session: Session, email: str, password: str) -> User:
     email = (email or "").strip().lower()
     user = session.execute(select(User).where(User.email == email)).scalar_one_or_none()
     if user is None or not verify_password(password, user.password_hash):
-        raise UnauthorizedError("Email hoặc mật khẩu không đúng")
+        raise UnauthorizedError(L("Email hoặc mật khẩu không đúng", "Incorrect email or password"))
     if not user.is_active:
-        raise ForbiddenError("Tài khoản đã bị khoá")
+        raise ForbiddenError(L("Tài khoản đã bị khoá", "This account has been locked"))
     user.last_login_at = utcnow()
     accept_pending_invites(session, user)
     return user
@@ -86,14 +87,14 @@ def authenticate_user(session: Session, email: str, password: str) -> User:
 
 def change_password(session: Session, user: User, old: str, new: str) -> None:
     if not verify_password(old, user.password_hash):
-        raise UnauthorizedError("Mật khẩu hiện tại không đúng")
+        raise UnauthorizedError(L("Mật khẩu hiện tại không đúng", "Current password is incorrect"))
     user.password_hash = hash_password(new)
 
 
 def get_user_or_404(session: Session, user_id: str) -> User:
     u = session.get(User, user_id)
     if u is None:
-        raise NotFoundError("Không có người dùng")
+        raise NotFoundError(L("Không có người dùng", "User not found"))
     return u
 
 
@@ -114,9 +115,9 @@ def create_workspace(session: Session, owner: User, *, name: str, description: s
                      domain_pack: str = "generic") -> Workspace:
     name = (name or "").strip()
     if not name:
-        raise ValidationFailed("Tên workspace không được rỗng")
+        raise ValidationFailed(L("Tên workspace không được rỗng", "Workspace name must not be empty"))
     if domain_pack not in {p.key for p in list_packs()}:
-        raise ValidationFailed(f"domain_pack không hợp lệ: {domain_pack}")
+        raise ValidationFailed(L(f"domain_pack không hợp lệ: {domain_pack}", f"Invalid domain_pack: {domain_pack}"))
     ws = Workspace(name=name[:120], slug=_unique_slug(session, name), owner_id=owner.id, description=description,
                    domain_pack=domain_pack)
     session.add(ws)
@@ -136,7 +137,7 @@ def list_user_workspaces(session: Session, user: User) -> list[tuple[Workspace, 
 def get_workspace_or_404(session: Session, workspace_id: str) -> Workspace:
     ws = session.get(Workspace, workspace_id)
     if ws is None or ws.archived_at is not None:
-        raise NotFoundError("Không có workspace")
+        raise NotFoundError(L("Không có workspace", "Workspace not found"))
     return ws
 
 
@@ -147,29 +148,29 @@ def resolve_context(session: Session, principal: Principal, workspace_id: str) -
         if principal.is_superadmin:
             return WorkspaceContext(ws.id, ws.name, ws.domain_pack, "owner", {}, ws.settings or {}, principal)
         if principal.key_workspace_id != ws.id:
-            raise ForbiddenError("API key không thuộc workspace này")
+            raise ForbiddenError(L("API key không thuộc workspace này", "This API key does not belong to this workspace"))
         return WorkspaceContext(ws.id, ws.name, ws.domain_pack, principal.key_role or "viewer", {}, ws.settings or {}, principal)
     m = session.get(WorkspaceMember, (ws.id, principal.subject))
     if m is None:
         if principal.is_superadmin:
             return WorkspaceContext(ws.id, ws.name, ws.domain_pack, "owner", {}, ws.settings or {}, principal)
-        raise ForbiddenError("Bạn không phải thành viên workspace này")
+        raise ForbiddenError(L("Bạn không phải thành viên workspace này", "You are not a member of this workspace"))
     return WorkspaceContext(ws.id, ws.name, ws.domain_pack, m.role, dict(m.attributes or {}), ws.settings or {}, principal)
 
 
 def update_workspace(session: Session, ws: Workspace, ctx: WorkspaceContext, *, name: str | None = None,
                      description: str | None = None, domain_pack: str | None = None, settings: dict | None = None) -> Workspace:
     if not ctx.has_role("owner"):
-        raise ForbiddenError("Chỉ owner mới sửa được workspace")
+        raise ForbiddenError(L("Chỉ owner mới sửa được workspace", "Only an owner can edit the workspace"))
     if name is not None:
         if not name.strip():
-            raise ValidationFailed("Tên workspace không được rỗng")
+            raise ValidationFailed(L("Tên workspace không được rỗng", "Workspace name must not be empty"))
         ws.name = name.strip()[:120]
     if description is not None:
         ws.description = description
     if domain_pack is not None:
         if domain_pack not in {p.key for p in list_packs()}:
-            raise ValidationFailed(f"domain_pack không hợp lệ: {domain_pack}")
+            raise ValidationFailed(L(f"domain_pack không hợp lệ: {domain_pack}", f"Invalid domain_pack: {domain_pack}"))
         ws.domain_pack = domain_pack
     if settings is not None:
         ws.settings = {**(ws.settings or {}), **settings}
@@ -178,7 +179,7 @@ def update_workspace(session: Session, ws: Workspace, ctx: WorkspaceContext, *, 
 
 def archive_workspace(session: Session, ws: Workspace, ctx: WorkspaceContext) -> None:
     if not ctx.has_role("owner"):
-        raise ForbiddenError("Chỉ owner mới lưu trữ được workspace")
+        raise ForbiddenError(L("Chỉ owner mới lưu trữ được workspace", "Only an owner can archive the workspace"))
     ws.archived_at = utcnow()
 
 
@@ -188,7 +189,7 @@ def archive_workspace(session: Session, ws: Workspace, ctx: WorkspaceContext) ->
 
 def _check_role(role: str) -> str:
     if role not in ROLES:
-        raise ValidationFailed(f"role phải là một trong {ROLES}")
+        raise ValidationFailed(L(f"role phải là một trong {ROLES}", f"role must be one of {ROLES}"))
     return role
 
 
@@ -198,7 +199,7 @@ def _check_attributes(pack_key: str, attributes: dict | None) -> dict:
     attrs = {k: v for k, v in (attributes or {}).items() if v not in (None, "")}
     unknown = set(attrs) - allowed
     if unknown:
-        raise ValidationFailed(f"Thuộc tính không có trong domain pack {pack.name}: {sorted(unknown)}")
+        raise ValidationFailed(L(f"Thuộc tính không có trong domain pack {pack.name}: {sorted(unknown)}", f"Attributes not in domain pack {pack.name}: {sorted(unknown)}"))
     return attrs
 
 
@@ -216,7 +217,7 @@ def _owner_count(session: Session, workspace_id: str) -> int:
 def invite_member(session: Session, ctx: WorkspaceContext, *, email: str, role: str = "viewer",
                   attributes: dict | None = None) -> dict:
     if not ctx.has_role("owner"):
-        raise ForbiddenError("Chỉ owner mới mời được thành viên")
+        raise ForbiddenError(L("Chỉ owner mới mời được thành viên", "Only an owner can invite members"))
     email = normalize_email(email)
     role = _check_role(role)
     attrs = _check_attributes(ctx.domain_pack, attributes)
@@ -239,7 +240,7 @@ def invite_member(session: Session, ctx: WorkspaceContext, *, email: str, role: 
         inv.role, inv.attributes, inv.accepted_at = role, attrs, None
     session.flush()
     return {"status": "invited", "invite_id": inv.id, "email": email, "role": role, "attributes": attrs,
-            "note": "Người này chưa có tài khoản — sẽ tự vào workspace khi đăng ký bằng email trên."}
+            "note": L("Người này chưa có tài khoản — sẽ tự vào workspace khi đăng ký bằng email trên.", "This person has no account yet — they will join the workspace automatically when they sign up with this email.")}
 
 
 def accept_pending_invites(session: Session, user: User) -> int:
@@ -257,14 +258,14 @@ def accept_pending_invites(session: Session, user: User) -> int:
 def update_member(session: Session, ctx: WorkspaceContext, user_id: str, *, role: str | None = None,
                   attributes: dict | None = None) -> WorkspaceMember:
     if not ctx.has_role("owner"):
-        raise ForbiddenError("Chỉ owner mới đổi vai trò thành viên")
+        raise ForbiddenError(L("Chỉ owner mới đổi vai trò thành viên", "Only an owner can change member roles"))
     m = session.get(WorkspaceMember, (ctx.workspace_id, user_id))
     if m is None:
-        raise NotFoundError("Không có thành viên")
+        raise NotFoundError(L("Không có thành viên", "Member not found"))
     if role is not None:
         role = _check_role(role)
         if m.role == "owner" and role != "owner" and _owner_count(session, ctx.workspace_id) <= 1:
-            raise ConflictError("Workspace phải còn ít nhất 1 owner")
+            raise ConflictError(L("Workspace phải còn ít nhất 1 owner", "The workspace must keep at least 1 owner"))
         m.role = role
     if attributes is not None:
         m.attributes = _check_attributes(ctx.domain_pack, attributes)
@@ -274,12 +275,12 @@ def update_member(session: Session, ctx: WorkspaceContext, user_id: str, *, role
 
 def remove_member(session: Session, ctx: WorkspaceContext, user_id: str) -> None:
     if user_id != ctx.subject and not ctx.has_role("owner"):
-        raise ForbiddenError("Chỉ owner mới xoá được thành viên khác")
+        raise ForbiddenError(L("Chỉ owner mới xoá được thành viên khác", "Only an owner can remove other members"))
     m = session.get(WorkspaceMember, (ctx.workspace_id, user_id))
     if m is None:
-        raise NotFoundError("Không có thành viên")
+        raise NotFoundError(L("Không có thành viên", "Member not found"))
     if m.role == "owner" and _owner_count(session, ctx.workspace_id) <= 1:
-        raise ConflictError("Owner cuối cùng không thể rời workspace — chuyển quyền owner trước")
+        raise ConflictError(L("Owner cuối cùng không thể rời workspace — chuyển quyền owner trước", "The last owner cannot leave the workspace — transfer ownership first"))
     session.delete(m)
 
 
@@ -294,7 +295,7 @@ def hash_key(raw: str) -> str:
 def create_api_key(session: Session, ctx: WorkspaceContext, *, name: str, role: str = "viewer",
                    rate_limit: int | None = None) -> tuple[ApiKey, str]:
     if not ctx.has_role("owner"):
-        raise ForbiddenError("Chỉ owner mới tạo được API key")
+        raise ForbiddenError(L("Chỉ owner mới tạo được API key", "Only an owner can create API keys"))
     role = _check_role(role)
     raw = API_KEY_PREFIX + secrets.token_urlsafe(32)
     row = ApiKey(workspace_id=ctx.workspace_id, name=(name or "key").strip()[:80], key_prefix=raw[:10], key_hash=hash_key(raw),
@@ -310,7 +311,7 @@ def principal_from_api_key(session: Session, raw: str) -> tuple[Principal, int |
         return Principal(subject="apikey:bootstrap-admin", kind="service", is_superadmin=True, key_id="bootstrap"), None
     row = session.execute(select(ApiKey).where(ApiKey.key_hash == hash_key(raw), ApiKey.active.is_(True))).scalar_one_or_none()
     if row is None:
-        raise UnauthorizedError("API key không hợp lệ hoặc đã bị thu hồi")
+        raise UnauthorizedError(L("API key không hợp lệ hoặc đã bị thu hồi", "Invalid or revoked API key"))
     row.last_used_at = utcnow()
     return Principal(subject=f"apikey:{row.name}", kind="service", key_id=row.id, key_workspace_id=row.workspace_id,
                      key_role=row.role), row.rate_limit_per_minute

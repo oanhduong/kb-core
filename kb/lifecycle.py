@@ -24,6 +24,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from core.errors import ConflictError, NotFoundError, ValidationFailed
+from core.i18n import L
 from core.logging import log_event
 from core.models import Document, KBRecordRow, utcnow
 from graph.resolve import fold_text
@@ -212,7 +213,7 @@ def soft_delete_document(session: Session, doc: Document, actor: str) -> dict[st
 
 def restore_document(session: Session, doc: Document, actor: str) -> dict[str, Any]:
     if doc.deleted_at is None:
-        raise ConflictError("Document chưa bị xoá, không cần khôi phục.")
+        raise ConflictError(L("Document chưa bị xoá, không cần khôi phục.", "This document is not deleted, nothing to restore."))
     deleted_at = doc.deleted_at
     doc.deleted_at, doc.status = None, "pending"
     recs = _doc_records(session, doc.id)
@@ -243,10 +244,10 @@ def soft_delete_record(session: Session, rec: KBRecordRow, actor: str) -> KBReco
 
 def restore_record(session: Session, rec: KBRecordRow, actor: str) -> KBRecordRow:
     if rec.deleted_at is None:
-        raise ConflictError("Record chưa bị xoá.")
+        raise ConflictError(L("Record chưa bị xoá.", "This passage is not deleted."))
     doc = session.get(Document, rec.document_id)
     if doc is None or doc.deleted_at is not None:
-        raise ConflictError("File chứa record đang bị xoá — khôi phục file trước.")
+        raise ConflictError(L("File chứa record đang bị xoá — khôi phục file trước.", "The file containing this passage is deleted — restore the file first."))
     prev = (rec.meta or {}).get("status_before_delete", "active")
     rec.deleted_at = None
     rec.status = prev if prev != "deleted" else "active"
@@ -261,18 +262,18 @@ def restore_record(session: Session, rec: KBRecordRow, actor: str) -> KBRecordRo
 def get_document_or_404(session: Session, doc_id: str) -> Document:
     doc = session.get(Document, doc_id)
     if doc is None:
-        raise NotFoundError(f"Không có document {doc_id}")
+        raise NotFoundError(L(f"Không có document {doc_id}", f"Document {doc_id} not found"))
     return doc
 
 
 def get_record_or_404(session: Session, record_id: str) -> KBRecordRow:
     rec = session.get(KBRecordRow, record_id)
     if rec is None:
-        raise NotFoundError(f"Không có record {record_id}")
+        raise NotFoundError(L(f"Không có record {record_id}", f"Passage {record_id} not found"))
     return rec
 
 
 def validate_replace_mode(mode: str) -> str:
     if mode not in ("document", "record", "none"):
-        raise ValidationFailed("replace_mode phải là document | record | none")
+        raise ValidationFailed(L("replace_mode phải là document | record | none", "replace_mode must be document | record | none"))
     return mode

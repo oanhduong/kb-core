@@ -14,6 +14,7 @@ from api.auth import workspace
 from api.deps import audit_action, get_db, get_services
 from core.config import get_settings
 from core.errors import ValidationFailed
+from core.i18n import L
 from core.principal import WorkspaceContext
 from modeling import service as svc
 from modeling.spec import KeyPair, Rule
@@ -73,7 +74,7 @@ def delete_model(model_id: str, request: Request, ctx: WorkspaceContext = Depend
 
 def _busy(m: Any) -> None:
     if m.status in ("analyzing", "building"):
-        raise ValidationFailed("Mô hình đang được xử lý — vui lòng đợi xong rồi thao tác tiếp")
+        raise ValidationFailed(L("Mô hình đang được xử lý — vui lòng đợi xong rồi thao tác tiếp", "The model is being processed — please wait until it finishes"))
 
 
 class ReanalyzeBody(BaseModel):
@@ -89,7 +90,7 @@ def reanalyze(model_id: str, body: ReanalyzeBody, ctx: WorkspaceContext = Depend
     if body.main_table:
         spec = svc.spec_of(m)
         if spec.table(body.main_table) is None:
-            raise ValidationFailed("Không có sheet này")
+            raise ValidationFailed(L("Không có sheet này", "Sheet not found"))
     job = enqueue_job(db, "model_analyze", {"model_id": m.id, "main_table": body.main_table}, workspace_id=ctx.workspace_id,
                       created_by=ctx.subject, max_attempts=2)
     m.job_id, m.status = job.id, "analyzing"
@@ -212,7 +213,7 @@ def build(model_id: str, request: Request, ctx: WorkspaceContext = Depends(works
     m = svc.get_model(db, ctx.workspace_id, model_id)
     _busy(m)
     if not m.spec:
-        raise ValidationFailed("Mô hình chưa phân tích xong")
+        raise ValidationFailed(L("Mô hình chưa phân tích xong", "The model has not finished analyzing"))
     job = enqueue_job(db, "model_build", {"model_id": m.id}, workspace_id=ctx.workspace_id, created_by=ctx.subject, max_attempts=2)
     m.job_id, m.status = job.id, "building"
     audit_action(request, ctx.principal, "data_model_build", model_id, revision=m.revision)
@@ -263,7 +264,7 @@ def table_rows(model_id: str, key: str, limit: int = Query(50, ge=1, le=500), of
     spec = svc.spec_of(m)
     t = spec.table(key)
     if t is None:
-        raise ValidationFailed("Không có sheet")
+        raise ValidationFailed(L("Không có sheet", "Sheet not found"))
     frames = svc.load_frames(services.cfg, m.workspace_id, m.id, [key])
     df = frames.get(key)
     if df is None:

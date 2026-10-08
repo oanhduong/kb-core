@@ -68,7 +68,24 @@ export function statusLabel(s: string | null | undefined): string {
 }
 
 export function roleLabel(r: string | null | undefined): string {
-  return r ? translate(`role.${r}`) : "";
+  if (!r) return "";
+  const k = `role.${r}`;
+  const out = translate(k);
+  return out === k ? r : out;
+}
+
+/** Trạng thái tài liệu: "pending" của tài liệu là đang chờ xử lý (khác "pending" của hàng chờ duyệt). */
+export function docStatus(s: string | null | undefined): string | null | undefined {
+  return s === "pending" ? "queued" : s;
+}
+
+/** Lý do vào hàng chờ duyệt: "money: giá, chiết khấu" (mã từ backend) -> câu theo ngôn ngữ giao diện. */
+export function reviewReason(r: string | null | undefined): string {
+  if (!r) return "";
+  const m = /^(?:money:|Câu hỏi liên quan tiền:)\s*(.*)$/.exec(r);
+  if (m) return translate("trust.review.reasonMoney", { words: m[1] });
+  if (r === "no_citation" || r === "no_results" || r === "abstained") return statusLabel(r === "no_results" ? "abstained" : r);
+  return r;
 }
 
 export function sourceLabel(s: string | null | undefined): string {

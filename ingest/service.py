@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from core.config import AppConfig
 from core.errors import ValidationFailed
+from core.i18n import L
 from core.logging import log_event
 from core.models import Document, Job, new_id
 from kb.ids import file_sha256
@@ -72,10 +73,10 @@ def register_upload(session: Session, cfg: AppConfig, *, workspace_id: str, src:
     fname = safe_filename(filename)
     ext = os.path.splitext(fname)[1].lower()
     if ext not in cfg.ingest.allowed_extensions or ext not in EXT_SOURCE_TYPE:
-        raise ValidationFailed(f"Định dạng {ext or '(không có đuôi)'} không được hỗ trợ. Hỗ trợ: {', '.join(cfg.ingest.allowed_extensions)}",
+        raise ValidationFailed(L(f"Định dạng {ext or '(không có đuôi)'} không được hỗ trợ. Hỗ trợ: {', '.join(cfg.ingest.allowed_extensions)}", f"The format {ext or '(no extension)'} is not supported. Supported: {', '.join(cfg.ingest.allowed_extensions)}"),
                                context={"filename": fname})
     if opts.doc_type and not re.match(r"^[a-z][a-z0-9_]{1,31}$", opts.doc_type):
-        raise ValidationFailed("doc_type phải là mã chữ thường (vd policy, report, price_list)")
+        raise ValidationFailed(L("doc_type phải là mã chữ thường (vd policy, report, price_list)", "doc_type must be a lowercase code (e.g. policy, report, price_list)"))
     validate_replace_mode(opts.replace_mode)
 
     doc_id = new_id()
@@ -98,11 +99,11 @@ def register_upload(session: Session, cfg: AppConfig, *, workspace_id: str, src:
                 if written > max_bytes:
                     out.close()
                     shutil.rmtree(folder, ignore_errors=True)
-                    raise ValidationFailed(f"File vượt giới hạn {cfg.ingest.max_upload_mb}MB", context={"filename": fname})
+                    raise ValidationFailed(L(f"File vượt giới hạn {cfg.ingest.max_upload_mb}MB", f"The file exceeds the {cfg.ingest.max_upload_mb}MB limit"), context={"filename": fname})
                 out.write(block)
     if written == 0:
         shutil.rmtree(folder, ignore_errors=True)
-        raise ValidationFailed("File rỗng", context={"filename": fname})
+        raise ValidationFailed(L("File rỗng", "The file is empty"), context={"filename": fname})
     digest = file_sha256(dest)
 
     existing = session.execute(select(Document).where(Document.workspace_id == workspace_id, Document.content_hash == digest,

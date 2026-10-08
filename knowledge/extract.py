@@ -137,7 +137,8 @@ def _extract_window(cfg: AppConfig, llm: Any, system: str, doc_title: str, w: Wi
     catalogue, ảnh chụp POS) -> chia đôi window và trích từng nửa thay vì bỏ cả window."""
     from core.llm import LLMOutputInvalid, LLMUnavailable
 
-    user = f"Tài liệu: {doc_title} — vị trí: {w.location}\n" + wrap_untrusted(w.text, source=f"{doc_title} / {w.location}")
+    user = (f"Tài liệu: {doc_title} — vị trí: {w.location}\n" + wrap_untrusted(w.text, source=f"{doc_title} / {w.location}")
+            + "\n\nNgôn ngữ đầu ra: nhãn quan hệ và mô tả viết bằng ngôn ngữ của đoạn tài liệu; tên đối tượng giữ nguyên như trong tài liệu.")
     try:
         out = llm.complete_json("knowledge_extract", system=system, user=user, schema=ExtractOut,
                                 max_tokens=cfg.knowledge.extract_max_tokens, max_retries=1)

@@ -26,6 +26,7 @@ from sqlalchemy import text
 from api.routes import accounts, admin, analytics, ingest, insights, kb, knowledge, models, qa, reports, review
 from core.config import get_config
 from core.errors import AppError
+from core.i18n import L, reset_lang, set_lang
 from core.logging import bind_log_context, configure_logging, log_event, reset_log_context
 
 logger = logging.getLogger(__name__)
@@ -59,14 +60,16 @@ def create_app(services=None) -> FastAPI:
         rid = request.headers.get("x-request-id") or uuid.uuid4().hex[:16]
         request.state.request_id = rid
         token = bind_log_context(request_id=rid)
+        lang_token = set_lang(request.headers.get("accept-language"))
         start = time.perf_counter()
         try:
             response = await call_next(request)
         except Exception:  # lỗi lọt khỏi exception handler (hiếm) -> vẫn JSON thân thiện
             logger.exception("lỗi không xử lý được ở middleware")
-            response = JSONResponse(status_code=500, content=_err("internal_error", _GENERIC, rid))
+            response = JSONResponse(status_code=500, content=_err("internal_error", _generic(), rid))
         finally:
             reset_log_context(token)
+            reset_lang(lang_token)
         response.headers["X-Request-ID"] = rid
         if request.url.path not in ("/healthz",):
             principal = getattr(request.state, "principal", None)
@@ -86,7 +89,7 @@ def create_app(services=None) -> FastAPI:
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError):
         details = [{"field": ".".join(str(p) for p in e["loc"][1:]), "message": e["msg"]} for e in exc.errors()]
-        body = _err("validation_failed", "Dữ liệu gửi lên không hợp lệ.", getattr(request.state, "request_id", None))
+        body = _err("validation_failed", L("Dữ liệu gửi lên không hợp lệ.", "The submitted data is not valid."), getattr(request.state, "request_id", None))
         body["error"]["details"] = details
         return JSONResponse(status_code=422, content=body)
 
@@ -94,7 +97,7 @@ def create_app(services=None) -> FastAPI:
     async def unhandled(request: Request, exc: Exception):
         rid = getattr(request.state, "request_id", None)
         logger.exception("lỗi không lường trước request_id=%s", rid)
-        return JSONResponse(status_code=500, content=_err("internal_error", _GENERIC, rid))
+        return JSONResponse(status_code=500, content=_err("internal_error", _generic(), rid))
 
     @app.get("/healthz", tags=["ops"], summary="Liveness")
     def healthz() -> dict:
@@ -130,7 +133,9 @@ def create_app(services=None) -> FastAPI:
     return app
 
 
-_GENERIC = "Hệ thống gặp sự cố tạm thời. Vui lòng thử lại; nếu lỗi lặp lại hãy báo admin kèm mã request."
+def _generic() -> str:
+    return L("Hệ thống gặp sự cố tạm thời. Vui lòng thử lại; nếu lỗi lặp lại hãy báo admin kèm mã request.",
+             "Something went wrong on our side. Please try again; if it keeps happening, tell your admin and include the request ID.")
 
 
 def _err(code: str, message: str, request_id: str | None) -> dict:

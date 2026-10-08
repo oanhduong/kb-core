@@ -14,7 +14,7 @@ import { VegaChart } from "@/components/VegaChart";
 import { useI18n } from "@/i18n";
 import { Page } from "@/layout/AppShell";
 import { api } from "@/lib/api";
-import { fmtDate, fmtMs, fmtNumber, fmtPct, fmtRelative, fmtUsd, statusLabel, truncate } from "@/lib/format";
+import { fmtDate, fmtMs, fmtNumber, fmtPct, fmtRelative, fmtUsd, reviewReason, statusLabel, truncate } from "@/lib/format";
 import type { Conflict, ReviewItem } from "@/lib/types";
 import { useWorkspace } from "@/state/auth";
 import { usePrefs } from "@/state/prefs";
@@ -118,7 +118,7 @@ function ReviewTab() {
             <div><div className="label">{t("trust.review.question")}</div><div className="rounded-xl bg-paper p-3 text-[15px]">{item.question}</div></div>
             <div><div className="label">{t("trust.review.draft")}</div><div className="rounded-xl border border-ink-100 p-3"><Markdown text={item.draft_answer} citations={item.draft_citations} /></div>
               {item.draft_citations?.length > 0 && <ul className="mt-2 space-y-0.5 text-xs text-ink-600">{item.draft_citations.map((c) => <li key={c.n}><span className="cite-chip">{c.n}</span> {c.label}</li>)}</ul>}</div>
-            <p className="rounded-xl bg-marker-100 px-3 py-2 text-ink-800">{t("trust.review.why")}: {item.reason}</p>
+            <p className="rounded-xl bg-marker-100 px-3 py-2 text-ink-800">{t("trust.review.why")}: {reviewReason(item.reason)}</p>
             {item.status === "pending" ? (
               <>
                 <Field label={t("trust.review.final")} hint={t("trust.review.finalHint")}><textarea className="input" rows={8} value={edited} onChange={(e) => setEdited(e.target.value)} /></Field>
@@ -230,7 +230,7 @@ function FeedbackTab() {
             {typeof f.comment === "string" && f.comment ? <p className="mt-1 italic text-ink-700">“{f.comment}”</p> : null}
             <p className="mt-2 line-clamp-3 text-xs text-ink-600">{truncate(String(f.answer || ""), 400)}</p>
             <div className="mt-2 flex items-center gap-2 text-xs text-ink-600">{String(f.user_id)} · {fmtRelative(String(f.created_at))}<span className="flex-1" />
-              {f.status === "new" ? <><button className="btn-secondary btn-sm" onClick={() => upd.mutate({ id: String(f.id), status: "acknowledged" })}>{t("trust.fb.seen")}</button><button className="btn-secondary btn-sm" onClick={() => upd.mutate({ id: String(f.id), status: "resolved" })}>{t("trust.fb.fixed")}</button></> : <StatusBadge status={String(f.status)} />}
+              {f.status === "new" ? <><button className="btn-secondary btn-sm" onClick={() => upd.mutate({ id: String(f.id), status: "seen" })}>{t("trust.fb.seen")}</button><button className="btn-secondary btn-sm" onClick={() => upd.mutate({ id: String(f.id), status: "fixed" })}>{t("trust.fb.fixed")}</button></> : <StatusBadge status={String(f.status)} />}
             </div>
           </li>
         ))}
@@ -287,7 +287,7 @@ function JobsTab() {
       <Segmented className="mb-3 w-fit" value={status} onChange={setStatus} options={["all", "queued", "processing", "done", "blocked", "error"].map((s) => ({ key: s, label: s === "all" ? t("trust.fb.all") : statusLabel(s) }))} />
       {jobs.isLoading && <Loading />}
       {jobs.data && (
-        <div className="panel overflow-x-auto"><table className="w-full"><thead><tr><th className="th">type</th><th className="th">status</th><th className="th">progress</th><th className="th">tries</th><th className="th">created</th><th className="th">result / error</th><th className="th" /></tr></thead>
+        <div className="panel overflow-x-auto"><table className="w-full"><thead><tr><th className="th">{t("trust.jobs.type")}</th><th className="th">{t("trust.jobs.status")}</th><th className="th">{t("trust.jobs.progress")}</th><th className="th">{t("trust.jobs.tries")}</th><th className="th">{t("trust.jobs.created")}</th><th className="th">{t("trust.jobs.result")}</th><th className="th" /></tr></thead>
           <tbody>{jobs.data.map((j) => (
             <tr key={j.job_id}>
               <td className="td font-mono text-xs">{j.type}</td><td className="td"><StatusBadge status={j.status} /></td>

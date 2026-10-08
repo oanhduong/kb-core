@@ -127,13 +127,14 @@ def upsert_alias(session: Any, workspace_id: str, kind: str, alias: str, canonic
     from sqlalchemy import select
 
     from core.errors import ValidationFailed
+    from core.i18n import L
     from core.models import GraphAlias
 
     if kind not in ALIAS_KINDS:
-        raise ValidationFailed(f"kind alias không hợp lệ: {kind!r}. Hợp lệ: {sorted(ALIAS_KINDS)}")
+        raise ValidationFailed(L(f"kind alias không hợp lệ: {kind!r}. Hợp lệ: {sorted(ALIAS_KINDS)}", f"Invalid alias kind: {kind!r}. Valid: {sorted(ALIAS_KINDS)}"))
     alias_n = normalize_alias(kind, alias)
     if not alias_n or not normalize_text(canonical):
-        raise ValidationFailed("alias và canonical không được rỗng")
+        raise ValidationFailed(L("alias và canonical không được rỗng", "alias and canonical must not be empty"))
     row = session.execute(select(GraphAlias).where(GraphAlias.workspace_id == workspace_id, GraphAlias.kind == kind,
                                                    GraphAlias.alias_norm == alias_n)).scalar_one_or_none()
     canonical_n = normalize_sku(canonical) if kind == "sku" else normalize_text(canonical)

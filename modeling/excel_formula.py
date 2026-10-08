@@ -17,6 +17,7 @@ from typing import Any, Callable
 from openpyxl.formula.tokenizer import Token, Tokenizer
 from openpyxl.utils.cell import column_index_from_string, get_column_letter
 
+from core.i18n import L
 from modeling import expr as E
 from modeling.spec import Condition, Rule
 
@@ -70,7 +71,7 @@ def parse_formula(formula: str) -> Any:
     try:
         items = [t for t in Tokenizer(formula).items if t.type != Token.WSPACE]
     except Exception as e:  # tokenizer của openpyxl ném nhiều loại lỗi
-        raise E.ExprError(f"không tokenize được: {e}") from e
+        raise E.ExprError(L(f"không tokenize được: {e}", f"could not tokenize: {e}")) from e
     pos = 0
 
     def peek() -> Token | None:
@@ -80,7 +81,7 @@ def parse_formula(formula: str) -> Any:
         nonlocal pos
         t = peek()
         if t is None:
-            raise E.ExprError("công thức kết thúc đột ngột")
+            raise E.ExprError(L("công thức kết thúc đột ngột", "the formula ends unexpectedly"))
         pos += 1
         return t
 
@@ -101,10 +102,10 @@ def parse_formula(formula: str) -> Any:
             elif st == Token.RANGE:
                 r = parse_ref(t.value)
                 if r is None:
-                    raise E.ExprError(f"tham chiếu không hỗ trợ: {t.value}")
+                    raise E.ExprError(L(f"tham chiếu không hỗ trợ: {t.value}", f"unsupported reference: {t.value}"))
                 node = XRef(r, t.value)
             else:
-                raise E.ExprError(f"toán hạng không hỗ trợ: {t.value}")
+                raise E.ExprError(L(f"toán hạng không hỗ trợ: {t.value}", f"unsupported operand: {t.value}"))
         elif t.type == Token.FUNC and t.subtype == Token.OPEN:
             name = t.value[:-1].upper().replace("_XLFN.", "")
             args: list[Any] = []
@@ -122,15 +123,15 @@ def parse_formula(formula: str) -> Any:
                     if s.type == Token.FUNC and s.subtype == Token.CLOSE:
                         break
                     if s.type != Token.SEP:
-                        raise E.ExprError(f"cần ',' trong {name}")
+                        raise E.ExprError(L(f"cần ',' trong {name}", f"expected ',' in {name}"))
             node = E.Call(name, tuple(args))
         elif t.type == Token.PAREN and t.subtype == Token.OPEN:
             node = binary(0)
             c = take()
             if c.type != Token.PAREN:
-                raise E.ExprError("thiếu ')'")
+                raise E.ExprError(L("thiếu ')'", "missing ')'"))
         else:
-            raise E.ExprError(f"không hiểu '{t.value}'")
+            raise E.ExprError(L(f"không hiểu '{t.value}'", f"cannot understand '{t.value}'"))
         while peek() is not None and peek().type == Token.OP_POST:
             take()
             node = E.Bin("/", node, E.Num(100))
@@ -151,10 +152,10 @@ def parse_formula(formula: str) -> Any:
             left = E.Bin(op, left, right)
 
     if not formula.startswith("="):
-        raise E.ExprError("không phải công thức")
+        raise E.ExprError(L("không phải công thức", "not a formula"))
     node = binary(0)
     if peek() is not None:
-        raise E.ExprError(f"thừa '{peek().value}'")
+        raise E.ExprError(L(f"thừa '{peek().value}'", f"unexpected '{peek().value}'"))
     return node
 
 
@@ -210,7 +211,7 @@ class Translator:
                     try:
                         default = self._const(d)
                     except _Fail:
-                        return Translation(error="giá trị mặc định của IFERROR không phải hằng số")
+                        return Translation(error=L("giá trị mặc định của IFERROR không phải hằng số", "the IFERROR default value is not a constant"))
             node = node.args[0]
         try:
             if isinstance(node, E.Call) and node.fn in _LOOKUPS:
@@ -218,7 +219,7 @@ class Translator:
             elif isinstance(node, E.Call) and node.fn in _AGGS:
                 tr = _AGGS[node.fn](self, node.args)
             elif self._is_cross(node):
-                return Translation(error="công thức kết hợp nhiều phép tra cứu/gộp — cần mô tả lại bằng quy tắc")
+                return Translation(error=L("công thức kết hợp nhiều phép tra cứu/gộp — cần mô tả lại bằng quy tắc", "the formula combines several lookups/aggregations — describe it again as a rule"))
             else:
                 const = self._try_const(node)
                 if const is not _NO:
@@ -262,9 +263,9 @@ class Translator:
         if isinstance(node, XRef) and node.ref.is_cell and not self._in_table_row(node.ref):
             v = self.cell_value(node.ref.sheet or self.sheet, node.ref.r1, node.ref.c1)
             if isinstance(v, str) and v.startswith("="):
-                raise _Fail("ô tham số là công thức")
+                raise _Fail(L("ô tham số là công thức", "the parameter cell is a formula"))
             return v
-        raise _Fail("không phải hằng số")
+        raise _Fail(L("không phải hằng số", "not a constant"))
 
     def _in_table_row(self, ref: Ref) -> bool:
         """Ô thuộc vùng dữ liệu của chính bảng (cùng sheet, cùng dòng)?"""
@@ -274,27 +275,27 @@ class Translator:
     def _row_col(self, node: Any) -> str:
         """Ô cùng dòng của sheet hiện tại -> tên cột SQL."""
         if not (isinstance(node, XRef) and node.ref.is_cell and (node.ref.sheet in (None, self.sheet)) and node.ref.r1 == self.row):
-            raise _Fail("điều kiện tham chiếu ô không cùng dòng")
+            raise _Fail(L("điều kiện tham chiếu ô không cùng dòng", "the condition refers to a cell in a different row"))
         sm = self.sheets.get(self.sheet)
         col = sm.columns.get(node.ref.c1) if sm else None
         if col is None:
-            raise _Fail(f"ô {node.raw} nằm ngoài vùng bảng")
+            raise _Fail(L(f"ô {node.raw} nằm ngoài vùng bảng", f"cell {node.raw} is outside the table area"))
         return col[0]
 
     def _range_col(self, node: Any) -> tuple[str, str]:
         """Vùng 1 cột ở sheet khác -> (bảng, cột SQL)."""
         if not isinstance(node, XRef):
-            raise _Fail("cần một vùng ô")
+            raise _Fail(L("cần một vùng ô", "a cell range is required"))
         r = node.ref
         sheet = r.sheet or self.sheet
         sm = self.sheets.get(sheet)
         if sm is None:
-            raise _Fail(f"sheet '{sheet}' không được phân tích thành bảng")
+            raise _Fail(L(f"sheet '{sheet}' không được phân tích thành bảng", f"sheet '{sheet}' was not analyzed as a table"))
         if r.c1 is None or r.c1 != r.c2:
-            raise _Fail(f"vùng {node.raw} không phải 1 cột")
+            raise _Fail(L(f"vùng {node.raw} không phải 1 cột", f"range {node.raw} is not a single column"))
         col = sm.columns.get(r.c1)
         if col is None:
-            raise _Fail(f"cột {get_column_letter(r.c1)} của '{sheet}' nằm ngoài bảng")
+            raise _Fail(L(f"cột {get_column_letter(r.c1)} của '{sheet}' nằm ngoài bảng", f"column {get_column_letter(r.c1)} of '{sheet}' is outside the table"))
         return sm.table, col[0]
 
     def _local(self, node: Any) -> Any:
@@ -306,7 +307,7 @@ class Translator:
                 sm = self.sheets.get(self.sheet)
                 col = sm.columns.get(node.ref.c1) if sm else None
                 if col is None:
-                    raise _Fail(f"ô {node.raw} nằm ngoài vùng bảng")
+                    raise _Fail(L(f"ô {node.raw} nằm ngoài vùng bảng", f"cell {node.raw} is outside the table area"))
                 return E.Col(col[1])
             v = self._const(node)
             if isinstance(v, bool):
@@ -328,9 +329,9 @@ class Translator:
             if fn == "DATEDIF":
                 return E.Call("DAYS", (self._local(node.args[1]), self._local(node.args[0])))
             if fn not in E._FUNCS:
-                raise _Fail(f"hàm {node.fn} chưa hỗ trợ")
+                raise _Fail(L(f"hàm {node.fn} chưa hỗ trợ", f"function {node.fn} is not supported yet"))
             return E.Call(fn, tuple(self._local(a) for a in node.args if a is not None))
-        raise _Fail("biểu thức không hỗ trợ")
+        raise _Fail(L("biểu thức không hỗ trợ", "unsupported expression"))
 
     def _criterion(self, crit_range: Any, crit: Any, joins: list[JoinHint], filters: list[Condition]) -> None:
         table, col = self._range_col(crit_range)
@@ -343,7 +344,7 @@ class Translator:
     def _join_table(self, joins: list[JoinHint]) -> str:
         tables = {j.source_table for j in joins}
         if len(tables) != 1:
-            raise _Fail("các vùng điều kiện thuộc nhiều bảng")
+            raise _Fail(L("các vùng điều kiện thuộc nhiều bảng", "the condition ranges span several tables"))
         return tables.pop()
 
 
@@ -365,7 +366,7 @@ def _parse_criterion(col: str, crit: Any, tr: Translator) -> Condition:
         op_txt = crit.left.v.strip()
         op = dict(_OPS).get(op_txt)
         if op is None:
-            raise _Fail(f"điều kiện '{op_txt}' chưa hỗ trợ")
+            raise _Fail(L(f"điều kiện '{op_txt}' chưa hỗ trợ", f"condition '{op_txt}' is not supported yet"))
         rhs = crit.right
         offset = _as_of_offset(rhs)
         if offset is not None:
@@ -379,7 +380,7 @@ def _parse_criterion(col: str, crit: Any, tr: Translator) -> Condition:
         v = tr._const(crit)
         return Condition(column=col, op="eq", value=v)
     if not isinstance(crit, E.Str):
-        raise _Fail("điều kiện phức tạp chưa hỗ trợ")
+        raise _Fail(L("điều kiện phức tạp chưa hỗ trợ", "complex conditions are not supported yet"))
     s = crit.v
     if s == "":
         return Condition(column=col, op="is_null")
@@ -412,12 +413,12 @@ def _as_of_offset(node: Any) -> int | None:
 # ------------------------------------------------------------------ tra cứu
 def _vlookup(tr: Translator, args: tuple) -> Translation:
     if len(args) < 3:
-        raise _Fail("VLOOKUP thiếu tham số")
+        raise _Fail(L("VLOOKUP thiếu tham số", "VLOOKUP is missing arguments"))
     if len(args) > 3 and args[3] is not None and tr._try_const(args[3]) not in (False, 0):
-        raise _Fail("VLOOKUP dò gần đúng (TRUE) chưa hỗ trợ")
+        raise _Fail(L("VLOOKUP dò gần đúng (TRUE) chưa hỗ trợ", "approximate-match VLOOKUP (TRUE) is not supported yet"))
     rng = args[1]
     if not isinstance(rng, XRef) or rng.ref.c1 is None:
-        raise _Fail("vùng VLOOKUP không hợp lệ")
+        raise _Fail(L("vùng VLOOKUP không hợp lệ", "invalid VLOOKUP range"))
     idx = tr._const(args[2])
     key_ref = XRef(Ref(rng.ref.sheet, rng.ref.c1, rng.ref.r1, rng.ref.c1, rng.ref.r2), rng.raw)
     ret_c = rng.ref.c1 + int(idx) - 1
@@ -427,7 +428,7 @@ def _vlookup(tr: Translator, args: tuple) -> Translation:
 
 def _xlookup(tr: Translator, args: tuple) -> Translation:
     if len(args) < 3:
-        raise _Fail("XLOOKUP thiếu tham số")
+        raise _Fail(L("XLOOKUP thiếu tham số", "XLOOKUP is missing arguments"))
     t = _lookup(tr, args[0], args[1], args[2])
     if len(args) > 3 and args[3] is not None and t.rule is not None:
         t.rule.default = tr._const(args[3])
@@ -436,10 +437,10 @@ def _xlookup(tr: Translator, args: tuple) -> Translation:
 
 def _index(tr: Translator, args: tuple) -> Translation:
     if len(args) < 2 or not (isinstance(args[1], E.Call) and args[1].fn == "MATCH"):
-        raise _Fail("INDEX không đi kèm MATCH")
+        raise _Fail(L("INDEX không đi kèm MATCH", "INDEX is not paired with MATCH"))
     m = args[1].args
     if len(m) > 2 and m[2] is not None and tr._try_const(m[2]) != 0:
-        raise _Fail("MATCH dò gần đúng chưa hỗ trợ")
+        raise _Fail(L("MATCH dò gần đúng chưa hỗ trợ", "approximate-match MATCH is not supported yet"))
     ret = args[0]
     if len(args) > 2 and args[2] is not None and isinstance(ret, XRef) and ret.ref.c1 is not None:
         c = ret.ref.c1 + int(tr._const(args[2])) - 1
@@ -452,7 +453,7 @@ def _lookup(tr: Translator, key: Any, key_range: Any, ret_range: Any) -> Transla
     t1, kcol = tr._range_col(key_range)
     t2, rcol = tr._range_col(ret_range)
     if t1 != t2:
-        raise _Fail("vùng khoá và vùng kết quả ở hai bảng khác nhau")
+        raise _Fail(L("vùng khoá và vùng kết quả ở hai bảng khác nhau", "the key range and result range are in different tables"))
     return Translation(rule=Rule(kind="lookup", table=t1, column=rcol, func="first"),
                        joins=[JoinHint(base_column=base_col, source_table=t1, source_column=kcol)])
 
@@ -464,19 +465,19 @@ def _ifs(func: str, has_value_range: bool) -> Callable[[Translator, tuple], Tran
         value_col = None
         if has_value_range:
             if not a:
-                raise _Fail("thiếu vùng giá trị")
+                raise _Fail(L("thiếu vùng giá trị", "missing the value range"))
             vt, value_col = tr._range_col(a.pop(0))
         if len(a) < 2 or len(a) % 2:
-            raise _Fail("cặp vùng/điều kiện không hợp lệ")
+            raise _Fail(L("cặp vùng/điều kiện không hợp lệ", "invalid range/condition pair"))
         joins: list[JoinHint] = []
         filters: list[Condition] = []
         for i in range(0, len(a), 2):
             tr._criterion(a[i], a[i + 1], joins, filters)
         if not joins:
-            raise _Fail("không có điều kiện nối theo dòng hiện tại")
+            raise _Fail(L("không có điều kiện nối theo dòng hiện tại", "no condition linking to the current row"))
         table = tr._join_table(joins)
         if has_value_range and vt != table:
-            raise _Fail("vùng giá trị khác bảng với vùng điều kiện")
+            raise _Fail(L("vùng giá trị khác bảng với vùng điều kiện", "the value range is in a different table from the condition ranges"))
         return Translation(rule=Rule(kind="aggregate", table=table, column=value_col, func=func, filters=filters,
                                      default=0 if func in ("count", "sum") else None), joins=joins)
     return run
@@ -486,7 +487,7 @@ def _if_single(func: str) -> Callable[[Translator, tuple], Translation]:
     """SUMIF(range, crit, [sum_range]) / COUNTIF(range, crit) / AVERAGEIF(...)"""
     def run(tr: Translator, args: tuple) -> Translation:
         if len(args) < 2:
-            raise _Fail("thiếu tham số")
+            raise _Fail(L("thiếu tham số", "missing arguments"))
         rest = [args[2], args[0], args[1]] if func != "count" and len(args) > 2 and args[2] is not None else [args[0], args[0], args[1]]
         if func == "count":
             return _ifs("count", False)(tr, (args[0], args[1]))

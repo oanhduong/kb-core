@@ -10,7 +10,7 @@ import { Empty, ErrorBox, Field, Loading, Modal, PageHeader, Pagination, SourceI
 import { useT } from "@/i18n";
 import { Page } from "@/layout/AppShell";
 import { api } from "@/lib/api";
-import { fmtBytes, fmtDate, fmtNumber, fmtRelative, statusLabel, truncate } from "@/lib/format";
+import { docStatus, fmtBytes, fmtDate, fmtNumber, fmtRelative, statusLabel, truncate } from "@/lib/format";
 import type { Document, Job } from "@/lib/types";
 import { useWorkspace } from "@/state/auth";
 import { Advanced, usePrefs } from "@/state/prefs";
@@ -128,7 +128,7 @@ export function DocumentsPage() {
 
 function DocumentRow({ d, job, showScope }: { d: Document; job?: Job; showScope: boolean }) {
   const t = useT();
-  const shownStatus = d.deleted_at ? "deleted" : d.status;
+  const shownStatus = d.deleted_at ? "deleted" : docStatus(d.status);
   return (
     <li className={clsx(d.deleted_at && "opacity-60")}>
       <Link to={d.document_id} className="group flex gap-4 px-4 py-4 transition hover:bg-paper focus-visible:bg-paper focus-visible:rounded-none focus-visible:shadow-[inset_0_0_0_3px_rgba(91,76,245,.35)] sm:px-5">

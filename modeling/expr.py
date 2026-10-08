@@ -15,6 +15,8 @@ import re
 from dataclasses import dataclass
 from typing import Callable, Union
 
+from core.i18n import L
+
 
 class ExprError(ValueError):
     pass
@@ -87,7 +89,7 @@ def _tokens(text: str) -> list[tuple[str, str]]:
     while pos < len(text):
         m = _TOKEN_RE.match(text, pos)
         if not m:
-            raise ExprError(f"Ký tự không hợp lệ ở vị trí {pos + 1}: {text[pos:pos + 10]!r}")
+            raise ExprError(L(f"Ký tự không hợp lệ ở vị trí {pos + 1}: {text[pos:pos + 10]!r}", f"Invalid character at position {pos + 1}: {text[pos:pos + 10]!r}"))
         pos = m.end()
         kind = m.lastgroup
         if kind != "ws":
@@ -106,19 +108,19 @@ class _Parser:
     def take(self) -> tuple[str, str]:
         t = self.peek()
         if t is None:
-            raise ExprError("Công thức kết thúc đột ngột")
+            raise ExprError(L("Công thức kết thúc đột ngột", "The formula ends unexpectedly"))
         self.i += 1
         return t
 
     def expect(self, value: str) -> None:
         t = self.take()
         if t[1] != value:
-            raise ExprError(f"Cần '{value}' nhưng gặp '{t[1]}'")
+            raise ExprError(L(f"Cần '{value}' nhưng gặp '{t[1]}'", f"Expected '{value}' but found '{t[1]}'"))
 
     def parse(self) -> Node:
         node = self.expr(0)
         if self.peek() is not None:
-            raise ExprError(f"Thừa ký tự: '{self.peek()[1]}'")
+            raise ExprError(L(f"Thừa ký tự: '{self.peek()[1]}'", f"Unexpected extra characters: '{self.peek()[1]}'"))
         return node
 
     def expr(self, min_prec: int) -> Node:
@@ -156,7 +158,7 @@ class _Parser:
         if kind == "col":
             name = val[1:-1].strip()
             if not name:
-                raise ExprError("Tham chiếu cột rỗng []")
+                raise ExprError(L("Tham chiếu cột rỗng []", "Empty column reference []"))
             return Col(name)
         if kind == "op" and val == "(":
             node = self.expr(0)
@@ -167,7 +169,7 @@ class _Parser:
             if up in ("TRUE", "FALSE") and not (self.peek() and self.peek()[1] == "("):
                 return Bool(up == "TRUE")
             if not (self.peek() and self.peek()[1] == "("):
-                raise ExprError(f"'{val}' không phải tên hàm hợp lệ (tên cột phải đặt trong [ ])")
+                raise ExprError(L(f"'{val}' không phải tên hàm hợp lệ (tên cột phải đặt trong [ ])", f"'{val}' is not a valid function name (column names must be in [ ])"))
             self.take()
             args: list[Node] = []
             if self.peek() and self.peek()[1] == ")":
@@ -179,19 +181,19 @@ class _Parser:
                     if t[1] == ")":
                         break
                     if t[1] != ",":
-                        raise ExprError(f"Cần ',' hoặc ')' trong {up}(...)")
+                        raise ExprError(L(f"Cần ',' hoặc ')' trong {up}(...)", f"Expected ',' or ')' in {up}(...)"))
             if up not in _FUNCS:
-                raise ExprError(f"Hàm {up} chưa được hỗ trợ")
+                raise ExprError(L(f"Hàm {up} chưa được hỗ trợ", f"Function {up} is not supported yet"))
             lo, hi = _FUNCS[up]
             if len(args) < lo or (hi is not None and len(args) > hi):
-                raise ExprError(f"Hàm {up} nhận {lo}{'' if hi == lo else f'–{hi}' if hi else '+'} tham số")
+                raise ExprError(L(f"Hàm {up} nhận {lo}{'' if hi == lo else f'–{hi}' if hi else '+'} tham số", f"Function {up} takes {lo}{'' if hi == lo else f'–{hi}' if hi else '+'} argument(s)"))
             return Call(up, tuple(args))
-        raise ExprError(f"Không hiểu '{val}'")
+        raise ExprError(L(f"Không hiểu '{val}'", f"Cannot understand '{val}'"))
 
 
 def parse(text: str) -> Node:
     if not text or not text.strip():
-        raise ExprError("Công thức rỗng")
+        raise ExprError(L("Công thức rỗng", "The formula is empty"))
     return _Parser(text.lstrip("=").strip()).parse()
 
 
@@ -367,7 +369,7 @@ def to_sql(node: Node, resolve: Callable[[str], SqlCol], as_of_sql: str) -> str:
                 return f"CAST(NULLIF(TRIM(CAST({rec(a[0])} AS VARCHAR)), '') AS FLOAT8)"
             if fn == "DATE":
                 return f"MAKE_DATE(CAST({rec(a[0])} AS INTEGER), CAST({rec(a[1])} AS INTEGER), CAST({rec(a[2])} AS INTEGER))"
-            raise ExprError(f"Hàm {fn} chưa hỗ trợ")
+            raise ExprError(L(f"Hàm {fn} chưa hỗ trợ", f"Function {fn} is not supported yet"))
         op = n.op
         if op == "&":
             return f"(COALESCE(CAST({rec(n.left)} AS VARCHAR), '') || COALESCE(CAST({rec(n.right)} AS VARCHAR), ''))"

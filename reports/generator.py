@@ -19,6 +19,7 @@ from sqlalchemy.orm import sessionmaker
 
 from core.config import AppConfig, read_prompt
 from core.db import session_scope
+from core.i18n import L, language_name
 from core.logging import log_event
 from core.models import DataTable, Document, Entity, Report, Workspace, new_id, utcnow
 from core.principal import Principal, WorkspaceContext
@@ -52,7 +53,8 @@ def _workspace_brief(session, workspace_id: str) -> str:
 
 
 def plan_report(cfg: AppConfig, llm: Any, prompt: str, brief: str) -> ReportPlan:
-    user = f"Yêu cầu của người dùng: {prompt}\n\nWorkspace đang có:\n{brief}\n\nHôm nay: {date.today().isoformat()}"
+    user = (f"Yêu cầu của người dùng: {prompt}\n\nWorkspace đang có:\n{brief}\n\nHôm nay: {date.today().isoformat()}"
+            f"\n\nViết tiêu đề báo cáo, tiêu đề và mục tiêu từng mục bằng {language_name()}.")
     return llm.complete_json("report", system=read_prompt("report_plan", cfg), user=user, schema=ReportPlan, max_tokens=1500, max_retries=1)
 
 
@@ -62,9 +64,9 @@ def blocks_from_answer(section: _Section, resp: Any) -> list[dict[str, Any]]:
     if resp.status in ("answered", "answered_general"):
         blocks.append({"id": new_id(), "type": "markdown", "text": resp.answer, "citations": resp.citations, "trace_id": resp.trace_id})
     elif resp.status == "pending_review":
-        blocks.append({"id": new_id(), "type": "markdown", "text": "_Nội dung mục này đang chờ người phụ trách duyệt._", "trace_id": resp.trace_id})
+        blocks.append({"id": new_id(), "type": "markdown", "text": L("_Nội dung mục này đang chờ người phụ trách duyệt._", "_This section is waiting for approval by the person in charge._"), "trace_id": resp.trace_id})
     else:
-        blocks.append({"id": new_id(), "type": "markdown", "text": f"_Không đủ dữ liệu trong workspace để trả lời: {section.question}_", "trace_id": resp.trace_id})
+        blocks.append({"id": new_id(), "type": "markdown", "text": L(f"_Không đủ dữ liệu trong workspace để trả lời: {section.question}_", f"_Not enough data in the workspace to answer: {section.question}_"), "trace_id": resp.trace_id})
     for art in resp.artifacts:
         if art.get("type") != "query_result":
             continue
@@ -75,7 +77,7 @@ def blocks_from_answer(section: _Section, resp: Any) -> list[dict[str, Any]]:
         elif chart and chart.get("type") == "kpi":
             blocks.append({"id": new_id(), "type": "kpi", "title": chart.get("title") or art.get("purpose") or "", "kpi": chart["kpi"], "sql": art.get("sql")})
         if art.get("rows") and (not chart or chart.get("type") in ("table", "kpi") or len(art["rows"]) <= 30):
-            blocks.append({"id": new_id(), "type": "table", "title": art.get("purpose") or "Số liệu", "columns": art["columns"],
+            blocks.append({"id": new_id(), "type": "table", "title": art.get("purpose") or L("Số liệu", "Figures"), "columns": art["columns"],
                            "rows": art["rows"][:200], "sql": art.get("sql"), "citation": art.get("citation"), "trace_id": resp.trace_id})
     return blocks
 
@@ -93,7 +95,7 @@ def generate_report(cfg: AppConfig, sm: sessionmaker, llm: Any, report_id: str, 
     if llm is None:
         with session_scope() as s:
             rep = s.get(Report, report_id)
-            rep.status, rep.blocks = "error", [{"id": new_id(), "type": "markdown", "text": "Thiếu ANTHROPIC_API_KEY — không sinh được báo cáo."}]
+            rep.status, rep.blocks = "error", [{"id": new_id(), "type": "markdown", "text": L("Thiếu ANTHROPIC_API_KEY — không sinh được báo cáo.", "ANTHROPIC_API_KEY is missing, so the report can't be generated.")}]
         return {"error": "no_llm"}
     try:
         plan = plan_report(cfg, llm, prompt, brief)
@@ -101,7 +103,7 @@ def generate_report(cfg: AppConfig, sm: sessionmaker, llm: Any, report_id: str, 
         with session_scope() as s:
             rep = s.get(Report, report_id)
             rep.status = "error"
-            rep.blocks = [{"id": new_id(), "type": "markdown", "text": f"Không lập được dàn ý: {e}"[:500]}]
+            rep.blocks = [{"id": new_id(), "type": "markdown", "text": L(f"Không lập được dàn ý: {e}", f"Couldn't draft the outline: {e}")[:500]}]
         return {"error": str(e)[:300]}
 
     from assistant.agent import AssistantRequest, AssistantService
@@ -121,7 +123,7 @@ def generate_report(cfg: AppConfig, sm: sessionmaker, llm: Any, report_id: str, 
     assistant = AssistantService(cfg, sm, llm, retriever)
     ctx = WorkspaceContext(ws_id, ws_name, pack, "owner", {}, {}, Principal(subject=created_by))
     blocks: list[dict[str, Any]] = [{"id": new_id(), "type": "heading", "text": plan.title, "level": 1},
-                                    {"id": new_id(), "type": "markdown", "text": f"_Báo cáo sinh tự động từ dữ liệu workspace ngày {date.today():%d/%m/%Y}. Mọi số liệu/nhận định đều có trích dẫn nguồn._"}]
+                                    {"id": new_id(), "type": "markdown", "text": L(f"_Báo cáo sinh tự động từ dữ liệu workspace ngày {date.today():%d/%m/%Y}. Mọi số liệu/nhận định đều có trích dẫn nguồn._", f"_Report generated automatically from the workspace data on {date.today():%d %b %Y}. Every figure and statement cites its source._")}]
     traces = []
     total = len(plan.sections)
     for i, sec in enumerate(plan.sections):
@@ -131,7 +133,7 @@ def generate_report(cfg: AppConfig, sm: sessionmaker, llm: Any, report_id: str, 
         traces.append(resp.trace_id)
         blocks += blocks_from_answer(sec, resp)
     all_cits = {c["label"]: c for b in blocks for c in (b.get("citations") or [])}
-    blocks.append({"id": new_id(), "type": "sources", "title": "Nguồn tham chiếu", "items": list(all_cits.values())})
+    blocks.append({"id": new_id(), "type": "sources", "title": L("Nguồn tham chiếu", "Sources"), "items": list(all_cits.values())})
     with session_scope() as s:
         rep = s.get(Report, report_id)
         if not rep.title or rep.title in (rep.prompt, (rep.prompt or "")[:120]):  # tiêu đề mặc định lấy từ prompt -> thay bằng tiêu đề AI đặt

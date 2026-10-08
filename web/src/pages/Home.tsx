@@ -10,7 +10,7 @@ import { Loading, SourceIcon, StatusBadge } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { Page } from "@/layout/AppShell";
 import { api } from "@/lib/api";
-import { fmtMs, fmtNumber, fmtPct, fmtRelative, sourceLabel, statusLabel, truncate } from "@/lib/format";
+import { docStatus, fmtMs, fmtNumber, fmtPct, fmtRelative, sourceLabel, statusLabel, truncate } from "@/lib/format";
 import { useWorkspace } from "@/state/auth";
 
 export function HomePage() {
@@ -142,7 +142,7 @@ export function HomePage() {
                     <Link to={`documents/${d.document_id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-paper">
                       <SourceIcon type={d.source_type} size="sm" />
                       <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-ink-900">{d.title}</span><span className="block text-xs text-ink-600">{fmtRelative(d.updated_at)}</span></span>
-                      {d.status !== "active" && <StatusBadge status={d.status} />}
+                      {d.status !== "active" && <StatusBadge status={docStatus(d.status)} />}
                     </Link>
                   </li>
                 ))}

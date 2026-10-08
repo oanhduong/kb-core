@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from api.auth import workspace
 from api.deps import audit_action, get_db
 from core.errors import NotFoundError, ValidationFailed
+from core.i18n import L
 from core.models import Job, QATrace, Report, Workspace, new_id, utcnow
 from core.principal import WorkspaceContext
 from reports import export as rexport
@@ -33,7 +34,7 @@ def _view(r: Report, job: Job | None = None) -> dict[str, Any]:
 def _get(db: Session, ctx: WorkspaceContext, report_id: str) -> Report:
     r = db.get(Report, report_id)
     if r is None or r.workspace_id != ctx.workspace_id or r.deleted_at is not None:
-        raise NotFoundError("Không có báo cáo")
+        raise NotFoundError(L("Không có báo cáo", "Report not found"))
     return r
 
 
@@ -53,7 +54,7 @@ class ReportCreate(BaseModel):
 @router.post("", summary="Tạo báo cáo: có prompt -> AI lập dàn ý + sinh từng mục (job nền); không -> báo cáo trống để ghim block")
 def create_report(body: ReportCreate, request: Request, ctx: WorkspaceContext = Depends(workspace("editor")), db: Session = Depends(get_db)) -> dict:
     if not body.title and not body.prompt:
-        raise ValidationFailed("Cần title hoặc prompt")
+        raise ValidationFailed(L("Cần title hoặc prompt", "A title or prompt is required"))
     r = Report(workspace_id=ctx.workspace_id, title=body.title or body.prompt[:120], prompt=body.prompt, description=body.description,
                created_by=ctx.subject, status="generating" if body.prompt else "draft", blocks=[])
     db.add(r)
@@ -87,11 +88,11 @@ def patch_report(report_id: str, body: ReportPatch, request: Request, ctx: Works
         r.description = body.description
     if body.blocks is not None:
         if len(body.blocks) > 500:
-            raise ValidationFailed("Quá 500 block")
+            raise ValidationFailed(L("Quá 500 block", "More than 500 blocks"))
         for b in body.blocks:
             b.setdefault("id", new_id())
             if b.get("type") not in ("heading", "markdown", "chart", "table", "kpi", "sources"):
-                raise ValidationFailed(f"Loại block không hợp lệ: {b.get('type')}")
+                raise ValidationFailed(L(f"Loại block không hợp lệ: {b.get('type')}", f"Invalid block type: {b.get('type')}"))
         r.blocks = body.blocks
         if r.status == "draft" and body.blocks:
             r.status = "ready"
@@ -112,9 +113,9 @@ def pin_trace(report_id: str, body: PinBody, request: Request, ctx: WorkspaceCon
     r = _get(db, ctx, report_id)
     t = db.get(QATrace, body.trace_id)
     if t is None or t.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có trace")
+        raise NotFoundError(L("Không có trace", "Trace not found"))
     if t.status not in ("answered", "answered_general"):
-        raise ValidationFailed(f"Chỉ ghim được câu trả lời đã hoàn tất (trace đang {t.status})")
+        raise ValidationFailed(L(f"Chỉ ghim được câu trả lời đã hoàn tất (trace đang {t.status})", f"Only completed answers can be pinned (trace is {t.status})"))
     blocks = list(r.blocks or [])
     if body.heading:
         blocks.append({"id": new_id(), "type": "heading", "text": body.heading, "level": 2})
@@ -143,7 +144,7 @@ def pin_trace(report_id: str, body: PinBody, request: Request, ctx: WorkspaceCon
 def regenerate(report_id: str, request: Request, ctx: WorkspaceContext = Depends(workspace("editor")), db: Session = Depends(get_db)) -> dict:
     r = _get(db, ctx, report_id)
     if not r.prompt:
-        raise ValidationFailed("Báo cáo không có prompt để sinh lại")
+        raise ValidationFailed(L("Báo cáo không có prompt để sinh lại", "This report has no prompt to regenerate from"))
     job = enqueue_job(db, "report_generate", {"report_id": r.id}, created_by=ctx.subject, workspace_id=ctx.workspace_id)
     r.job_id, r.status = job.id, "generating"
     audit_action(request, ctx.principal, "report_regenerate", report_id)
@@ -176,5 +177,5 @@ def export_report(report_id: str, fmt: Literal["pdf", "docx", "xlsx", "html"] = 
         try:
             data, media = rexport.export_pdf(r.title, r.blocks or [], **meta), "application/pdf"
         except Exception as e:  # thiếu weasyprint/pango trên máy chủ -> báo rõ, gợi ý DOCX
-            raise ValidationFailed(f"Không xuất được PDF trên máy chủ này ({type(e).__name__}). Hãy xuất DOCX hoặc HTML.") from e
+            raise ValidationFailed(L(f"Không xuất được PDF trên máy chủ này ({type(e).__name__}). Hãy xuất DOCX hoặc HTML.", f"PDF export is not available on this server ({type(e).__name__}). Please export DOCX or HTML instead.")) from e
     return Response(data, media_type=media, headers={"Content-Disposition": f'attachment; filename="{ascii_name}.{fmt}"; filename*=UTF-8\'\'{quote(base)}.{fmt}'})

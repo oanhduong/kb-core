@@ -156,7 +156,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center gap-2 border-b border-ink-100 bg-white px-3 lg:hidden">
-          <button className="btn-ghost btn-sm" onClick={() => setOpen((v) => !v)} aria-label="menu">{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+          <button className="btn-ghost btn-sm" onClick={() => setOpen((v) => !v)} aria-label={t("nav.menu")}>{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
           <Logo />
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>

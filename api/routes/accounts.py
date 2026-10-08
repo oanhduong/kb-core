@@ -12,6 +12,7 @@ from accounts import service as accounts
 from api.auth import current_principal, current_user, issue_jwt, require_superadmin, workspace
 from api.deps import audit_action, get_db
 from core.errors import ForbiddenError, NotFoundError
+from core.i18n import L
 from core.models import ApiKey, User, Workspace, WorkspaceInvite, WorkspaceMember
 from core.principal import Principal, WorkspaceContext
 from domains import get_pack, list_packs
@@ -191,7 +192,7 @@ def remove_member(user_id: str, request: Request, ctx: WorkspaceContext = Depend
 def cancel_invite(invite_id: str, ctx: WorkspaceContext = Depends(workspace("owner")), db: Session = Depends(get_db)) -> dict:
     inv = db.get(WorkspaceInvite, invite_id)
     if inv is None or inv.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có lời mời")
+        raise NotFoundError(L("Không có lời mời", "Invitation not found"))
     db.delete(inv)
     return {"cancelled": invite_id}
 
@@ -221,7 +222,7 @@ def create_key(body: ApiKeyBody, request: Request, ctx: WorkspaceContext = Depen
 def revoke_key(key_id: str, request: Request, ctx: WorkspaceContext = Depends(workspace("owner")), db: Session = Depends(get_db)) -> dict:
     k = db.get(ApiKey, key_id)
     if k is None or k.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có API key")
+        raise NotFoundError(L("Không có API key", "API key not found"))
     k.active = False
     audit_action(request, ctx.principal, "api_key_revoke", key_id)
     return {"id": key_id, "active": False}
@@ -243,7 +244,7 @@ def admin_update_user(user_id: str, body: AdminUserUpdate, request: Request, pri
                       db: Session = Depends(get_db)) -> dict:
     u = accounts.get_user_or_404(db, user_id)
     if u.id == principal.subject and body.is_superadmin is False:
-        raise ForbiddenError("Không tự bỏ quyền superadmin của chính mình")
+        raise ForbiddenError(L("Không tự bỏ quyền superadmin của chính mình", "You cannot remove your own superadmin permission"))
     if body.is_active is not None:
         u.is_active = body.is_active
     if body.is_superadmin is not None:

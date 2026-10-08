@@ -20,6 +20,7 @@ from typing import Any, Callable
 
 from core.config import get_config
 from core.db import get_sessionmaker, session_scope
+from core.i18n import use_lang
 from core.llm import get_llm
 from core.logging import configure_logging, log_context, log_event
 from core.models import Document, Job
@@ -159,7 +160,7 @@ class Worker:
             s.expunge(job)
         handler = self.HANDLERS[job_type]
         start = time.perf_counter()
-        with log_context(job_id=job_id):
+        with log_context(job_id=job_id), use_lang((job.payload or {}).get("lang")):
             log_event(logger, "job_start", job_type=job_type, attempt=job.attempts)
             try:
                 result = handler(self, job)

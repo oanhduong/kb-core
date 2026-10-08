@@ -8,6 +8,7 @@ from qa.citation import StreamingCitationGate, display_title, format_citation, m
 
 @pytest.mark.parametrize("title,stype,loc,expected", [
     ("CHÍNH SÁCH ĐỔI TRẢ", "docx", "CHÍNH SÁCH ĐỔI TRẢ > CHƯƠNG II > Điều 5. Thời hạn đổi trả", "chính sách đổi trả, Điều 5"),
+    ("Chính Sách Đổi Trả Hàng Hóa", "docx", "CHƯƠNG II > Điều 5. Thời hạn", "chính sách đổi trả hàng hóa, Điều 5"),
     ("CHÍNH SÁCH ĐỔI TRẢ", "docx", "CHÍNH SÁCH ĐỔI TRẢ > CHƯƠNG II > Điều 5. Thời hạn > Bảng 1", "chính sách đổi trả, Điều 5"),
     ("Bảng giá tháng 8", "xlsx", "HCM01!A42", "bảng giá tháng 8, Sheet HCM01 dòng 42"),
     ("Bảng giá tháng 8", "xlsx", "HCM01!A5:D5", "bảng giá tháng 8, Sheet HCM01 dòng 5"),

@@ -95,6 +95,8 @@ const en: Record<string, string> = {
   "trail.checkDetail": "Before you saw it, every statement was matched to a source; anything that couldn't be backed up would have been removed.",
   "trail.heldDetail": "The assistant didn't find enough support in your files, so it didn't make up an answer. This question is now on the knowledge-gap list in the Trust center.",
   "trail.conflicts": "{n} sources disagreed — the newer one was preferred and the difference flagged.",
+  "chat.noStream": "This browser can't stream answers",
+  "trail.degraded": "Fallback used",
 };
 
 const vi: Record<string, string> = {
@@ -193,6 +195,8 @@ const vi: Record<string, string> = {
   "trail.checkDetail": "Trước khi hiện cho bạn, từng ý đã được đối chiếu với nguồn; ý nào không có căn cứ sẽ bị loại.",
   "trail.heldDetail": "Trợ lý không tìm đủ căn cứ trong file của bạn nên không tự bịa câu trả lời. Câu hỏi này đã vào danh sách “thiếu tài liệu” ở Trung tâm tin cậy.",
   "trail.conflicts": "{n} nguồn mâu thuẫn — ưu tiên bản mới hơn và đánh dấu điểm khác biệt.",
+  "chat.noStream": "Trình duyệt không hỗ trợ nhận câu trả lời dạng luồng",
+  "trail.degraded": "Đã dùng phương án dự phòng",
 };
 
 export default { en, vi };

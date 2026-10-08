@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from core.config import AppConfig
 from core.errors import ValidationFailed
+from core.i18n import L
 from core.logging import log_event
 from core.models import Conflict, Document, KBRecordRow, utcnow
 from graph.resolve import normalize_store_code
@@ -32,12 +33,12 @@ def edit_record(session: Session, cfg: AppConfig, rec: KBRecordRow, changes: dic
     cập nhật cache unit (để graph build lại dùng dữ liệu đã sửa) -> đẩy graph_sync cho file."""
     unknown = set(changes) - set(EDITABLE_FIELDS)
     if unknown:
-        raise ValidationFailed(f"Không sửa được field: {sorted(unknown)}. Được sửa: {list(EDITABLE_FIELDS)}")
+        raise ValidationFailed(L(f"Không sửa được field: {sorted(unknown)}. Được sửa: {list(EDITABLE_FIELDS)}", f"Cannot edit field(s): {sorted(unknown)}. Editable: {list(EDITABLE_FIELDS)}"))
     before = {k: getattr(rec, "meta" if k == "metadata" else k) for k in changes}
     if "content" in changes:
         content = (changes["content"] or "").strip()
         if not content:
-            raise ValidationFailed("content không được rỗng")
+            raise ValidationFailed(L("content không được rỗng", "content must not be empty"))
         rec.content = content
         rec.content_hash = content_hash(content)
         if "skus" not in changes:
@@ -96,10 +97,10 @@ def resolve_conflict(session: Session, conflict: Conflict, *, action: str, actor
     from kb.lifecycle import soft_delete_record
 
     if conflict.status != "open":
-        raise ValidationFailed(f"Conflict đã ở trạng thái {conflict.status}")
+        raise ValidationFailed(L(f"Conflict đã ở trạng thái {conflict.status}", f"This conflict is already {conflict.status}"))
     if action == "keep_one":
         if keep_record_id not in conflict.record_ids:
-            raise ValidationFailed("keep_record_id phải là 1 trong các record của conflict")
+            raise ValidationFailed(L("keep_record_id phải là 1 trong các record của conflict", "keep_record_id must be one of the passages in this conflict"))
         for rid in conflict.record_ids:
             if rid != keep_record_id:
                 rec = session.get(KBRecordRow, rid)
@@ -112,7 +113,7 @@ def resolve_conflict(session: Session, conflict: Conflict, *, action: str, actor
     elif action == "resolved":
         conflict.status, conflict.resolution = "resolved", note or "Đã xử lý ngoài hệ thống"
     else:
-        raise ValidationFailed("action phải là keep_one | dismiss | resolved")
+        raise ValidationFailed(L("action phải là keep_one | dismiss | resolved", "action must be keep_one | dismiss | resolved"))
     conflict.resolved_by, conflict.resolved_at = actor, utcnow()
     session.flush()
     log_event(logger, "conflict_resolved", conflict_id=conflict.id, action=action, actor=actor)

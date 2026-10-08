@@ -17,6 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from core.i18n import L
+
 
 @dataclass
 class DecisionTrace:
@@ -73,28 +75,29 @@ def compute_confidence(*, top_score: float | None, score_kind: str, coverage: fl
     reasons = []
     if score_kind == "rerank" and top_score is not None:
         base = top_score
-        reasons.append(f"điểm rerank cao nhất {top_score:.2f}")
+        reasons.append(L(f"điểm rerank cao nhất {top_score:.2f}", f"best rerank score {top_score:.2f}"))
     elif score_kind == "graph":
         base = 0.75 if graph_paths >= 2 else 0.6
-        reasons.append(f"{graph_paths} đường đi graph khớp thực thể được hỏi")
+        reasons.append(L(f"{graph_paths} đường đi graph khớp thực thể được hỏi", f"{graph_paths} graph paths match the things asked about"))
     elif score_kind == "dense" and top_score is not None:
         base = min(0.75, max(0.0, top_score))
-        reasons.append(f"tương đồng ngữ nghĩa cao nhất {top_score:.2f} (không rerank)")
+        reasons.append(L(f"tương đồng ngữ nghĩa cao nhất {top_score:.2f} (không rerank)", f"best meaning similarity {top_score:.2f} (no reranking)"))
     elif coverage > 0:
         base = 0.65  # nguồn là metadata/tóm tắt tài liệu, kết quả tính toán... (không có điểm retrieval để so)
-        reasons.append("căn cứ trên dữ liệu có cấu trúc/tóm tắt tài liệu, không qua xếp hạng điểm")
+        reasons.append(L("căn cứ trên dữ liệu có cấu trúc/tóm tắt tài liệu, không qua xếp hạng điểm",
+                         "based on structured data or document summaries, without a ranking score"))
     else:
         base = 0.3
-        reasons.append("không có điểm retrieval")
+        reasons.append(L("không có điểm retrieval", "no search score"))
     score = base * (0.5 + 0.5 * coverage)
     if coverage < 1.0:
-        reasons.append(f"{coverage:.0%} câu khẳng định có trích dẫn")
+        reasons.append(L(f"{coverage:.0%} câu khẳng định có trích dẫn", f"{coverage:.0%} of claims cited"))
     if conflicts:
         score -= 0.2
-        reasons.append("nguồn mâu thuẫn nhau")
+        reasons.append(L("nguồn mâu thuẫn nhau", "sources disagree"))
     if degraded:
         score -= 0.1
-        reasons.append("một thành phần chạy chế độ dự phòng")
+        reasons.append(L("một thành phần chạy chế độ dự phòng", "one component ran in fallback mode"))
     score = max(0.0, min(1.0, score))
     level = "cao" if score >= 0.7 else ("trung bình" if score >= 0.45 else "thấp")
     return {"level": level, "score": round(score, 3), "explanation": ", ".join(reasons)}

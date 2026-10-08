@@ -19,6 +19,7 @@ from accounts import service as accounts
 from api.deps import get_db
 from core.config import get_config, get_settings
 from core.errors import ForbiddenError, UnauthorizedError, ValidationFailed
+from core.i18n import L
 from core.models import User
 from core.principal import Principal, WorkspaceContext
 
@@ -26,7 +27,7 @@ from core.principal import Principal, WorkspaceContext
 def issue_jwt(user: User, ttl_minutes: int | None = None) -> str:
     settings, cfg = get_settings(), get_config()
     if not settings.jwt_secret:
-        raise ValidationFailed("JWT_SECRET chưa cấu hình — không phát được token")
+        raise ValidationFailed(L("JWT_SECRET chưa cấu hình — không phát được token", "JWT_SECRET is not configured — cannot issue a token"))
     now = datetime.now(timezone.utc)
     payload = {"sub": user.id, "email": user.email, "name": user.name, "iss": cfg.auth.jwt_issuer,
                "iat": int(now.timestamp()), "exp": int((now + timedelta(minutes=ttl_minutes or cfg.auth.jwt_ttl_minutes)).timestamp())}
@@ -36,14 +37,14 @@ def issue_jwt(user: User, ttl_minutes: int | None = None) -> str:
 def decode_jwt(token: str) -> dict:
     settings, cfg = get_settings(), get_config()
     if not settings.jwt_secret:
-        raise UnauthorizedError("Server chưa cấu hình JWT_SECRET")
+        raise UnauthorizedError(L("Server chưa cấu hình JWT_SECRET", "The server has no JWT_SECRET configured"))
     try:
         return jwt.decode(token, settings.jwt_secret, algorithms=[cfg.auth.jwt_algorithm], issuer=cfg.auth.jwt_issuer,
                           options={"require": ["sub", "exp"]})
     except jwt.ExpiredSignatureError as e:
-        raise UnauthorizedError("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.") from e
+        raise UnauthorizedError(L("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.", "Your session has expired, please sign in again.")) from e
     except jwt.PyJWTError as e:
-        raise UnauthorizedError(f"Token không hợp lệ: {e}") from e
+        raise UnauthorizedError(L(f"Token không hợp lệ: {e}", f"Invalid token: {e}")) from e
 
 
 def authenticate(request: Request, session: Session) -> Principal:
@@ -59,11 +60,11 @@ def authenticate(request: Request, session: Session) -> Principal:
         data = decode_jwt(auth[7:].strip())
         user = session.get(User, str(data["sub"]))
         if user is None or not user.is_active:
-            raise UnauthorizedError("Tài khoản không tồn tại hoặc đã bị khoá")
+            raise UnauthorizedError(L("Tài khoản không tồn tại hoặc đã bị khoá", "This account does not exist or has been locked"))
         principal = accounts.principal_from_user(user)
         limit = cfg.auth.user_rate_limit_per_minute
     else:
-        raise UnauthorizedError("Thiếu thông tin xác thực (Authorization: Bearer <JWT> hoặc X-API-Key)")
+        raise UnauthorizedError(L("Thiếu thông tin xác thực (Authorization: Bearer <JWT> hoặc X-API-Key)", "Missing credentials (Authorization: Bearer <JWT> or X-API-Key)"))
     check_rate_limit(session, principal.rate_key, limit)
     request.state.principal = principal
     return principal
@@ -76,13 +77,13 @@ def current_principal(request: Request, session: Session = Depends(get_db)) -> P
 def current_user(request: Request, session: Session = Depends(get_db)) -> User:
     p = authenticate(request, session)
     if p.kind != "user":
-        raise ForbiddenError("Thao tác này cần tài khoản người dùng (không dùng API key)")
+        raise ForbiddenError(L("Thao tác này cần tài khoản người dùng (không dùng API key)", "This action requires a user account (not an API key)"))
     return session.get(User, p.subject)
 
 
 def require_superadmin(principal: Principal = Depends(current_principal)) -> Principal:
     if not principal.is_superadmin:
-        raise ForbiddenError("Cần quyền quản trị hệ thống (superadmin)")
+        raise ForbiddenError(L("Cần quyền quản trị hệ thống (superadmin)", "System administrator (superadmin) permission required"))
     return principal
 
 
@@ -93,7 +94,7 @@ def workspace(min_role: str = "viewer"):
         principal = authenticate(request, session)
         ctx = accounts.resolve_context(session, principal, workspace_id)
         if not ctx.has_role(min_role):
-            raise ForbiddenError(f"Cần vai trò {min_role} trở lên trong workspace (bạn là {ctx.role})")
+            raise ForbiddenError(L(f"Cần vai trò {min_role} trở lên trong workspace (bạn là {ctx.role})", f"Requires the {min_role} role or higher in this workspace (you are {ctx.role})"))
         request.state.workspace = ctx
         return ctx
 
@@ -107,6 +108,6 @@ def effective_scope(ctx: WorkspaceContext, requested: str | None) -> str | None:
     req = (requested or "").strip().upper() or None
     if mine:
         if req and req != mine:
-            raise ForbiddenError(f"Tài khoản chỉ được truy vấn dữ liệu {mine} và dữ liệu toàn hệ thống, không được truy vấn {req}.")
+            raise ForbiddenError(L(f"Tài khoản chỉ được truy vấn dữ liệu {mine} và dữ liệu toàn hệ thống, không được truy vấn {req}.", f"Your account can only query {mine} data and system-wide data, not {req}."))
         return mine
     return req

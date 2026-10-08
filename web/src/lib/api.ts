@@ -6,7 +6,7 @@ import type {
   TableDetail, TableInfo, TraceSummary, User, Workspace,
 } from "./types";
 
-import { getLang } from "@/i18n";
+import { getLang, translate } from "@/i18n";
 import type { DataModel, DataModelDetail, Insights, ModelConnection, RuleSpec, RuleTest } from "./types";
 
 export const BASE = "/api";
@@ -38,7 +38,7 @@ export function setUnauthorizedHandler(fn: () => void) {
 }
 
 async function parseError(res: Response): Promise<ApiError> {
-  let msg = `Lỗi ${res.status}`;
+  let msg = translate("error.http", { status: res.status });
   let code: string | undefined;
   let rid: string | undefined;
   try {
@@ -81,7 +81,7 @@ export function qs(params: Record<string, unknown>): string {
 /** Tải file có Authorization (fetch -> blob -> a[download]). */
 export async function download(path: string, fallbackName: string): Promise<void> {
   const token = auth.token();
-  const res = await fetch(BASE + path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  const res = await fetch(BASE + path, { headers: { "Accept-Language": getLang(), ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
   if (!res.ok) throw await parseError(res);
   const blob = await res.blob();
   const cd = res.headers.get("content-disposition") || "";
@@ -176,7 +176,7 @@ export const api = {
   exportQuery: async (ws: string, sql: string, fmt: "csv" | "xlsx") => {
     const token = auth.token();
     const res = await fetch(`${BASE}/w/${ws}/analytics/export?fmt=${fmt}`, {
-      method: "POST", headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ sql }),
+      method: "POST", headers: { "Content-Type": "application/json", "Accept-Language": getLang(), ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ sql }),
     });
     if (!res.ok) throw await parseError(res);
     const blob = await res.blob();
@@ -277,12 +277,12 @@ export function streamChat(ws: string, params: ChatParams, onEvent: (e: ChatEven
     try {
       const res = await fetch(`${BASE}/w/${ws}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "text/event-stream", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream", "Accept-Language": getLang(), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ question: params.question, session_id: params.session_id || undefined, document_ids: params.document_ids?.length ? params.document_ids : undefined, scope: params.scope || undefined, mode: params.mode || "agent" }),
         signal: ctrl.signal,
       });
       if (!res.ok) throw await parseError(res);
-      if (!res.body) throw new Error("Trình duyệt không hỗ trợ stream");
+      if (!res.body) throw new Error(translate("chat.noStream"));
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let buf = "";

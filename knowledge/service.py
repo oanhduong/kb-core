@@ -8,6 +8,7 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
 from core.errors import NotFoundError, ValidationFailed
+from core.i18n import L
 from core.models import Document, Entity, EntityMention, KBRecordRow, Relation
 from graph.resolve import fold_text, normalize_text
 
@@ -35,7 +36,7 @@ def list_entities(session: Session, workspace_id: str, *, q: str | None = None, 
 def get_entity(session: Session, workspace_id: str, entity_id: str) -> Entity:
     e = session.get(Entity, entity_id)
     if e is None or e.workspace_id != workspace_id:
-        raise NotFoundError("Không có thực thể")
+        raise NotFoundError(L("Không có thực thể", "Entity not found"))
     return e
 
 
@@ -165,11 +166,11 @@ def update_entity(session: Session, workspace_id: str, entity_id: str, *, name: 
     if name is not None:
         name = normalize_text(name)
         if not name:
-            raise ValidationFailed("Tên không được rỗng")
+            raise ValidationFailed(L("Tên không được rỗng", "Name must not be empty"))
         e.name, e.name_norm = name, fold_text(name)
     if type_ is not None:
         if type_ not in ENTITY_TYPES:
-            raise ValidationFailed(f"type phải là một trong {ENTITY_TYPES}")
+            raise ValidationFailed(L(f"type phải là một trong {ENTITY_TYPES}", f"type must be one of {ENTITY_TYPES}"))
         e.type = type_
     if description is not None:
         e.description = description

@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import sessionmaker
 
 from core.config import AppConfig, read_prompt
+from core.i18n import L
 from core.db import session_scope
 from core.llm import AnthropicCompatAdapter, LLMClient, LLMOutputInvalid, LLMUnavailable
 from core.logging import log_context, log_event
@@ -111,7 +112,7 @@ class IngestPipeline:
         with session_scope() as s:
             doc = s.get(Document, document_id, with_for_update=True)
             if doc is None:
-                raise JobBlocked("Document đã bị xoá trong lúc ingest")
+                raise JobBlocked(L("Tài liệu đã bị xoá trong lúc nạp", "The document was deleted while it was being ingested"))
             rows: list[KBRecordRow] = []
             for r in records:
                 row = s.get(KBRecordRow, r["record_id"])
@@ -226,7 +227,7 @@ class IngestPipeline:
         with session_scope() as s:
             doc = s.get(Document, document_id)
             if doc is None or doc.deleted_at is not None:
-                raise JobBlocked("Document không tồn tại hoặc đã bị xoá")
+                raise JobBlocked(L("Tài liệu không tồn tại hoặc đã bị xoá", "The document doesn't exist or was deleted"))
             doc.status = "processing"
             filename, path = doc.filename, doc.storage_path
         with log_context(job_id=job_id), tracing.start_trace(
@@ -242,7 +243,7 @@ class IngestPipeline:
                 kind = call("detect_file_type", {"path": path})["kind"]
             if kind not in SUPPORTED_KINDS:
                 self._set_status(document_id, "blocked")
-                raise JobBlocked(f"Định dạng file không hỗ trợ (nhận diện: {kind})")
+                raise JobBlocked(L(f"Định dạng file không hỗ trợ (nhận diện: {kind})", f"Unsupported file format (detected: {kind})"))
 
             with session_scope() as s:
                 doc = s.get(Document, document_id)
@@ -257,7 +258,7 @@ class IngestPipeline:
                         if kind == "image":
                             if not cfg.ingest.image_extraction or self.llm is None:
                                 self._set_status(document_id, "blocked")
-                                raise JobBlocked("Ảnh cần Claude vision nhưng đang tắt (ingest.image_extraction) hoặc thiếu API key")
+                                raise JobBlocked(L("Ảnh cần Claude vision nhưng đang tắt (ingest.image_extraction) hoặc thiếu API key", "Images need Claude vision, which is turned off (ingest.image_extraction) or has no API key"))
                             text = self._vision_text(gateway, path, job_id, document_id)
                             units = [RecordUnit(location=filename, content=text, kind="image")] if text else []
                         else:
@@ -276,11 +277,11 @@ class IngestPipeline:
                                     warnings.append(f"{len(ocr_pages)} trang PDF dạng scan chưa được OCR (vision đang tắt)")
                     except ParserError as e:
                         self._set_status(document_id, "blocked")
-                        raise JobBlocked(f"File không parse được đáng tin cậy: {e}") from e
+                        raise JobBlocked(L(f"File không đọc được đáng tin cậy: {e}", f"The file couldn't be read reliably: {e}")) from e
                     sp.update(output={"units": len(units)})
                 if not units:
                     self._set_status(document_id, "blocked")
-                    raise JobBlocked("Không trích được nội dung nào từ file (file rỗng/ảnh không có chữ?)")
+                    raise JobBlocked(L("Không trích được nội dung nào từ file (file rỗng/ảnh không có chữ?)", "No content could be extracted (empty file, or an image without text?)"))
                 save_units(units_cache_path(doc), units)
                 # metadata cấp document: doc_type / ngày hiệu lực / phiên bản (người upload khai báo thì ưu tiên)
                 head_text = "\n".join(u.content for u in units[:10])
@@ -325,8 +326,8 @@ class IngestPipeline:
                       "conflicts": conflicts, "warnings": warnings, "suspicious_records": suspicious[:20]}
             th.update(output={k: v for k, v in result.items() if k != "suspicious_records"})
             if suspicious:
-                raise JobBlocked(f"{len(suspicious)} record có dấu hiệu prompt injection — file bị chặn chờ admin duyệt "
-                                 "(POST /kb/documents/{id}/approve sau khi kiểm tra).", result)
+                raise JobBlocked(L(f"{len(suspicious)} đoạn có dấu hiệu cài lệnh vào AI (prompt injection) — file bị chặn chờ admin duyệt sau khi kiểm tra.",
+                                   f"{len(suspicious)} passages look like instructions aimed at the AI (prompt injection). The file is blocked until an admin reviews and approves it."), result)
             log_event(logger, "ingest_done", document_id=document_id, records=summary.get("records"),
                       chunks=summary.get("chunks"), superseded=len(summary.get("superseded_documents", [])))
             return result

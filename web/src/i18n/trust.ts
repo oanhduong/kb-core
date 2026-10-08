@@ -73,6 +73,13 @@ const en: Record<string, string> = {
   "trust.costs.perQuestion": "Average per question",
   "trust.costs.today": "Whole system today",
   "trust.costs.budget": "daily budget {v}",
+  "trust.review.reasonMoney": "Question involves money ({words})",
+  "trust.jobs.type": "Type",
+  "trust.jobs.status": "Status",
+  "trust.jobs.progress": "Progress",
+  "trust.jobs.tries": "Tries",
+  "trust.jobs.created": "Created",
+  "trust.jobs.result": "Result or error",
 };
 
 const vi: Record<string, string> = {
@@ -149,6 +156,13 @@ const vi: Record<string, string> = {
   "trust.costs.perQuestion": "Trung bình mỗi câu",
   "trust.costs.today": "Toàn hệ thống hôm nay",
   "trust.costs.budget": "ngân sách ngày {v}",
+  "trust.review.reasonMoney": "Câu hỏi liên quan tiền ({words})",
+  "trust.jobs.type": "Loại",
+  "trust.jobs.status": "Trạng thái",
+  "trust.jobs.progress": "Tiến độ",
+  "trust.jobs.tries": "Số lần",
+  "trust.jobs.created": "Tạo lúc",
+  "trust.jobs.result": "Kết quả hoặc lỗi",
 };
 
 export default { en, vi };

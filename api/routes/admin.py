@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from api.auth import current_principal, require_superadmin, workspace
 from api.deps import audit_action, get_db, get_services
 from core.errors import NotFoundError
+from core.i18n import L
 from core.models import Abstention, Feedback, GraphAlias, QATrace
 from core.principal import Principal, WorkspaceContext
 from domains import get_pack, list_packs
@@ -54,7 +55,7 @@ def put_alias(body: AliasBody, request: Request, ctx: WorkspaceContext = Depends
 def delete_alias(alias_id: int, request: Request, ctx: WorkspaceContext = Depends(workspace("editor")), db: Session = Depends(get_db)) -> dict:
     row = db.get(GraphAlias, alias_id)
     if row is None or row.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có alias")
+        raise NotFoundError(L("Không có alias", "Alias not found"))
     db.delete(row)
     invalidate_resolver_cache(ctx.workspace_id)
     audit_action(request, ctx.principal, "alias_delete", str(alias_id))
@@ -64,7 +65,7 @@ def delete_alias(alias_id: int, request: Request, ctx: WorkspaceContext = Depend
 @ws_router.get("/graph/rule-stats", summary="Số node/edge graph rule-based (AGE) của workspace")
 def graph_stats(ctx: WorkspaceContext = Depends(workspace("viewer")), services: Any = Depends(get_services)) -> dict:
     if not get_pack(ctx.domain_pack).rule_graph:
-        return {"enabled": False, "reason": "domain pack không có graph rule-based"}
+        return {"enabled": False, "reason": L("domain pack không có graph rule-based", "this domain pack has no rule-based graph")}
     store = services.graph_store(ctx.workspace_id)
     if store is None:
         return {"enabled": False}
@@ -126,10 +127,10 @@ class FeedbackUpdate(BaseModel):
 def update_feedback(feedback_id: int, body: FeedbackUpdate, ctx: WorkspaceContext = Depends(workspace("editor")), db: Session = Depends(get_db)) -> dict:
     fb = db.get(Feedback, feedback_id)
     if fb is None:
-        raise NotFoundError("Không có feedback")
+        raise NotFoundError(L("Không có feedback", "Feedback not found"))
     tr = db.get(QATrace, fb.trace_id)
     if tr is None or tr.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có feedback")
+        raise NotFoundError(L("Không có feedback", "Feedback not found"))
     fb.status, fb.admin_note = body.status, body.admin_note
     return {"id": fb.id, "status": fb.status}
 
@@ -155,7 +156,7 @@ def search_traces(user_id: str | None = None, session_id: str | None = None, sta
 def get_trace(trace_id: str, ctx: WorkspaceContext = Depends(workspace("editor")), db: Session = Depends(get_db)) -> dict:
     t = db.get(QATrace, trace_id)
     if t is None or t.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có trace (hoặc đã quá hạn lưu trữ)")
+        raise NotFoundError(L("Không có trace (hoặc đã quá hạn lưu trữ)", "Trace not found (or past its retention period)"))
     return {c.name: getattr(t, c.name) for c in QATrace.__table__.columns} | {"langfuse_url": trace_url(t.langfuse_trace_id)}
 
 

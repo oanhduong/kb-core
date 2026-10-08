@@ -15,7 +15,7 @@ import { Confirm, Empty, ErrorBox, Field, Loading, MatchMeter, Modal, Spinner, S
 import { useI18n } from "@/i18n";
 import { Page } from "@/layout/AppShell";
 import { api, download } from "@/lib/api";
-import { fmtCell, fmtNumber, fmtPct, fmtRelative } from "@/lib/format";
+import { fmtCell, fmtDate, fmtNumber, fmtPct, fmtRelative } from "@/lib/format";
 import type { DataModelDetail, KeyPairSpec, OutputColumnSpec, RelationshipSpec, TableSpecView } from "@/lib/types";
 import { useWorkspace } from "@/state/auth";
 import { Advanced, usePrefs } from "@/state/prefs";
@@ -457,7 +457,7 @@ function CalculationsStep({ m, onChanged }: { m: DataModelDetail; onChanged: (m:
         <span className="flex-1" />
         {(usesDate || asOf) && (
           <button className="btn-secondary" onClick={() => setDateOpen(true)} title={t("models.calc.reportDateHint")}>
-            {t("models.calc.reportDate")}: <b className="font-semibold">{asOf === "today" || !asOf ? t("models.calc.today") : asOf}</b>
+            {t("models.calc.reportDate")}: <b className="font-semibold">{asOf === "today" || !asOf ? t("models.calc.today") : fmtDate(asOf)}</b>
           </button>
         )}
         {can("editor") && <button className="btn-ink" disabled={confirmAll.isPending} onClick={() => confirmAll.mutate()}>{confirmAll.isPending ? <Spinner className="text-white" /> : <CheckCheck className="h-4 w-4 text-marker-200" />}{t("models.calc.confirmStrong")}</button>}
@@ -515,7 +515,7 @@ function ReportDateModal({ m, open, onClose, onSaved }: { m: DataModelDetail; op
     <Modal open={open} onClose={onClose} title={t("models.date.title")}
       footer={<><button className="btn-secondary" onClick={onClose}>{t("action.cancel")}</button><button className="btn-primary" disabled={mut.isPending} onClick={() => mut.mutate()}>{t("action.save")}</button></>}>
       <p className="mb-4 text-sm leading-6 text-ink-700">{t("models.date.hint")}</p>
-      {m.spec.parameters.as_of_source === "inferred" && <p className="mb-4 rounded-lg bg-marker-100 px-3 py-2 text-sm text-ink-800">{t("models.date.inferred", { date: cur || "" })}</p>}
+      {m.spec.parameters.as_of_source === "inferred" && <p className="mb-4 rounded-lg bg-marker-100 px-3 py-2 text-sm text-ink-800">{t("models.date.inferred", { date: cur ? fmtDate(cur) : "" })}</p>}
       <div className="space-y-2 text-sm">
         <label className="flex items-center gap-2"><input type="radio" checked={mode === "fixed"} onChange={() => setMode("fixed")} />{t("models.date.fixed")}<input type="date" className="input w-44" value={date} onChange={(e) => { setDate(e.target.value); setMode("fixed"); }} /></label>
         <label className="flex items-center gap-2"><input type="radio" checked={mode === "today"} onChange={() => setMode("today")} />{t("models.date.today")}</label>

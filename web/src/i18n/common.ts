@@ -106,6 +106,16 @@ const en: Record<string, string> = {
   "chart.failed": "Couldn't draw this chart: {error}",
   "grid.empty": "No data",
   "grid.showing": "Showing {n} of {total} rows",
+  "error.http": "Request failed ({status})",
+  "nav.menu": "Menu",
+  "status.dismissed": "Dismissed",
+  "status.seen": "Seen",
+  "status.fixed": "Fixed",
+  "status.wontfix": "Won't fix",
+  "status.final": "Final",
+  "status.proposed": "Suggested",
+  "status.confirmed": "Confirmed",
+  "status.quarantined": "Quarantined",
 };
 
 const vi: Record<string, string> = {
@@ -215,6 +225,16 @@ const vi: Record<string, string> = {
   "chart.failed": "Không vẽ được biểu đồ: {error}",
   "grid.empty": "Không có dữ liệu",
   "grid.showing": "Hiển thị {n}/{total} dòng",
+  "error.http": "Yêu cầu thất bại ({status})",
+  "nav.menu": "Menu",
+  "status.dismissed": "Đã bỏ qua",
+  "status.seen": "Đã xem",
+  "status.fixed": "Đã sửa",
+  "status.wontfix": "Không sửa",
+  "status.final": "Chốt",
+  "status.proposed": "Đề xuất",
+  "status.confirmed": "Đã xác nhận",
+  "status.quarantined": "Cách ly",
 };
 
 export default { en, vi };

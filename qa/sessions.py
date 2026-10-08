@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from agent.loop import _approx_tokens
 from core.config import AppConfig, read_prompt
 from core.errors import ForbiddenError, NotFoundError
+from core.i18n import L
 from core.llm import LLMClient, LLMUnavailable
 from core.logging import log_event
 from core.models import ChatMessage, ChatSession, utcnow
@@ -89,11 +90,11 @@ class ChatSessionService:
                 s.flush()
                 return sess
             if sess.user_id != user_id:
-                raise ForbiddenError("Session này thuộc người dùng khác.", context={"session_id": session_id})
+                raise ForbiddenError(L("Session này thuộc người dùng khác.", "This session belongs to another user."), context={"session_id": session_id})
             if sess.workspace_id != workspace_id:
-                raise ForbiddenError("Session thuộc workspace khác.")
+                raise ForbiddenError(L("Session thuộc workspace khác.", "This session belongs to another workspace."))
             if sess.store_code and store_code and sess.store_code != store_code:
-                raise ForbiddenError(f"Session gắn với phạm vi {sess.store_code}, không dùng cho {store_code}.")
+                raise ForbiddenError(L(f"Session gắn với phạm vi {sess.store_code}, không dùng cho {store_code}.", f"This session is tied to scope {sess.store_code} and cannot be used for {store_code}."))
             return sess
         sess = ChatSession(workspace_id=workspace_id, user_id=user_id, store_code=store_code)
         s.add(sess)
@@ -104,9 +105,9 @@ class ChatSessionService:
                   allow_any: bool = False) -> ChatSession:
         sess = s.get(ChatSession, session_id)
         if sess is None or (workspace_id and sess.workspace_id != workspace_id):
-            raise NotFoundError(f"Không có session {session_id}")
+            raise NotFoundError(L(f"Không có session {session_id}", f"Session {session_id} not found"))
         if sess.user_id != user_id and not allow_any:
-            raise ForbiddenError("Session này thuộc người dùng khác.")
+            raise ForbiddenError(L("Session này thuộc người dùng khác.", "This session belongs to another user."))
         return sess
 
     def add_message(self, s: Session, sess: ChatSession, role: str, content: str, *, trace_id: str | None = None,

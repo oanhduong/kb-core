@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from core.config import AppConfig, read_prompt
 from core.errors import AppError
+from core.i18n import L, get_lang, language_name
 from core.llm import LLMClient, LLMUnavailable
 from core.logging import log_context, log_event
 from core.models import QATrace, new_id
@@ -49,8 +50,11 @@ from qa.trace import DecisionTrace, compute_confidence
 logger = logging.getLogger(__name__)
 
 _SKU_IN_Q_RE = re.compile(r"\b[A-Za-zĐđ]{2,5}-?\d{2,6}\b")
-ERROR_MESSAGE = ("Xin lỗi, hệ thống đang gặp sự cố tạm thời nên chưa trả lời được. Vui lòng thử lại sau ít phút; "
-                 "nếu cần gấp hãy liên hệ supervisor. (Mã tra cứu: {trace_id})")
+def error_message(trace_id: str) -> str:
+    return L(f"Xin lỗi, hệ thống đang gặp sự cố tạm thời nên chưa trả lời được. Vui lòng thử lại sau ít phút; "
+             f"nếu cần gấp hãy liên hệ supervisor. (Mã tra cứu: {trace_id})",
+             f"Sorry, the system is having a temporary problem and couldn't answer. Please try again in a few minutes; "
+             f"if it's urgent, contact your supervisor. (Reference: {trace_id})")
 
 
 class QAResponse(BaseModel):
@@ -317,13 +321,15 @@ class QAService:
             as_of=prep.as_of.isoformat() if prep.as_of else None,
             conflicts_block=conflict_prompt_block(prep.conflicts, sid_by_record) if prep.conflicts else None,
             computed_facts=prep.computed_facts, graph_paths=prep.graph_paths)
-        system = [{"type": "text", "text": read_prompt("answer_system", self.cfg), "cache_control": {"type": "ephemeral"}}]
+        system = [{"type": "text", "text": read_prompt("answer_system", self.cfg), "cache_control": {"type": "ephemeral"}},
+                  {"type": "text", "text": f"Ngôn ngữ giao diện của người hỏi: {language_name()}. Trả lời bằng ngôn ngữ của câu hỏi "
+                                           f"(không rõ thì dùng {language_name()}); giữ nguyên trích dẫn [S#], tên riêng và mã."}]
         return system, [*prep.history, {"role": "user", "content": user_prompt}]
 
     def _postcheck(self, prep: Prepared, raw: str) -> cit.PostCheckResult:
         with tracing.span("answer.postcheck") as sp:
             pc = cit.postcheck(raw, {s.sid: s for s in prep.sources}, min_coverage=self.cfg.citation.min_sentence_coverage,
-                               insufficient_message=self.cfg.citation.insufficient_message)
+                               insufficient_message=self.cfg.citation.insufficient())
             if pc.ok and prep.conflicts:
                 numbers = {c.record_id: c.n for c in pc.citations}
                 pc.answer, appended = ensure_conflict_disclosure(pc.answer, prep.conflicts, numbers)
@@ -358,7 +364,7 @@ class QAService:
         user_answer = answer
         with self.sm() as s:
             if status == "pending_review":
-                user_answer = self.cfg.review.pending_message
+                user_answer = self.cfg.review.pending()
             if req.channel == "chat" and prep.session_id:
                 sess = self.sessions.get_owned(s, prep.session_id, req.user_id, workspace_id=req.ctx.workspace_id)
                 msg = self.sessions.add_message(
@@ -371,7 +377,7 @@ class QAService:
                                       user_id=req.user_id, store_code=req.store_code, question=req.question,
                                       workspace_id=req.ctx.workspace_id,
                                       draft_answer=answer, citations=citations, decision_trace=trace_dict,
-                                      reason="Câu hỏi liên quan tiền: " + ", ".join(prep.money_hits))
+                                      reason="money: " + ", ".join(prep.money_hits))
                 review_id = item.id
             if status in ("abstained", "no_citation"):
                 record_abstention(s, trace_id=prep.trace_id, question=req.question,
@@ -413,7 +419,7 @@ class QAService:
             trace_url=tracing.trace_url(prep.trace_id) if th is not None and th.enabled else None)
 
     def _error_response(self, req: QARequest, trace_id: str, prep: Prepared | None, exc: BaseException) -> QAResponse:
-        msg = exc.message if isinstance(exc, AppError) and exc.http_status == 503 else ERROR_MESSAGE.format(trace_id=trace_id)
+        msg = exc.message if isinstance(exc, AppError) and exc.http_status == 503 else error_message(trace_id)
         if isinstance(exc, AppError) and exc.http_status == 503:
             msg = f"{msg} (Mã tra cứu: {trace_id})"
         prep = prep or Prepared(trace_id=trace_id, req=req, dtrace=DecisionTrace())
@@ -439,7 +445,7 @@ class QAService:
             try:
                 prep = self._prepare(req, trace_id)
                 if prep.abstain and prep.abstain.abstain:
-                    return self._finalize(prep, status="abstained", answer=self.cfg.abstention.handoff_message)
+                    return self._finalize(prep, status="abstained", answer=self.cfg.abstention.handoff())
                 system, messages = self._messages(prep)
                 with tracing.span("model.answer", model=self.llm.model_for("answer")):
                     res = self.llm.complete("answer", system=system, messages=messages,
@@ -479,7 +485,7 @@ class QAService:
                                "question_type": prep.route.question_type if prep.route else None,
                                "route": prep.route.route if prep.route else None}
                 if prep.abstain and prep.abstain.abstain:
-                    resp = self._finalize(prep, status="abstained", answer=self.cfg.abstention.handoff_message)
+                    resp = self._finalize(prep, status="abstained", answer=self.cfg.abstention.handoff())
                     yield "delta", {"text": resp.answer}
                     yield from self._tail(resp)
                     return

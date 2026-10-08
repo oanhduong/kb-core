@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from core.errors import RateLimited
+from core.i18n import L
 
 
 def check_rate_limit(session: Session, key: str, limit_per_minute: int) -> int:
@@ -22,6 +23,6 @@ def check_rate_limit(session: Session, key: str, limit_per_minute: int) -> int:
     session.commit()
     if count > limit_per_minute:
         retry = 60 - now.second
-        raise RateLimited(f"Vượt giới hạn {limit_per_minute} request/phút, thử lại sau {retry}s.",
+        raise RateLimited(L(f"Vượt giới hạn {limit_per_minute} request/phút, thử lại sau {retry}s.", f"Rate limit of {limit_per_minute} requests/minute exceeded, try again in {retry}s."),
                           context={"retry_after": retry, "key": key})
     return int(count)

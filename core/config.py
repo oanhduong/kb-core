@@ -30,6 +30,7 @@ import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from core.errors import ConfigError
+from core.i18n import L
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG_PATH = REPO_ROOT / "config.yaml"
@@ -152,6 +153,13 @@ class AbstentionConfig(BaseModel):
         "Mình chưa tìm thấy đủ căn cứ trong tài liệu để trả lời chắc chắn câu này. "
         "Bạn vui lòng liên hệ quản lý ca/supervisor hoặc bộ phận phụ trách để được hỗ trợ."
     )
+    handoff_message_en: str = (
+        "I couldn't find enough evidence in the documents to answer this with confidence. "
+        "Please contact your shift manager/supervisor or the team responsible."
+    )
+
+    def handoff(self) -> str:
+        return L(self.handoff_message, self.handoff_message_en)
 
 
 class RouterConfig(BaseModel):
@@ -214,6 +222,13 @@ class CitationConfig(BaseModel):
         "Mình không thể đưa ra câu trả lời có trích dẫn nguồn rõ ràng cho câu hỏi này, nên không trả "
         "lời để tránh sai sót. Bạn vui lòng liên hệ supervisor hoặc bộ phận phụ trách."
     )
+    insufficient_message_en: str = (
+        "I can't give an answer backed by clear sources for this question, so I won't answer to avoid mistakes. "
+        "Please contact your supervisor or the team responsible."
+    )
+
+    def insufficient(self) -> str:
+        return L(self.insufficient_message, self.insufficient_message_en)
 
 
 class ReviewConfig(BaseModel):
@@ -224,6 +239,13 @@ class ReviewConfig(BaseModel):
         "Câu hỏi liên quan đến tiền (giá/chiết khấu/hoàn tiền/bồi thường) nên đã được chuyển cho "
         "supervisor duyệt trước khi gửi. Bạn sẽ nhận câu trả lời ngay khi được duyệt."
     )
+    pending_message_en: str = (
+        "This question involves money (prices/discounts/refunds/compensation), so it has been sent to a "
+        "supervisor for approval first. You'll get the answer as soon as it is approved."
+    )
+
+    def pending(self) -> str:
+        return L(self.pending_message, self.pending_message_en)
 
 
 class ChatConfig(BaseModel):

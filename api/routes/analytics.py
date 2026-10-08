@@ -18,6 +18,7 @@ from analytics.nl2sql import answer_with_sql
 from api.auth import workspace
 from api.deps import audit_action, get_db, get_services
 from core.errors import NotFoundError
+from core.i18n import L
 from core.models import SavedQuery
 from core.principal import WorkspaceContext
 
@@ -28,7 +29,7 @@ def _table(db: Session, ctx: WorkspaceContext, table_id: str) -> engine.TableInf
     for t in engine.catalog(db, ctx.workspace_id):
         if t.id == table_id or t.name == table_id:
             return t
-    raise NotFoundError("Không có bảng dữ liệu")
+    raise NotFoundError(L("Không có bảng dữ liệu", "Data table not found"))
 
 
 @router.get("/tables", summary="Catalog bảng số liệu của workspace")
@@ -112,7 +113,7 @@ def run_saved(query_id: str, ctx: WorkspaceContext = Depends(workspace("viewer")
               services: Any = Depends(get_services)) -> dict:
     row = db.get(SavedQuery, query_id)
     if row is None or row.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có truy vấn đã lưu")
+        raise NotFoundError(L("Không có truy vấn đã lưu", "Saved query not found"))
     res = engine.run_query(services.cfg, engine.catalog(db, ctx.workspace_id), row.sql)
     return {"result": res.to_dict(), "chart": build_chart(res, row.chart_spec, services.cfg.analytics.chart_max_points)}
 
@@ -121,7 +122,7 @@ def run_saved(query_id: str, ctx: WorkspaceContext = Depends(workspace("viewer")
 def delete_saved(query_id: str, ctx: WorkspaceContext = Depends(workspace("editor")), db: Session = Depends(get_db)) -> dict:
     row = db.get(SavedQuery, query_id)
     if row is None or row.workspace_id != ctx.workspace_id:
-        raise NotFoundError("Không có truy vấn đã lưu")
+        raise NotFoundError(L("Không có truy vấn đã lưu", "Saved query not found"))
     db.delete(row)
     return {"deleted": query_id}
 

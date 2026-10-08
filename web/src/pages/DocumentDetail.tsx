@@ -15,7 +15,7 @@ import {
 import { translate, useT } from "@/i18n";
 import { Page } from "@/layout/AppShell";
 import { api } from "@/lib/api";
-import { fmtBytes, fmtDate, fmtNumber, fmtRelative, sourceLabel } from "@/lib/format";
+import { docStatus, fmtBytes, fmtDate, fmtNumber, fmtRelative, sourceLabel } from "@/lib/format";
 import type { DocumentDetail } from "@/lib/types";
 import { useWorkspace } from "@/state/auth";
 import { Advanced, usePrefs } from "@/state/prefs";
@@ -89,7 +89,7 @@ export function DocumentDetailPage() {
         <ArrowLeft className="h-4 w-4" /> {t("sources.title")}
       </Link>
       <PageHeader
-        title={<span className="flex flex-wrap items-center gap-3"><SourceIcon type={d.source_type} size="lg" /><span className="min-w-0 break-words">{d.title}</span><StatusBadge status={d.deleted_at ? "deleted" : d.status} /></span>}
+        title={<span className="flex flex-wrap items-center gap-3"><SourceIcon type={d.source_type} size="lg" /><span className="min-w-0 break-words">{d.title}</span><StatusBadge status={d.deleted_at ? "deleted" : docStatus(d.status)} /></span>}
         subtitle={<span className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <span>{t("sources.fileAndSize", { name: d.filename, size: fmtBytes(d.size_bytes) })}</span>
           <span className="font-medium text-ink-700"><DocType code={d.doc_type} /></span>

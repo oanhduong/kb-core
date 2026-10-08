@@ -13,6 +13,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from core.i18n import L
 from modeling.compile import compile_view
 from modeling.spec import ColumnCheck, ModelSpec, Rule
 
@@ -153,7 +154,7 @@ class DuckEval:
         col = spec.column(column)
         main = spec.main()
         if col is None or main is None:
-            return None, "không có cột"
+            return None, L("không có cột", "no such column")
         try:
             out, problems = self.run(spec, override={column: rule}, only=[column])
         except Exception as e:  # SQL lỗi (vd kiểu dữ liệu không hợp) -> báo lại cho người dùng/AI
@@ -162,7 +163,7 @@ class DuckEval:
             return None, problems[column]
         base = self.frames[main.key]
         if col.name not in base.columns:
-            return None, "sheet chính không có cột này để đối chiếu"
+            return None, L("sheet chính không có cột này để đối chiếu", "the main sheet has no such column to compare against")
         calc = out[["source_row", column]].rename(columns={column: "__calc"})
         m = base[["_row", col.name]].merge(calc, left_on="_row", right_on="source_row", how="left")
         return compare(m[col.name], m["__calc"], col.type, rows=m["_row"]), None
