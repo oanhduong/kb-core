@@ -46,7 +46,7 @@ class Worker:
         if self._llm is None:
             from core.config import get_settings
 
-            self._llm = get_llm() if get_settings().anthropic_api_key else None
+            self._llm = get_llm() if get_settings().llm_available else None
         return self._llm
 
     @property
@@ -105,7 +105,8 @@ class Worker:
         from knowledge.pipeline import extract_document_knowledge
 
         return extract_document_knowledge(self.cfg, self.sm, self.llm, self.embedder, job.payload["document_id"],
-                                          progress=lambda d, t, note=None: queue.update_progress(job.id, d, t, note=note))
+                                          progress=lambda d, t, note=None: queue.update_progress(job.id, d, t, note=note),
+                                          only=job.payload.get("only"), force=bool(job.payload.get("force")))
 
     def _report_generate(self, job: Job) -> dict[str, Any]:
         from reports.generator import generate_report

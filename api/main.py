@@ -122,7 +122,7 @@ def create_app(services=None) -> FastAPI:
             checks["graph_age"] = f"lỗi: {e}"[:200]
         checks["reranker"] = "ok" if services.retriever._rerank_ready.is_set() else (
             "tắt" if not services.cfg.retrieval.rerank.enabled else "đang tải (tạm dùng hybrid)")
-        checks["anthropic_api_key"] = "ok" if services.settings.anthropic_api_key else "THIẾU — không trả lời được"
+        checks["llm"] = (services.settings.llm_provider if services.settings.llm_available else "THIẾU API key — không trả lời được")
         checks["langfuse"] = "ok" if services.settings.langfuse_public_key else "tắt"
         return JSONResponse(status_code=200 if ok else 503, content={"ready": ok, "config_version": cfg.config_version,
                                                                       "config_hash": cfg.config_hash, "checks": checks})

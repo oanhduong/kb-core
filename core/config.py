@@ -401,6 +401,11 @@ class Settings(BaseModel):
     # chuỗi kết nối hiển thị cho người dùng BI (không chứa mật khẩu), vd postgresql://bi_reader@db.internal:5432/retailkb
     warehouse_public_dsn: str | None = None
 
+    @property
+    def llm_available(self) -> bool:
+        """Có đường gọi model: API key, hoặc Claude Code CLI đăng nhập subscription (máy dev)."""
+        return bool(self.anthropic_api_key) or self.llm_provider == "claude_cli"
+
     @classmethod
     def from_env(cls) -> "Settings":
         env = os.environ
