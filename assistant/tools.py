@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from analytics import engine
 from analytics.charts import build_chart
+from analytics.relations import join_hints
 from assistant.sources import Source, SourceRegistry
 from core.config import AppConfig
 from core.errors import AppError
@@ -244,7 +245,8 @@ def tool_list_tables(tc: ToolContext, document_ids: list[str] | None = None) -> 
     tables = engine.catalog(tc.session, tc.ctx.workspace_id, document_ids=document_ids or tc.document_ids)
     if not tables:
         return ToolOutcome("Workspace chưa có bảng số liệu nào (chưa upload bảng tính hoặc tài liệu không có bảng).", summary={"tables": 0})
-    return ToolOutcome(engine.catalog_prompt(tables), summary={"tables": len(tables), "names": [t.name for t in tables][:30]})
+    joins = join_hints(tc.session, tables)
+    return ToolOutcome(engine.catalog_prompt(tables, joins), summary={"tables": len(tables), "names": [t.name for t in tables][:30], "joins": len(joins)})
 
 
 def tool_query_tables(tc: ToolContext, sql: str, purpose: str | None = None, chart: dict[str, Any] | None = None) -> ToolOutcome:

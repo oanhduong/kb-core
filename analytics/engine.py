@@ -81,10 +81,17 @@ def catalog(session: Session, workspace_id: str, *, document_ids: list[str] | No
                       t.storage_path, t.semantic or {}) for t, dt in session.execute(q).all()]
 
 
-def catalog_prompt(tables: list[TableInfo]) -> str:
+def catalog_prompt(tables: list[TableInfo], joins: list[Any] | None = None) -> str:
+    """Catalog cho model viết SQL; joins (analytics.relations.KeyGroup): khoá chung giữa các bảng, kiểm chứng trên dữ liệu."""
     if not tables:
         return "<catalog>\n(workspace chưa có bảng số liệu nào)\n</catalog>"
-    return "<catalog>\n" + "\n".join(t.to_prompt() for t in tables) + "\n</catalog>"
+    out = "<catalog>\n" + "\n".join(t.to_prompt() for t in tables) + "\n</catalog>"
+    if joins:
+        out += ("\n<joins>\nKhoá chung giữa các bảng, đã kiểm chứng bằng dữ liệu. Mỗi cột kèm biểu thức khoá đã chuẩn hoá: muốn nối 2 bảng "
+                "trong cùng nhóm thì dùng ON <biểu thức của bảng 1> = <biểu thức của bảng 2> (ĐÚNG biểu thức này, đặt alias thì thay "
+                "tên bảng trong biểu thức bằng alias). Không nối qua cột không có ở đây trừ khi câu hỏi buộc phải vậy.\n"
+                + "\n".join(j.to_prompt() for j in joins) + "\n</joins>")
+    return out
 
 
 # =====================================================================================

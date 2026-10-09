@@ -15,13 +15,15 @@ from sqlalchemy.orm import Session
 from analytics import engine
 from analytics.charts import build_chart
 from analytics.nl2sql import answer_with_sql
+from analytics.relations import relationship_view, schedule_discovery
 from api.auth import workspace
 from api.deps import audit_action, get_db, get_services
 from core.errors import NotFoundError
 from core.i18n import L
-from core.models import SavedQuery
+from core.models import DataTable, SavedQuery, TableRelationship
 from core.principal import WorkspaceContext
 from knowledge.translate import localize
+from worker.queue import job_view
 
 router = APIRouter(prefix="/w/{workspace_id}", tags=["analytics"])
 
@@ -59,6 +61,48 @@ class SQLBody(BaseModel):
     sql: str = Field(min_length=1, max_length=20000)
     limit: int | None = Field(default=None, ge=1, le=5000)
     chart: dict | None = None
+
+
+# ------------------------------------------------------------------ quan hệ giữa các bảng (dò bằng dữ liệu)
+@router.get("/analytics/relationships", summary="Quan hệ giữa các bảng của workspace (khác file/sheet) + job dò đang chạy")
+def list_relationships(ctx: WorkspaceContext = Depends(workspace("viewer")), db: Session = Depends(get_db)) -> dict:
+    from core.models import Job
+
+    rows = db.execute(select(TableRelationship).where(TableRelationship.workspace_id == ctx.workspace_id)
+                      .order_by(TableRelationship.confidence.desc())).scalars().all()
+    ids = {r.left_table_id for r in rows} | {r.right_table_id for r in rows}
+    tables = {t.id: t for t in db.execute(select(DataTable).where(DataTable.id.in_(ids))).scalars()} if ids else {}
+    job = db.execute(select(Job).where(Job.type == "relations_discover", Job.workspace_id == ctx.workspace_id)
+                     .order_by(Job.created_at.desc()).limit(1)).scalars().first()
+    items = [relationship_view(r, tables) for r in rows if tables.get(r.left_table_id) and tables[r.left_table_id].is_active
+             and tables.get(r.right_table_id) and tables[r.right_table_id].is_active]
+    # tên bảng/cột/sheet là tên người dùng đặt -> giữ nguyên (không localize)
+    return {"items": items, "job": job_view(job) if job else None}
+
+
+@router.post("/analytics/relationships/discover", summary="Dò lại quan hệ giữa mọi bảng + dựng thực thể từ cột mã (job nền)")
+def discover_relationships(request: Request, ctx: WorkspaceContext = Depends(workspace("editor")), db: Session = Depends(get_db)) -> dict:
+    job = schedule_discovery(db, ctx.workspace_id, created_by=ctx.subject, delay_seconds=0)
+    audit_action(request, ctx.principal, "relationships_discover", job.id)
+    return job_view(job)
+
+
+class RelationshipReview(BaseModel):
+    status: Literal["approved", "rejected", "proposed"]
+
+
+@router.patch("/analytics/relationships/{rel_id}", summary="Xác nhận / bỏ 1 quan hệ (dò lại vẫn giữ quyết định)")
+def review_relationship(rel_id: str, body: RelationshipReview, request: Request, ctx: WorkspaceContext = Depends(workspace("editor")),
+                        db: Session = Depends(get_db)) -> dict:
+    r = db.get(TableRelationship, rel_id)
+    if r is None or r.workspace_id != ctx.workspace_id:
+        raise NotFoundError(L("Không có quan hệ này", "Relationship not found"))
+    r.status, r.reviewed_by = body.status, ctx.subject
+    audit_action(request, ctx.principal, "relationship_review", rel_id, status=body.status)
+    # thực thể từ cột mã phụ thuộc quan hệ -> dựng lại
+    schedule_discovery(db, ctx.workspace_id, created_by=ctx.subject, delay_seconds=5)
+    tables = {t.id: t for t in db.execute(select(DataTable).where(DataTable.id.in_([r.left_table_id, r.right_table_id]))).scalars()}
+    return relationship_view(r, tables)
 
 
 @router.post("/analytics/query", summary="Chạy SQL DuckDB read-only trên các bảng của workspace")

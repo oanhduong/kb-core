@@ -133,6 +133,34 @@ class DataTable(Base):
                       Index("ix_data_tables_document", "document_id"))
 
 
+class TableRelationship(Base):
+    """Quan hệ giữa 2 bảng số liệu bất kỳ của workspace (khác file/sheet), dò bằng dữ liệu (analytics/relations.py):
+    left = phía "nhiều" (bảng tham chiếu), right = phía "một" (bảng danh mục) nếu xác định được. Khoá được chuẩn hoá
+    bằng transforms (modeling/keys.py) trước khi so. proposed -> người dùng approved | rejected (dò lại giữ quyết định)."""
+    __tablename__ = "table_relationships"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(32), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    left_table_id: Mapped[str] = mapped_column(String(32), ForeignKey("data_tables.id", ondelete="CASCADE"), nullable=False)
+    left_column: Mapped[str] = mapped_column(Text, nullable=False)
+    left_transforms: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    right_table_id: Mapped[str] = mapped_column(String(32), ForeignKey("data_tables.id", ondelete="CASCADE"), nullable=False)
+    right_column: Mapped[str] = mapped_column(Text, nullable=False)
+    right_transforms: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    cardinality: Mapped[str] = mapped_column(String(16), nullable=False)  # one_to_one | many_to_one | many_to_many
+    matched_keys: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    left_coverage: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)  # tỉ lệ dòng bên trái tìm thấy bên phải
+    right_coverage: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")  # proposed | approved | rejected
+    reviewed_by: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
+
+    __table_args__ = (UniqueConstraint("left_table_id", "left_column", "right_table_id", "right_column", name="uq_table_relationship"),
+                      Index("ix_table_relationships_ws", "workspace_id", "status"))
+
+
 class DataModel(Base):
     """Mô hình dữ liệu nghiệp vụ (modeling/): spec JSON (bảng, quan hệ, logic từng cột — người dùng duyệt) + kết quả build
     (schema/view trong warehouse, đối chiếu với file gốc)."""

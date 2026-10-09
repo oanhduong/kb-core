@@ -10,7 +10,9 @@ from pydantic import BaseModel, Field
 
 from analytics.charts import build_chart
 from analytics.engine import QueryResult, TableInfo, catalog_prompt, run_query
+from analytics.relations import join_hints
 from core.config import AppConfig, read_prompt
+from core.db import session_scope
 from core.errors import ValidationFailed
 from core.i18n import L, get_lang, output_language_rule
 from core.llm import LLMClient, LLMOutputInvalid, LLMUnavailable
@@ -59,7 +61,9 @@ def _tables_in_sql(sql: str, tables: list[TableInfo]) -> list[str]:
 def answer_with_sql(cfg: AppConfig, llm: LLMClient, tables: list[TableInfo], question: str, *, context: str | None = None) -> AnalyticsAnswer:
     if not tables:
         return AnalyticsAnswer(None, None, None, L("Workspace chưa có bảng số liệu nào để truy vấn.", "This workspace has no data tables to query yet."), error="no_tables")
-    system = (read_prompt("nl2sql", cfg) + "\n\n" + catalog_prompt(tables)
+    with session_scope() as s:
+        joins = join_hints(s, tables)
+    system = (read_prompt("nl2sql", cfg) + "\n\n" + catalog_prompt(tables, joins)
               + output_language_rule(get_lang(), "The user's app").replace("free-text value", "chart title and explanation"))
     user = ((f"Ngữ cảnh: {context}\n" if context else "") + f"Câu hỏi: {question}"
 )

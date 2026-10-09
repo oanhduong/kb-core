@@ -25,7 +25,7 @@ from core.models import Job, utcnow
 logger = logging.getLogger(__name__)
 
 JOB_TYPES = ("ingest_file", "reindex", "graph_sync", "graph_rebuild", "document_lifecycle", "knowledge_extract", "report_generate",
-             "model_analyze", "model_build")
+             "model_analyze", "model_build", "relations_discover")
 
 
 class JobBlocked(Exception):

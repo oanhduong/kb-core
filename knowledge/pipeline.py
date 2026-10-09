@@ -9,12 +9,13 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import sessionmaker
 
 from core.config import AppConfig
 from core.db import session_scope
 from core.logging import log_event
-from core.models import Document
+from core.models import DataTable, Document
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,18 @@ def extract_document_knowledge(cfg: AppConfig, sm: sessionmaker, llm: Any, embed
             logger.exception("knowledge step %s lỗi", step)
             out["steps"][step] = {"error": f"{type(e).__name__}: {e}"[:500]}
     progress(total, total, "done")
+    # bảng mới / thực thể vừa trích lại -> dò lại quan hệ giữa các bảng của workspace + thực thể từ cột mã
+    # (sau bước entities: trích lại xoá mention của tài liệu, kể cả mention dựng từ cột mã)
+    if any(st in out["steps"] and "error" not in out["steps"][st] and "skipped" not in out["steps"][st] for st in ("tables", "entities")):
+        try:
+            from analytics.relations import schedule_discovery
+
+            with session_scope() as s:
+                ws = s.get(Document, document_id).workspace_id
+                if s.execute(select(func.count()).select_from(DataTable).where(DataTable.workspace_id == ws, DataTable.is_active.is_(True))).scalar_one() >= 2:
+                    schedule_discovery(s, ws)
+        except Exception:
+            logger.exception("không đẩy được job dò quan hệ bảng")
     log_event(logger, "knowledge_extract_done", document_id=document_id,
               **{k: ("error" if isinstance(v, dict) and "error" in v else "ok") for k, v in out["steps"].items()})
     return out

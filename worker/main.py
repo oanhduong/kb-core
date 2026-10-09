@@ -125,6 +125,16 @@ class Worker:
 
         return run_build(self.cfg, job.payload["model_id"], progress=lambda d, t, note=None: queue.update_progress(job.id, d, t, note=note))
 
+    def _relations_discover(self, job: Job) -> dict[str, Any]:
+        """Quan hệ giữa mọi bảng của workspace (dò bằng dữ liệu) -> thực thể từ cột mã cho bản đồ tri thức."""
+        from analytics.relations import discover
+        from knowledge.table_entities import build_key_entities
+
+        ws = job.workspace_id or job.payload["workspace_id"]
+        out = discover(ws, progress=lambda d, t: queue.update_progress(job.id, d, t))
+        out["entities"] = build_key_entities(ws)
+        return out
+
     def _reindex(self, job: Job) -> dict[str, Any]:
         from kb.reindex import run_reindex
 
@@ -148,7 +158,7 @@ class Worker:
         "ingest_file": _ingest, "graph_sync": _graph_sync, "graph_rebuild": _graph_rebuild,
         "reindex": _reindex, "document_lifecycle": _document_lifecycle,
         "knowledge_extract": _knowledge_extract, "report_generate": _report_generate,
-        "model_analyze": _model_analyze, "model_build": _model_build,
+        "model_analyze": _model_analyze, "model_build": _model_build, "relations_discover": _relations_discover,
     }
 
     # ------------------------------------------------------------------ loop
