@@ -139,7 +139,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {can("editor") && item("trust", ShieldCheck, t("nav.trust"))}
         {item("settings", Settings, t("nav.settings"))}
         {item("about", Info, t("nav.about"))}
-        {user?.is_superadmin && item("/admin", Shield, t("nav.admin"))}
+        {user?.is_superadmin && item("admin", Shield, t("nav.admin"))}
       </nav>
       <div className="border-t border-white/[.08] p-3"><UserMenu onNavigate={() => setOpen(false)} /></div>
     </aside>

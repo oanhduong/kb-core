@@ -12,7 +12,8 @@ import { fmtDate, fmtNumber, fmtRelative, fmtUsd, statusLabel, truncate } from "
 import { useAuth } from "@/state/auth";
 import { Advanced } from "@/state/prefs";
 
-export function AdminPage() {
+// inShell: hiện trong khung workspace (có sidebar); không có workspace nào thì hiện riêng kèm nút quay lại.
+export function AdminPage({ inShell }: { inShell?: boolean }) {
   const { user, workspaces } = useAuth();
   const t = useT();
   if (!user?.is_superadmin) return <Navigate to="/" replace />;
@@ -25,9 +26,9 @@ export function AdminPage() {
     { to: "config", label: t("auth.admin.tab.config") },
   ];
   return (
-    <div className="min-h-screen bg-paper">
+    <div className={clsx(!inShell && "min-h-screen bg-paper")}>
       <Page wide>
-        <Link to={back} className="mb-4 inline-flex items-center gap-1.5 rounded-lg text-sm text-ink-600 hover:text-ink-900"><ArrowLeft className="h-4 w-4" /> {t("auth.admin.back")}</Link>
+        {!inShell && <Link to={back} className="mb-4 inline-flex items-center gap-1.5 rounded-lg text-sm text-ink-600 hover:text-ink-900"><ArrowLeft className="h-4 w-4" /> {t("auth.admin.back")}</Link>}
         <PageHeader
           title={<span className="flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink-900 text-white"><Shield className="h-[18px] w-[18px]" /></span>{t("auth.admin.title")}</span>}
           subtitle={t("auth.admin.subtitle")} />
