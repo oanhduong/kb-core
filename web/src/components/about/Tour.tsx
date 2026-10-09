@@ -1,13 +1,11 @@
-// Video minh họa trang Giới thiệu: 7 chương, mỗi chương một "cảnh" trên sân khấu 1280x720 scale theo bề rộng.
-// Thời gian chạy trong ref (không render lại mỗi frame); chỉ render khi đổi cảnh. Phần tử <At s e> hiện từ bước s tới trước bước e.
+// Video minh họa trang Giới thiệu: 7 chương, mỗi chương một "cảnh" trên sân khấu 1280x720 (bộ phát: VideoPlayer).
+// Phần tử <At s e> hiện từ bước s tới trước bước e.
 import clsx from "clsx";
-import { createContext, useCallback, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { useI18n } from "@/i18n";
 import { fmtNumber } from "@/lib/format";
+import { At, StepCtx, VideoPlayer, type Chapter, type VideoHandle } from "./VideoPlayer";
 import "./tour.css";
-
-type Beat = { d: number; r?: number };
-export type Chapter = { id: string; beats: Beat[] };
 
 // Thời lượng (giây) từng cảnh + bước đang sáng trên thanh quy trình (r).
 export const CHAPTERS: Chapter[] = [
@@ -20,18 +18,6 @@ export const CHAPTERS: Chapter[] = [
   { id: "compare", beats: [{ d: 8 }, { d: 11 }] },
 ];
 
-type Flat = Beat & { ci: number; bi: number; start: number };
-const FLAT: Flat[] = [];
-const STARTS: number[] = [];
-let TOTAL = 0;
-CHAPTERS.forEach((c, ci) => {
-  STARTS.push(TOTAL);
-  c.beats.forEach((b, bi) => { FLAT.push({ ...b, ci, bi, start: TOTAL }); TOTAL += b.d; });
-});
-const chapterDur = (ci: number) => CHAPTERS[ci].beats.reduce((s, b) => s + b.d, 0);
-const idxAt = (x: number) => { for (let k = 0; k < FLAT.length; k++) if (x < FLAT[k].start + FLAT[k].d) return k; return FLAT.length - 1; };
-const fmtClock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
-
 /** Chuỗi dịch có định dạng nhẹ: [[n]] chip trích dẫn, ==x== đánh dấu bằng chứng, **x** đậm, `x` mono. */
 export function rich(s: string): ReactNode {
   const parts = s.split(/(\[\[\d+\]\]|==[^=]+==|\*\*[^*]+\*\*|`[^`]+`)/g);
@@ -42,14 +28,6 @@ export function rich(s: string): ReactNode {
     if (/^`.+`$/.test(p)) return <span key={i} className="mono">{p.slice(1, -1)}</span>;
     return p;
   });
-}
-
-const StepCtx = createContext(-1);
-
-function At({ s, e, className, style, children }: { s: number; e?: number; className?: string; style?: CSSProperties; children?: ReactNode }) {
-  const step = useContext(StepCtx);
-  const on = step >= s && step < (e ?? Infinity);
-  return <div className={clsx("ti", on && "on", className)} style={style} aria-hidden={!on}>{children}</div>;
 }
 
 function Rail({ prefix, n, r }: { prefix: string; n: number; r?: number }) {
@@ -80,14 +58,6 @@ function Count({ n }: { n: number }) {
     return () => cancelAnimationFrame(raf);
   }, [on, n]);
   return <b className="big">{fmtNumber(v)}</b>;
-}
-
-function Scene({ id, active, step, children }: { id: string; active: boolean; step: number; children: ReactNode }) {
-  return (
-    <section className={clsx("scene", active && "active")} aria-hidden={!active} data-scene={id}>
-      <StepCtx.Provider value={active ? step : -1}>{children}</StepCtx.Provider>
-    </section>
-  );
 }
 
 function Header({ flow, title }: { flow: string; title: string }) {
@@ -661,118 +631,16 @@ function CmpRow({ s, cells }: { s: number; cells: ReactNode[] }) {
 }
 
 // ------------------------------------------------------------------ player
-export type TourHandle = { seekTo: (ci: number, bi: number) => void };
+export type TourHandle = VideoHandle;
 
 export const Tour = forwardRef<TourHandle>(function Tour(_, ref) {
   const { t } = useI18n();
-  const screenRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const segRefs = useRef<(HTMLElement | null)[]>([]);
-  const timeRef = useRef<HTMLSpanElement>(null);
-  const tRef = useRef(0);
-  const playingRef = useRef(false);
-  const speedRef = useRef(1);
-  const [idx, setIdx] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const reduce = typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-
-  const paint = useCallback(() => {
-    const x = tRef.current;
-    const i = idxAt(x);
-    setIdx((p) => (p === i ? p : i));
-    CHAPTERS.forEach((_, ci) => {
-      const p = Math.max(0, Math.min(1, (x - STARTS[ci]) / chapterDur(ci)));
-      const bar = segRefs.current[ci]?.querySelector<HTMLElement>(".bar i");
-      if (bar) bar.style.width = `${p * 100}%`;
-    });
-    if (timeRef.current) timeRef.current.textContent = `${fmtClock(x)} / ${fmtClock(TOTAL)}`;
-  }, []);
-
-  const seek = useCallback((x: number) => { tRef.current = Math.max(0, Math.min(TOTAL - 0.001, x)); paint(); }, [paint]);
-  const setPlay = useCallback((on: boolean) => {
-    if (on && tRef.current >= TOTAL - 0.01) tRef.current = 0;
-    playingRef.current = on; setPlaying(on);
-  }, []);
-
-  useImperativeHandle(ref, () => ({ seekTo: (ci, bi) => { const k = FLAT.findIndex((f) => f.ci === ci && f.bi === bi); seek(FLAT[k].start + 0.01); setPlay(true); } }), [seek, setPlay]);
-
-  useEffect(() => {
-    const el = screenRef.current;
-    if (!el) return;
-    const fit = () => { if (stageRef.current) stageRef.current.style.transform = `scale(${el.clientWidth / 1280})`; };
-    const ro = new ResizeObserver(fit);
-    ro.observe(el); fit();
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    let raf = 0;
-    let last = performance.now();
-    const loop = (now: number) => {
-      const dt = (now - last) / 1000; last = now;
-      if (playingRef.current) {
-        tRef.current += dt * speedRef.current;
-        if (tRef.current >= TOTAL) { tRef.current = TOTAL - 0.001; playingRef.current = false; setPlaying(false); }
-        paint();
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    paint();
-    const auto = reduce ? 0 : window.setTimeout(() => { if (!playingRef.current && tRef.current === 0) setPlay(true); }, 1200);
-    return () => { cancelAnimationFrame(raf); window.clearTimeout(auto); };
-  }, [paint, reduce, setPlay]);
-
-  const b = FLAT[idx];
-  const ch = CHAPTERS[b.ci];
-  const next = () => { const i = idxAt(tRef.current); if (i < FLAT.length - 1) seek(FLAT[i + 1].start + 0.01); };
-  const prev = () => { const i = idxAt(tRef.current); const tgt = tRef.current - FLAT[i].start > 1.5 || i === 0 ? FLAT[i].start : FLAT[i - 1].start; seek(tgt + 0.01); };
-  const cycleSpeed = () => { const sp = [1, 1.5, 0.75]; const v = sp[(sp.indexOf(speedRef.current) + 1) % sp.length]; speedRef.current = v; setSpeed(v); };
-  const onKey = (e: React.KeyboardEvent) => {
-    if ((e.target as HTMLElement).closest("button") && (e.key === " " || e.key === "Enter")) return;
-    if (e.key === " ") { e.preventDefault(); setPlay(!playingRef.current); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); next(); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+  const scenes: Record<string, (r: number | undefined) => ReactNode> = {
+    intro: () => <IntroScene />, ingest: (r) => <IngestScene r={r} />, ask: (r) => <AskScene r={r} />, numbers: (r) => <NumbersScene r={r} />,
+    model: (r) => <ModelScene r={r} />, report: (r) => <ReportScene r={r} />, compare: () => <CompareScene />,
   };
-  const sceneProps = (id: string) => ({ id, active: ch.id === id, step: ch.id === id ? b.bi : -1 });
-  const r = b.r;
-
   return (
-    <section className="tour" tabIndex={0} aria-label={t("about.player.label")} onKeyDown={onKey}>
-      <div className="screen" ref={screenRef}>
-        <div className="stage" ref={stageRef}>
-          <Scene {...sceneProps("intro")}><IntroScene /></Scene>
-          <Scene {...sceneProps("ingest")}><IngestScene r={ch.id === "ingest" ? r : undefined} /></Scene>
-          <Scene {...sceneProps("ask")}><AskScene r={ch.id === "ask" ? r : undefined} /></Scene>
-          <Scene {...sceneProps("numbers")}><NumbersScene r={ch.id === "numbers" ? r : undefined} /></Scene>
-          <Scene {...sceneProps("model")}><ModelScene r={ch.id === "model" ? r : undefined} /></Scene>
-          <Scene {...sceneProps("report")}><ReportScene r={ch.id === "report" ? r : undefined} /></Scene>
-          <Scene {...sceneProps("compare")}><CompareScene /></Scene>
-        </div>
-      </div>
-      <div className="caption" aria-live="polite">
-        <span className="who">{b.ci + 1}. {t(`about.ch.${ch.id}`)}</span>{t(`about.cap.${ch.id}.${b.bi}`)}
-      </div>
-      <div className="timeline">
-        {CHAPTERS.map((c, ci) => (
-          <button key={c.id} type="button" ref={(el) => { segRefs.current[ci] = el; }} className={clsx("seg", ci === b.ci && "now")}
-            style={{ "--w": chapterDur(ci) } as CSSProperties} aria-label={t("about.player.chapter", { n: ci + 1, title: t(`about.ch.${c.id}`) })}
-            onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); const f = e.detail ? Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) : 0; seek(STARTS[ci] + f * chapterDur(ci)); }}>
-            <span className="bar"><i /></span><span className="lbl">{t(`about.ch.${c.id}`)}</span>
-          </button>
-        ))}
-      </div>
-      <div className="ctrl">
-        <button type="button" className="tbtn" onClick={prev} aria-label={t("about.player.prev")}><svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h2v12H3zM14 2v12L6 8z" /></svg></button>
-        <button type="button" className="tbtn play" onClick={() => setPlay(!playingRef.current)}>
-          <svg viewBox="0 0 16 16" fill="currentColor">{playing ? <path d="M3 2h4v12H3zM9 2h4v12H9z" /> : <path d="M4 2l10 6-10 6z" />}</svg>
-          {t(playing ? "about.player.pause" : "about.player.play")}
-        </button>
-        <button type="button" className="tbtn" onClick={next} aria-label={t("about.player.next")}><svg viewBox="0 0 16 16" fill="currentColor"><path d="M11 2h2v12h-2zM2 2v12l8-6z" /></svg></button>
-        <button type="button" className="tbtn" onClick={cycleSpeed} aria-label={t("about.player.speed")}>{fmtNumber(speed)}×</button>
-        <span className="time" ref={timeRef} />
-      </div>
-    </section>
+    <VideoPlayer ref={ref} chapters={CHAPTERS} label={t("about.player.label")} chapterTitle={(id) => t(`about.ch.${id}`)}
+      caption={(id, bi) => t(`about.cap.${id}.${bi}`)} renderScene={(id, r) => scenes[id](r)} />
   );
 });

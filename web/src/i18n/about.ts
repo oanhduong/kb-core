@@ -427,17 +427,6 @@ const en: Record<string, string> = {
 
   "about.sec.compare": "Compared with plain RAG and Graph RAG",
   "about.sec.compareLead": "All three find relevant passages and let an AI write the answer. The difference shows on questions where finding passages is not enough. Each row has an example from the two running workspaces.",
-  "about.enough.title": "When a plain RAG is enough",
-  "about.enough.1": "Look-up questions whose answer sits in one passage, such as the return period for electronics.",
-  "about.enough.2": "Few documents, no large data tables, no overlapping versions.",
-  "about.enough.3": "No need for a trail or a human reviewer.",
-  "about.limits.title": "Current limits of KB Explorer",
-  "about.limits.1": "Conflict detection covers the price of one SKU within the same store scope, and is only disclosed in strict answer mode. Asking about a past date also needs strict mode.",
-  "about.limits.2": "The citation check requires at least one valid source. Requiring a source for every sentence exists but is set to 0.",
-  "about.limits.4": "Store scope filters document search, but not yet SQL queries or the knowledge map (a fix is in progress).",
-  "about.limits.3": "There is no standard question set yet to measure answer accuracy. The only measurement is a 10-question SKU set with simulated meaning search: first result correct 2/10 with meaning search alone, 6/10 with keywords added.",
-  "about.sec.transcript": "Narration",
-  "about.sec.transcriptLead": "The full narration by chapter. Click a line to jump the video to that scene.",
 };
 
 const vi: Record<string, string> = {
@@ -866,17 +855,6 @@ const vi: Record<string, string> = {
 
   "about.sec.compare": "So với RAG và Graph RAG thông thường",
   "about.sec.compareLead": "Cả ba đều tìm đoạn văn liên quan rồi để AI viết câu trả lời. Khác biệt nằm ở những câu hỏi mà tìm đoạn văn thôi là không đủ. Mỗi dòng kèm một ví dụ lấy từ hai workspace đang chạy.",
-  "about.enough.title": "Khi nào RAG thông thường là đủ",
-  "about.enough.1": "Câu hỏi tra cứu một ý nằm gọn trong một đoạn văn, ví dụ thời hạn đổi trả hàng điện tử.",
-  "about.enough.2": "Tài liệu ít, không có bảng số liệu lớn, không có nhiều phiên bản chồng nhau.",
-  "about.enough.3": "Không cần truy vết hay người duyệt cho câu trả lời.",
-  "about.limits.title": "Giới hạn hiện tại của KB Explorer",
-  "about.limits.1": "Phát hiện mâu thuẫn mới áp dụng cho giá của cùng SKU trong cùng phạm vi cửa hàng, và chỉ được nêu ở chế độ trả lời nghiêm ngặt. Hỏi theo ngày trong quá khứ cũng cần chế độ đó.",
-  "about.limits.2": "Kiểm chứng trích dẫn đang ở mức “phải có ít nhất một nguồn hợp lệ”. Yêu cầu từng câu phải có nguồn đã có sẵn nhưng đang đặt ở mức 0.",
-  "about.limits.4": "Phạm vi theo cửa hàng đã lọc phần tìm tài liệu, nhưng chưa lọc truy vấn SQL và bản đồ tri thức (đang sửa).",
-  "about.limits.3": "Chưa có bộ câu hỏi chuẩn để đo độ chính xác trả lời. Số đo duy nhất là bộ thử 10 câu có mã SKU, phần tìm theo nghĩa được mô phỏng: đúng ngay kết quả đầu 2/10 khi chỉ tìm theo nghĩa, 6/10 khi kết hợp từ khóa.",
-  "about.sec.transcript": "Lời thuyết minh",
-  "about.sec.transcriptLead": "Toàn bộ nội dung video theo từng chương. Bấm vào một câu để tua video tới cảnh đó.",
 };
 
 export default { en, vi };

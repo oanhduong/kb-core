@@ -15,12 +15,13 @@ import settings from "./settings";
 import auth from "./auth";
 import about from "./about";
 import tech from "./tech";
+import arch from "./arch";
 
 export type Lang = "vi" | "en";
 type Dict = Record<string, string>;
 type Module = { en: Dict; vi: Dict };
 
-const MODULES: Module[] = [common, home, chat, sources, models, explore, reports, graph, trust, settings, auth, about, tech];
+const MODULES: Module[] = [common, home, chat, sources, models, explore, reports, graph, trust, settings, auth, about, tech, arch];
 const DICTS: Record<Lang, Dict> = { en: {}, vi: {} };
 for (const m of MODULES) {
   Object.assign(DICTS.en, m.en);

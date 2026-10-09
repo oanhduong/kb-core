@@ -1,0 +1,133 @@
+/* Tab Kiến trúc: sơ đồ platform (.arch, khung 1200x880 scale theo bề rộng) + cảnh video đường đi của dữ liệu (.tour .j-*).
+   Màu lấy từ hệ "provenance" như tour.css: tím (brand) = nạp file, xanh (verify) = câu hỏi, xám đứt = bên ngoài. */
+.arch {
+  --ink: #1E1B4B; --ink2: #57538F; --ink3: #8C89B8; --line: #E7E6F3; --well: #EEEDF6; --paper: #F6F5FB;
+  --brand: #5B4CF5; --brand-soft: #F3F1FF; --verify: #0E9F6E; --verify-soft: #E8F7F1;
+  position: absolute; left: 0; top: 0; transform-origin: 0 0; color: var(--ink); font-size: 14px; line-height: 1.4;
+  background: radial-gradient(circle, #E4E2F2 1px, transparent 1px) 0 0 / 22px 22px;
+}
+.arch .edges { position: absolute; inset: 0; overflow: visible; }
+.arch .edges path { fill: none; stroke-width: 2.4; }
+.arch .e-in { stroke: var(--brand); }
+.arch .e-q { stroke: var(--verify); }
+.arch .e-ext { stroke: #B9B6D9; stroke-dasharray: 6 5; }
+.arch .m-in { fill: var(--brand); }
+.arch .m-q { fill: var(--verify); }
+.arch .m-ext { fill: #B9B6D9; }
+.arch .node { position: absolute; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
+  box-shadow: 0 1px 0 rgba(30,27,75,.04), 0 2px 6px rgba(30,27,75,.06); display: flex; flex-direction: column; gap: 4px; }
+.arch .node > b { font: 700 16px "Bricolage Grotesque", "Be Vietnam Pro", sans-serif; letter-spacing: -.005em; }
+.arch .node .d { color: var(--ink2); font-size: 12.5px; }
+.arch .node.ext { border-style: dashed; background: #FBFBFE; }
+.arch .node.group { padding: 14px 16px; }
+.arch .node.group > b { font-size: 17px; margin-bottom: 4px; }
+.arch .node.group .d { font-size: 13px; line-height: 1.55; }
+.arch .rows { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.arch .rows li { background: var(--paper); border-radius: 9px; padding: 8px 11px; font-size: 13.5px; color: var(--ink); }
+.arch .rows code { font: 600 12.5px "JetBrains Mono", ui-monospace, monospace; color: var(--brand); }
+.arch .pg-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin-top: 4px; }
+.arch .pg-cell { background: var(--paper); border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px; }
+.arch .pg-cell.wide { grid-column: span 2; }
+.arch .pg-cell b { font-size: 13.5px; }
+.arch .pg-cell span { font: 500 12px "JetBrains Mono", ui-monospace, monospace; color: var(--ink2); }
+.arch .elabel { position: absolute; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #fff; white-space: nowrap;
+  border: 1px solid var(--line); }
+.arch .elabel.in { color: var(--brand); }
+.arch .elabel.q { color: var(--verify); }
+.arch .elabel.ext { color: var(--ink3); }
+
+/* ---------- video: đi theo một mẩu dữ liệu ---------- */
+.tour .j-upload { display: flex; flex-direction: column; gap: 22px; align-items: flex-start; padding-top: 30px; }
+.tour .j-file { display: flex; gap: 16px; align-items: center; padding: 18px 22px; }
+.tour .j-file .ico { width: 54px; height: 64px; border-radius: 9px; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; font: 700 12px var(--f-mono); }
+.tour .j-file b { display: block; font-size: 18px; }
+.tour .j-bytes { display: flex; align-items: center; gap: 14px; }
+.tour .j-bytes code { font: 500 17px var(--f-mono); background: var(--well); border-radius: 10px; padding: 8px 14px; }
+.tour .j-tree, .tour .j-tree ul { list-style: none; margin: 0; padding-left: 26px; }
+.tour .j-tree { padding-left: 0; margin-top: 14px; font-size: 18px; }
+.tour .j-tree li { margin: 7px 0; position: relative; }
+.tour .j-tree ul li::before { content: ""; position: absolute; left: -16px; top: .7em; width: 10px; border-top: 2px solid var(--line); }
+.tour .j-tree .dim { color: var(--ink3); }
+.tour .j-tree .hit { background: var(--marker); border-radius: 8px; padding: 2px 10px; display: inline-block; font-weight: 700; }
+.tour .j-record { padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; }
+.tour .j-rhead { display: flex; gap: 12px; align-items: center; }
+.tour .j-id { font: 500 13.5px var(--f-mono); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tour .j-text p { margin: 4px 0; font-size: 17px; line-height: 1.5; }
+.tour .j-text p.b { font-weight: 700; }
+.tour .j-text p.mk-line { background: var(--marker); border-radius: 6px; padding: 0 6px; display: inline-block; }
+.tour .j-text.small { font-size: 14.5px; color: var(--ink2); }
+.tour .j-chunks { display: flex; flex-direction: column; gap: 22px; }
+.tour .j-child { margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.tour .j-longer { display: flex; flex-direction: column; gap: 8px; }
+.tour .j-strip { position: relative; height: 66px; background: var(--well); border-radius: 10px; }
+.tour .j-strip i { position: absolute; top: 6px; height: 32px; width: 40%; border-radius: 8px; background: rgba(91,76,245,.22); border: 2px solid var(--brand);
+  font: 600 12px var(--f-mono); color: var(--brand); display: grid; place-items: center; font-style: normal; }
+.tour .j-strip i:nth-child(2) { background: rgba(91,76,245,.12); }
+.tour .j-embedtext { margin-top: 10px; padding: 18px 22px; font: 500 15px/1.6 var(--f-mono); white-space: pre-wrap; }
+.tour .j-pre { color: var(--verify); font-weight: 700; }
+.tour .j-ctx { background: var(--brand-soft); color: var(--brand); border-radius: 6px; padding: 0 4px; }
+.tour .j-pipe { display: flex; align-items: center; gap: 14px; margin-top: 30px; }
+.tour .j-pipe .card { padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.tour .j-in { flex: 0 0 230px; }
+.tour .j-pipe > .arrow { flex: 0 0 64px; min-width: 0; }
+.tour .j-model { flex: 0 0 220px; text-align: center; background: var(--brand-soft); border-color: var(--brand); }
+.tour .j-model b { font: 700 18px var(--f-display); }
+.tour .j-out { flex: 1; }
+.tour .j-out.wide { margin-top: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+.tour .j-result { flex: 1; }
+.tour .j-result code { white-space: pre-wrap; font: 500 13px/1.55 var(--f-mono); color: var(--ink2); }
+.tour .j-notes { display: flex; gap: 12px; margin-top: 26px; flex-wrap: wrap; }
+.tour .j-toks { display: flex; flex-wrap: wrap; margin-top: 14px; }
+.tour .j-toks .tok { font-size: 17px; }
+.tour .tok.pre { background: var(--verify-soft); color: var(--verify); }
+.tour .tok.pick { background: var(--brand); color: #fff; }
+.tour .j-tools { display: flex; flex-wrap: wrap; margin: 12px 0 18px; }
+.tour .j-excel { display: flex; flex-direction: column; gap: 14px; }
+.tour .j-two { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+.tour .j-two .card { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.tour .j-two code { font-family: var(--f-mono); color: var(--ink2); }
+.tour .c-wrap { display: flex; align-items: center; gap: 22px; }
+.tour .c-wrap .arrow { width: 60px; flex: none; }
+.tour .counts .c .note { display: block; margin-top: 6px; font-size: 14px; }
+.tour .j-prep { display: flex; flex-direction: column; align-items: flex-end; gap: 22px; padding-top: 30px; }
+.tour .j-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+.tour .j-chips .tag { font-size: 15px; height: 32px; padding: 0 14px; }
+.tour .j-search { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; align-content: start; }
+.tour .j-search > .card { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.tour .j-search > .card b { font: 700 19px var(--f-display); }
+.tour .j-art4 { grid-column: span 2; justify-self: start; font-size: 15px; height: 32px; }
+.tour .j-hnsw { width: 100%; height: 190px; }
+.tour .j-hnsw .lay { stroke: var(--line); stroke-width: 2; }
+.tour .j-hnsw .dot { fill: #C9C5F0; }
+.tour .j-hnsw .walk { fill: none; stroke: var(--brand); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 620; stroke-dashoffset: 620; }
+.tour .ti.on .j-hnsw .walk { animation: j-walk 3.2s ease forwards .4s; }
+.tour .j-hnsw .goal { fill: var(--marker); stroke: var(--ink); stroke-width: 2; opacity: 0; }
+.tour .ti.on .j-hnsw .goal { animation: j-pop .4s ease forwards 3.4s; }
+@keyframes j-walk { to { stroke-dashoffset: 0; } }
+@keyframes j-pop { to { opacity: 1; } }
+.tour .j-lists { display: flex; align-items: center; gap: 16px; margin-top: 30px; }
+.tour .j-lists > .card:not(.j-formula) { flex: 0 0 180px; padding: 14px; display: flex; flex-direction: column; gap: 7px; }
+.tour .j-lists > .card i { display: block; height: 16px; border-radius: 5px; background: var(--well); }
+.tour .j-lists > .card i.hit { background: var(--marker); }
+.tour .j-formula { flex: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.tour .j-formula b { font: 700 20px var(--f-display); }
+.tour .j-formula code { font: 500 20px var(--f-mono); }
+.tour .j-rr { margin-top: 12px; }
+.tour .j-rr .li .t { font-size: 15.5px; }
+.tour .j-rr .barw { width: 300px; position: relative; overflow: visible; }
+.tour .j-rr .barw::after { content: ""; position: absolute; left: 25%; top: -5px; bottom: -5px; border-left: 2px dashed var(--alert); }
+.tour .j-thr { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; }
+.tour .j-thr i { display: inline-block; width: 0; height: 16px; border-left: 2px dashed var(--alert); }
+.tour .j-rr .score { width: 52px; text-align: right; }
+.tour .j-answer { padding: 18px 22px; font-size: 22px; line-height: 1.5; margin: 12px 0 16px; }
+.tour .j-answer b { background: var(--marker); border-radius: 5px; padding: 0 4px; }
+.tour .j-checks .j-check { display: flex; gap: 12px; align-items: center; font-size: 19px; margin: 8px 0; }
+.tour .j-conf .code { margin: 14px 0; font-size: 26px; }
+.tour .j-meter { height: 16px; border-radius: 8px; background: var(--well); overflow: hidden; margin-bottom: 18px; }
+.tour .j-meter i { display: block; height: 100%; width: 0; background: var(--verify); transition: width 1.2s ease; }
+.tour .ti.on .j-meter i { width: var(--w); }
+.tour .j-final { display: flex; flex-direction: column; gap: 12px; }
+.tour .j-final .small-q { align-self: flex-end; font-size: 20px; padding: 10px 20px; }
+.tour .j-final .j-answer { margin: 0; }
+.tour .j-src { padding: 14px 18px; }
+.tour .j-src p { margin: 6px 0 0; font-size: 15.5px; color: var(--ink2); }
