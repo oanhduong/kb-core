@@ -36,6 +36,7 @@ from graph.router import QuestionRouter, RouteDecision
 from graph.store import GraphStore, GraphUnavailable
 from index.store import Filters
 from kb import repository as repo
+from knowledge.translate import qa_strings, translate_later
 from observability import tracing
 from qa import citation as cit
 from qa.abstention import AbstainDecision, decide, record_abstention
@@ -400,6 +401,8 @@ class QAService:
                 langfuse_trace_id=prep.trace_id if (tracing.current_trace() and tracing.current_trace().enabled) else None,
                 error=error))
             s.commit()
+        # bản dịch sang ngôn ngữ còn lại (đổi ngôn ngữ giao diện vẫn đọc được lịch sử hỏi đáp)
+        translate_later(self.llm, req.ctx.workspace_id, qa_strings(req.question, answer, trace_dict) + [user_answer])
         with tracing.span("answer.final", status=status) as sp:  # E1: span câu trả lời cuối cùng gửi user
             sp.update(output={"status": status, "answer": user_answer[:2000], "citations": len(citations),
                               "conflicts": len(prep.conflicts), "review_id": review_id})

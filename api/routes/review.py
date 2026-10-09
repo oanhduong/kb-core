@@ -12,6 +12,7 @@ from core.errors import ForbiddenError, NotFoundError
 from core.i18n import L
 from core.models import ReviewItem
 from core.principal import WorkspaceContext
+from knowledge.translate import localize, qa_strings
 from qa import review as review_svc
 
 router = APIRouter(prefix="/w/{workspace_id}/review", tags=["review"])
@@ -33,7 +34,9 @@ def list_review(status: str = "pending", overridden: bool | None = None, limit: 
         q = q.where(ReviewItem.overridden.is_(overridden))
     if ctx.scope_value:
         q = q.where(or_(ReviewItem.store_code == ctx.scope_value, ReviewItem.store_code.is_(None)))
-    return [_view(r) for r in db.execute(q.order_by(ReviewItem.created_at).limit(limit)).scalars()]
+    rows = db.execute(q.order_by(ReviewItem.created_at).limit(limit)).scalars().all()
+    return localize(db, ctx.workspace_id, [_view(r) for r in rows],
+                    ensure=[x for r in rows for x in qa_strings(r.question, r.draft_answer, r.decision_trace) + [r.final_answer or ""]])
 
 
 def _get_scoped(db: Session, review_id: str, ctx: WorkspaceContext) -> ReviewItem:

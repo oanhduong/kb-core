@@ -33,3 +33,28 @@ def test_replace_only_touches_translated_strings():
     out = tr._replace(payload, table)
     assert out == {"id": "abc123", "name": "ĐT-018", "description": "Electronics product",
                    "edges": [{"label": "is priced at", "type": "priced_at"}], "count": 3}
+
+
+def test_long_answers_get_their_own_batch(monkeypatch):
+    monkeypatch.setattr(tr, "BATCH_CHARS", 100)
+    llm = FakeLLM()
+    tr.translate_strings(llm, ["ngắn một", "a" * 95, "ngắn hai", "ngắn ba"], "en")
+    assert [c[2] for c in llm.calls] == [["ngắn một"], ["a" * 95], ["ngắn hai", "ngắn ba"]]
+
+
+def test_qa_strings_cover_question_title_answer_and_explanation():
+    q = "What is the warranty period for drones sold at the airport kiosk? Please include battery terms too."
+    out = tr.qa_strings(q, "Không có thông tin.", {"summary": ["Đã hiểu: tra cứu"], "degraded": [],
+                                                  "confidence": {"level": "low", "explanation": "không có điểm retrieval"}})
+    assert out == [q, q[:80], "Không có thông tin.", "Đã hiểu: tra cứu", "không có điểm retrieval"]
+    assert tr.qa_strings(None) == []
+
+
+def test_translate_later_skips_strings_tried_recently(monkeypatch):
+    submitted = []
+    monkeypatch.setattr(tr, "_recent", {})
+    monkeypatch.setattr(tr._POOL, "submit", lambda fn: submitted.append(fn))
+    tr.translate_later(object(), "ws1", ["Hello there, how are you?", "Xin chào"])
+    tr.translate_later(object(), "ws1", ["Hello there, how are you?"])
+    tr.translate_later(None, "ws1", ["Something else"])
+    assert len(submitted) == 1

@@ -17,6 +17,7 @@ from core.errors import ForbiddenError, NotFoundError
 from core.i18n import L
 from core.models import ChatSession, Feedback, QATrace
 from core.principal import WorkspaceContext
+from knowledge.translate import localize, qa_strings
 from observability.tracing import trace_url
 from assistant.agent import AssistantRequest, AssistantResponse
 from qa.answer import QARequest, QAResponse
@@ -97,16 +98,19 @@ def list_sessions(ctx: WorkspaceContext = Depends(workspace("viewer")), db: Sess
                   limit: int = Query(30, le=200)) -> list[dict]:
     rows = db.execute(select(ChatSession).where(ChatSession.workspace_id == ctx.workspace_id, ChatSession.user_id == ctx.subject)
                       .order_by(ChatSession.updated_at.desc()).limit(limit)).scalars().all()
-    return [{"session_id": r.id, "title": r.title, "scope": r.store_code, "updated_at": r.updated_at, "created_at": r.created_at} for r in rows]
+    out = [{"session_id": r.id, "title": r.title, "scope": r.store_code, "updated_at": r.updated_at, "created_at": r.created_at} for r in rows]
+    return localize(db, ctx.workspace_id, out, ensure=[r.title for r in rows if r.title])
 
 
 @router.get("/chat/sessions/{session_id}/messages", summary="Tin nhắn của session (after_id để poll)")
 def session_messages(session_id: str, after_id: int | None = None, ctx: WorkspaceContext = Depends(workspace("viewer")),
                      db: Session = Depends(get_db), services: Any = Depends(get_services)) -> list[dict]:
     sess = services.qa.sessions.get_owned(db, session_id, ctx.subject, workspace_id=ctx.workspace_id, allow_any=ctx.has_role("owner"))
-    return [{"id": m.id, "role": m.role, "content": m.content, "status": m.status, "trace_id": m.trace_id,
-             "citations": (m.payload or {}).get("citations", []), "artifacts": (m.payload or {}).get("artifacts", []),
-             "created_at": m.created_at} for m in services.qa.sessions.list_messages(db, sess, after_id)]
+    msgs = services.qa.sessions.list_messages(db, sess, after_id)
+    out = [{"id": m.id, "role": m.role, "content": m.content, "status": m.status, "trace_id": m.trace_id,
+            "citations": (m.payload or {}).get("citations", []), "artifacts": (m.payload or {}).get("artifacts", []),
+            "created_at": m.created_at} for m in msgs]
+    return localize(db, ctx.workspace_id, out, ensure=[m.content for m in msgs])
 
 
 @router.delete("/chat/sessions/{session_id}", summary="Xoá session chat của tôi")
@@ -125,8 +129,9 @@ def get_answer(trace_id: str, ctx: WorkspaceContext = Depends(workspace("viewer"
     if t.user_id != ctx.subject and not ctx.has_role("editor"):
         raise ForbiddenError(L("Không có quyền xem câu trả lời này", "You do not have permission to view this answer"))
     pending = t.status == "pending_review"
-    return {"trace_id": t.trace_id, "status": t.status, "question": t.question,
-            "answer": None if pending else t.answer, "citations": [] if pending else t.citations,
-            "conflicts": t.conflicts, "artifacts": [] if pending else t.artifacts,
-            "decision_trace": t.decision_trace if ctx.has_role("editor") or not pending else {},
-            "created_at": t.created_at, "trace_url": trace_url(t.langfuse_trace_id)}
+    out = {"trace_id": t.trace_id, "status": t.status, "question": t.question,
+           "answer": None if pending else t.answer, "citations": [] if pending else t.citations,
+           "conflicts": t.conflicts, "artifacts": [] if pending else t.artifacts,
+           "decision_trace": t.decision_trace if ctx.has_role("editor") or not pending else {},
+           "created_at": t.created_at, "trace_url": trace_url(t.langfuse_trace_id)}
+    return localize(db, ctx.workspace_id, out, ensure=qa_strings(t.question, out["answer"], out["decision_trace"]))

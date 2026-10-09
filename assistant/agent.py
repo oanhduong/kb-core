@@ -35,6 +35,7 @@ from core.logging import log_context, log_event
 from core.models import QATrace, new_id
 from core.principal import WorkspaceContext
 from domains import get_pack
+from knowledge.translate import qa_strings, translate_later
 from observability import tracing
 from qa import citation as cit
 from qa.abstention import record_abstention
@@ -342,6 +343,8 @@ class AssistantService:
                           input_tokens=in_tok, output_tokens=out_tok, tool_calls=run.tool_calls, artifacts=run.artifacts,
                           langfuse_trace_id=run.trace_id if (tracing.current_trace() and tracing.current_trace().enabled) else None, error=error))
             s.commit()
+        # bản dịch sang ngôn ngữ còn lại (đổi ngôn ngữ giao diện vẫn đọc được lịch sử hỏi đáp)
+        translate_later(self.llm, req.ctx.workspace_id, qa_strings(req.question, answer, trace_dict) + [user_answer])
         th = tracing.current_trace()
         if th is not None:
             th.update(output={"status": status, "answer": user_answer[:2000]}, metadata={"status": status, "question_type": intent, "confidence": conf.get("level")})

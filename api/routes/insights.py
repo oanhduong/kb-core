@@ -15,6 +15,7 @@ from api.deps import get_db, get_services
 from core.models import (ApiKey, ChunkEmbedding, ChunkRow, Conflict, DataModel, DataTable, Document, Entity, Feedback, KBRecordRow, QATrace,
                          Relation, ReviewItem, WorkspaceMember)
 from core.principal import WorkspaceContext
+from knowledge.translate import localize
 
 router = APIRouter(prefix="/w/{workspace_id}", tags=["insights"])
 
@@ -108,10 +109,10 @@ def insights(days: int = Query(30, ge=1, le=365), ctx: WorkspaceContext = Depend
             "latency_p50_ms": int(lat[0]) if lat[0] is not None else None, "latency_p95_ms": int(lat[1]) if lat[1] is not None else None,
             "avg_cost_usd": float(lat[2]) if lat[2] is not None else None, "avg_citations": float(lat[3]) if lat[3] is not None else None,
             "tools": tools, "skills": skills, "multi_skill": multi,
-            "recent": [{"trace_id": r.trace_id, "question": r.question, "status": r.status, "latency_ms": r.latency_ms, "created_at": r.created_at,
+            "recent": localize(db, ctx.workspace_id, [{"trace_id": r.trace_id, "question": r.question, "status": r.status, "latency_ms": r.latency_ms, "created_at": r.created_at,
                         "citations": len(r.citations or []), "confidence": r.confidence,
                         "skills": sorted({TOOL_SKILL.get(c.get("tool", ""), "other") for c in (r.tool_calls or []) if isinstance(c, dict)} - {"other"})}
-                       for r in recent],
+                       for r in recent], ensure=[r.question for r in recent]),
         },
         "trust": {
             "pending_reviews": pending_reviews, "reviewed": reviewed, "open_conflicts": open_conflicts, "resolved_conflicts": resolved_conflicts,

@@ -18,6 +18,7 @@ from core.principal import Principal, WorkspaceContext
 from domains import get_pack, list_packs
 from graph.resolve import invalidate_resolver_cache, upsert_alias
 from graph.store import GraphUnavailable
+from knowledge.translate import localize, qa_strings
 from observability.costs import cost_by_role, cost_today
 from observability.tracing import trace_url
 from worker.queue import enqueue_job, job_view
@@ -94,9 +95,10 @@ def abstentions(days: int = Query(7, ge=1, le=180), limit: int = Query(200, le=1
     q = select(Abstention).where(Abstention.workspace_id == ctx.workspace_id, Abstention.created_at >= since)
     if ctx.scope_value:
         q = q.where(Abstention.store_code == ctx.scope_value)
-    return [{"trace_id": a.trace_id, "question": a.question, "reason": a.reason, "top_score": a.top_score,
-             "question_type": a.question_type, "scope": a.store_code, "user_id": a.user_id, "created_at": a.created_at}
-            for a in db.execute(q.order_by(Abstention.created_at.desc()).limit(limit)).scalars()]
+    rows = db.execute(q.order_by(Abstention.created_at.desc()).limit(limit)).scalars().all()
+    out = [{"trace_id": a.trace_id, "question": a.question, "reason": a.reason, "top_score": a.top_score,
+            "question_type": a.question_type, "scope": a.store_code, "user_id": a.user_id, "created_at": a.created_at} for a in rows]
+    return localize(db, ctx.workspace_id, out, ensure=[a.question for a in rows])
 
 
 @ws_router.get("/ops/feedback", summary="Feedback (mặc định thumbs down) kèm link trace")
@@ -115,7 +117,7 @@ def list_feedback(rating: int = -1, status: str | None = None, days: int = Query
                     "status": fb.status, "admin_note": fb.admin_note, "created_at": fb.created_at, "question": tr.question,
                     "answer": tr.answer, "answer_status": tr.status, "scope": tr.store_code, "config_version": tr.config_version,
                     "trace_url": trace_url(tr.langfuse_trace_id)})
-    return out
+    return localize(db, ctx.workspace_id, out, ensure=[x for o in out for x in qa_strings(o["question"], o["answer"])])
 
 
 class FeedbackUpdate(BaseModel):
@@ -146,10 +148,12 @@ def search_traces(user_id: str | None = None, session_id: str | None = None, sta
         query = query.where(QATrace.store_code.in_([ctx.scope_value]) | QATrace.store_code.is_(None))
     if q:
         query = query.where(QATrace.question.ilike(f"%{q}%"))
-    return [{"trace_id": t.trace_id, "created_at": t.created_at, "user_id": t.user_id, "scope": t.store_code, "question": t.question,
-             "status": t.status, "question_type": t.question_type, "route": t.route, "confidence": t.confidence,
-             "latency_ms": t.latency_ms, "cost_usd": t.cost_usd, "config_version": t.config_version,
-             "trace_url": trace_url(t.langfuse_trace_id)} for t in db.execute(query.order_by(QATrace.created_at.desc()).limit(limit)).scalars()]
+    rows = db.execute(query.order_by(QATrace.created_at.desc()).limit(limit)).scalars().all()
+    out = [{"trace_id": t.trace_id, "created_at": t.created_at, "user_id": t.user_id, "scope": t.store_code, "question": t.question,
+            "status": t.status, "question_type": t.question_type, "route": t.route, "confidence": t.confidence,
+            "latency_ms": t.latency_ms, "cost_usd": t.cost_usd, "config_version": t.config_version,
+            "trace_url": trace_url(t.langfuse_trace_id)} for t in rows]
+    return localize(db, ctx.workspace_id, out, ensure=[t.question for t in rows])
 
 
 @ws_router.get("/ops/traces/{trace_id}", summary="Toàn bộ dữ kiện 1 request (khi user báo trả lời sai)")
