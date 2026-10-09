@@ -315,7 +315,7 @@ def _table_item_text(table_item, doc):
 
 
 _LAYOUT_ROW_TOL = 3.0      # pt: 2 ô cùng dòng nếu cạnh trên lệch <= 3pt
-_LAYOUT_COL_TOL = 8.0      # pt: ô thuộc cột nếu cạnh trái lệch <= 8pt so với cạnh trái header
+_LAYOUT_MIN_SHARE = 0.6    # ô thuộc cột nếu >= 60% bề ngang của ô nằm trong vùng của cột đó
 _LAYOUT_MIN_COLS = 3
 _LAYOUT_MIN_ROWS = 2       # dòng dữ liệu (không tính header)
 _LAYOUT_MAX_GAP_FACTOR = 2.5
@@ -326,8 +326,10 @@ def reconstruct_layout_tables(boxes):
     mất quan hệ "mã SP ↔ giá" trong cùng hàng). boxes: [(l, t, r, b, text)] của 1 trang, toạ độ PDF (t lớn = cao hơn).
 
     Quy tắc: gom ô thành dòng theo cạnh trên; dòng có >= 3 ô là ứng viên header; các dòng tiếp theo thuộc bảng khi mọi
-    ô có cạnh trái khớp một cột header (lệch <= 8pt), có >= 2 ô, và khoảng cách dọc không vượt 2.5 lần khoảng cách dòng
-    đầu. Dòng chỉ có ô ở cột sau (cột đầu trống) = phần xuống dòng của hàng trước -> nối vào ô tương ứng.
+    ô rơi vào một cột header, có >= 2 ô, và khoảng cách dọc không vượt 2.5 lần khoảng cách dòng đầu.
+    Vùng của 1 cột = từ điểm giữa khoảng trống với cột bên trái tới điểm giữa khoảng trống với cột bên phải (cột ngoài
+    cùng kéo dài ra mép trang); ô thuộc cột chứa >= 60% bề ngang của nó. Nhờ vậy cột căn trái, căn phải (giá tiền) hay
+    căn giữa đều khớp, còn đoạn văn trải ngang nhiều cột thì không thuộc cột nào -> kết thúc bảng. Dòng chỉ có ô ở cột sau (cột đầu trống) = phần xuống dòng của hàng trước -> nối vào ô tương ứng.
     Trả về (tables, consumed): tables = [{"top": t, "rows": [[cell, ...], ...]}] (hàng 0 là header), consumed = set chỉ số box đã dùng.
     """
     order = sorted(range(len(boxes)), key=lambda i: (-boxes[i][1], boxes[i][0]))
@@ -340,10 +342,17 @@ def reconstruct_layout_tables(boxes):
             lines.append((t, [i]))
     lines = [(t, sorted(ids, key=lambda i: boxes[i][0])) for t, ids in lines]
 
-    def col_of(starts, idx):
-        left = boxes[idx][0]
-        best = min(range(len(starts)), key=lambda c: abs(starts[c] - left))
-        return best if abs(starts[best] - left) <= _LAYOUT_COL_TOL else None
+    def regions(header):
+        spans = [(boxes[i][0], boxes[i][2]) for i in header]
+        cuts = [(spans[c][1] + spans[c + 1][0]) / 2 for c in range(len(spans) - 1)]
+        return [(cuts[c - 1] if c else float("-inf"), cuts[c] if c < len(cuts) else float("inf")) for c in range(len(spans))]
+
+    def col_of(cols, idx):
+        left, right = boxes[idx][0], boxes[idx][2]
+        width = max(right - left, 1e-6)
+        share = [max(0.0, min(right, hi) - max(left, lo)) / width for lo, hi in cols]
+        best = max(range(len(cols)), key=lambda c: share[c])
+        return best if share[best] >= _LAYOUT_MIN_SHARE else None
 
     tables, consumed = [], set()
     k = 0
@@ -352,7 +361,7 @@ def reconstruct_layout_tables(boxes):
         if len(header) < _LAYOUT_MIN_COLS:
             k += 1
             continue
-        starts = [boxes[i][0] for i in header]
+        starts = regions(header)
         rows, used, prev_top, step = [], list(header), top, None
         j = k + 1
         while j < len(lines):

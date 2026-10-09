@@ -68,6 +68,44 @@ def test_header_only_is_not_a_table():
     assert reconstruct_layout_tables(boxes)[0] == []  # cần >= 2 dòng dữ liệu
 
 
+def _price_list(price_box, top=664.0, step=18.0):
+    """Mã | Tên | Bảo hành (căn giữa) | Giá (căn phải, số rộng hơn tiêu đề "Giá")."""
+    boxes = [(94.0, top, 130.0, top - 8, "Mã SP"), (160.0, top, 250.0, top - 8, "Tên sản phẩm"),
+             (300.0, top, 345.0, top - 8, "Bảo hành"), (452.0, top, 470.0, top - 8, "Giá")]
+    data = [("HGD-001", "Nồi chiên không dầu 6L", "12 tháng", "1.590.000đ"), ("HGD-002", "Máy xay", "6 tháng", "890.000đ"),
+            ("HGD-003", "Bếp từ đôi", "18 tháng", "12.490.000đ")]
+    for n, (code, name, warranty, price) in enumerate(data, 1):
+        t = top - n * step
+        boxes += [(94.0, t, 136.0, t - 8, code), (160.0, t, 160.0 + 5.2 * len(name), t - 8, name),
+                  (322.5 - 2.6 * len(warranty), t, 322.5 + 2.6 * len(warranty), t - 8, warranty), price_box(t, price)]
+    return boxes
+
+
+def test_right_aligned_numbers_and_centered_column_stay_in_their_columns():
+    # số căn phải theo mép phải tiêu đề "Giá" (470pt): cạnh trái lệch 24–40pt so với cạnh trái tiêu đề
+    boxes = _price_list(lambda t, price: (470.0 - 5.0 * len(price), t, 470.0, t - 8, price))
+    tables, consumed = reconstruct_layout_tables(boxes)
+    assert len(tables) == 1 and len(consumed) == len(boxes)
+    assert tables[0]["rows"][1] == ["HGD-001", "Nồi chiên không dầu 6L", "12 tháng", "1.590.000đ"]
+    assert tables[0]["rows"][3] == ["HGD-003", "Bếp từ đôi", "18 tháng", "12.490.000đ"]
+
+
+def test_long_cell_spilling_past_its_header_stays_in_its_column():
+    boxes = _price_list(lambda t, price: (452.0, t, 452.0 + 5.0 * len(price), t - 8, price))
+    t = 664.0 - 4 * 18
+    boxes += [(94.0, t, 136.0, t - 8, "HGD-004"), (160.0, t, 300.0, t - 8, "Máy lọc không khí cao cấp 3 lớp"),
+              (310.0, t, 335.0, t - 8, "24 tháng"), (452.0, t, 500.0, t - 8, "4.990.000đ")]
+    tables, _ = reconstruct_layout_tables(boxes)
+    assert tables[0]["rows"][4] == ["HGD-004", "Máy lọc không khí cao cấp 3 lớp", "24 tháng", "4.990.000đ"]
+
+
+def test_paragraph_spanning_columns_still_ends_a_price_list():
+    boxes = _price_list(lambda t, price: (470.0 - 5.0 * len(price), t, 470.0, t - 8, price))
+    boxes.append((57.0, 664.0 - 4 * 18, 529.0, 664.0 - 4 * 18 - 8, "Giá đã gồm VAT, áp dụng tới hết quý."))
+    tables, consumed = reconstruct_layout_tables(boxes)
+    assert len(tables[0]["rows"]) == 4 and len(boxes) - 1 not in consumed
+
+
 # ------------------------------------------------------------------ knowledge window split
 def test_split_text_prefers_line_boundary_near_middle():
     from knowledge.extract import split_text
