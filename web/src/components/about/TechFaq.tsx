@@ -1,6 +1,6 @@
 // Tab "Hỏi đáp kỹ thuật" của trang Giới thiệu: sơ đồ đường đi của file/câu hỏi (bấm để nhảy tới nhóm câu hỏi), tìm kiếm,
 // câu hỏi–đáp mở/đóng theo nhóm. Nội dung ở i18n/tech.ts — đoạn cách nhau bằng dòng trống, "- " là gạch đầu dòng,
-// "1. " là danh sách đánh số, `code`, **đậm**.
+// "1. " là danh sách đánh số, `code`, **đậm**, *nghiêng*.
 import clsx from "clsx";
 import { ChevronRight, Search, X } from "lucide-react";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
@@ -10,7 +10,7 @@ const SECTIONS: { id: string; qs: string[] }[] = [
   { id: "ingest", qs: ["types", "parse", "injection", "versions", "records"] },
   { id: "index", qs: ["chunking", "embedding", "bm25", "nollm"] },
   { id: "retrieve", qs: ["retrieval", "rerankfail", "abstain", "dates"] },
-  { id: "agent", qs: ["agent", "router", "graphrag"] },
+  { id: "agent", qs: ["flow", "tools", "agent", "router", "graphrag"] },
   { id: "tables", qs: ["tables", "nl2sql", "sqlsafe", "charts"] },
   { id: "links", qs: ["links", "linkfalse", "linksql", "linkmap", "models"] },
   { id: "knowledge", qs: ["extract", "profile"] },
@@ -25,9 +25,10 @@ const FLOW: [string, string][] = [
 ];
 
 function inline(text: string): ReactNode[] {
-  return text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g).map((p, i) => {
+  return text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*\s][^*]*\*)/g).map((p, i) => {
     if (p.startsWith("`") && p.endsWith("`")) return <code key={i} className="rounded bg-ink-100/70 px-1 py-0.5 font-mono text-[12.5px] text-ink-900">{p.slice(1, -1)}</code>;
     if (p.startsWith("**") && p.endsWith("**")) return <strong key={i} className="font-semibold text-ink-900">{p.slice(2, -2)}</strong>;
+    if (p.length > 2 && p.startsWith("*") && p.endsWith("*")) return <em key={i}>{p.slice(1, -1)}</em>;
     return <Fragment key={i}>{p}</Fragment>;
   });
 }
