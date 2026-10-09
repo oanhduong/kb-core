@@ -61,8 +61,6 @@ def build_services(*, warmup: bool = True) -> Services:
     assistant = AssistantService(cfg, sm, llm, retriever)
     services = Services(cfg, settings, sm, llm, embedder, bm25, retriever, qa, assistant)
     if warmup:
-        retriever.warmup_reranker()
-
         def _warm() -> None:
             try:
                 embedder.embed_query("khởi động")
@@ -70,6 +68,10 @@ def build_services(*, warmup: bool = True) -> Services:
                 log_event(logger, "warmup_done", embedding_model=embedder.model_name)
             except Exception:
                 logger.exception("warmup lỗi (request đầu tiên sẽ tự tải lại)")
+            finally:
+                # tải reranker SAU embedder: import transformers đồng thời từ 2 thread làm hỏng
+                # import của accelerate (circular import) -> reranker không bao giờ lên
+                retriever.warmup_reranker()
         threading.Thread(target=_warm, daemon=True, name="warmup").start()
     try:
         record_config_version(cfg)
