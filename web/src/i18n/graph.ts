@@ -21,7 +21,10 @@ const en: Record<string, string> = {
   "graph.map.backToOverview": "Whole map",
   "graph.map.depth1": "Direct links",
   "graph.map.depth2": "Two steps away",
-  "graph.map.hint": "Showing the {n} most mentioned. Drag to move, scroll to zoom.",
+  "graph.map.hint": "Showing the {n} most mentioned. Drag to move, scroll to zoom, point at a dot to see its links.",
+  "graph.map.expand": "Full screen",
+  "graph.map.collapse": "Exit full screen",
+  "graph.map.fit": "Fit to view",
 
   "graph.guide.title": "How to read this map",
   "graph.guide.dots": "Each dot is a person, company, product, place or other thing found in your files. Bigger dots are mentioned more often.",
@@ -98,7 +101,10 @@ const vi: Record<string, string> = {
   "graph.map.backToOverview": "Toàn bộ bản đồ",
   "graph.map.depth1": "Liên kết trực tiếp",
   "graph.map.depth2": "Cách hai bước",
-  "graph.map.hint": "Đang hiện {n} mục được nhắc nhiều nhất. Kéo để di chuyển, cuộn để phóng to.",
+  "graph.map.hint": "Đang hiện {n} mục được nhắc nhiều nhất. Kéo để di chuyển, cuộn để phóng to, rê chuột vào một chấm để xem liên kết của nó.",
+  "graph.map.expand": "Toàn màn hình",
+  "graph.map.collapse": "Thoát toàn màn hình",
+  "graph.map.fit": "Vừa khung",
 
   "graph.guide.title": "Cách đọc bản đồ",
   "graph.guide.dots": "Mỗi chấm là một người, công ty, sản phẩm, địa điểm hay sự vật tìm thấy trong file. Chấm càng lớn thì càng được nhắc nhiều.",

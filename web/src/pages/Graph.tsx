@@ -2,7 +2,7 @@
 // (nơi được nhắc đến kèm đoạn trích dẫn, liên kết vào/ra), sửa/gộp/xoá (biên tập). Số liệu kỹ thuật chỉ ở chế độ kỹ thuật.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
-import { ArrowLeft, ArrowRight, Merge, MessageSquare, MousePointerClick, Network, Pencil, Plus, Quote, Search, Trash2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Maximize2, Merge, MessageSquare, Minimize2, MousePointerClick, Network, Pencil, Plus, Quote, Scan, Search, Trash2, X } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge, Confirm, Empty, ErrorBox, Field, Loading, Modal, PageHeader, Segmented, Spinner, useToast } from "@/components/ui";
@@ -43,6 +43,18 @@ export function GraphPage() {
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [depth, setDepth] = useState<"1" | "2">("1");
+  const [full, setFull] = useState(false);
+  const fitRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") setFull(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [full]);
+  useEffect(() => {
+    const tm = setTimeout(() => fitRef.current(), 350);  // khung đổi kích thước -> căn lại cho vừa
+    return () => clearTimeout(tm);
+  }, [full]);
   const overview = useQuery({ queryKey: ["graph-overview", wsId], queryFn: () => api.graphOverview(wsId, 60) });
   const search = useQuery({ queryKey: ["entities", wsId, q, typeFilter], queryFn: () => api.entities(wsId, { q: q || undefined, type: typeFilter || undefined, limit: 40 }), enabled: q.length > 0 || !!typeFilter });
   const hood = useQuery({ queryKey: ["neighborhood", wsId, entityId, depth], queryFn: () => api.neighborhood(wsId, [entityId!], Number(depth), 120), enabled: !!entityId });
@@ -78,9 +90,10 @@ export function GraphPage() {
         </div>
       )}
       {overview.data && overview.data.entity_count > 0 && (
-        <div className="grid gap-4 xl:grid-cols-[290px_minmax(0,1fr)_360px]">
-          {/* tìm + lọc */}
-          <aside className="panel flex max-h-[680px] flex-col overflow-hidden">
+        <div className={clsx("grid gap-4", entityId ? "xl:grid-cols-[280px_minmax(0,1fr)_380px]" : "lg:grid-cols-[280px_minmax(0,1fr)]")}>
+          {/* tìm + lọc (+ cách đọc bản đồ khi chưa chọn mục nào) */}
+          <div className="flex min-w-0 flex-col gap-4">
+          <aside className="panel flex max-h-[calc(100vh-200px)] min-h-[360px] flex-col overflow-hidden">
             <div className="border-b border-ink-100 p-3">
               <label className="relative block">
                 <span className="sr-only">{t("graph.search.label")}</span>
@@ -118,9 +131,12 @@ export function GraphPage() {
               )}
             </div>
           </aside>
+          {!entityId && <MapGuide relationTypes={overview.data.relation_types} />}
+          </div>
 
           {/* bản đồ */}
-          <div className="panel relative min-h-[560px] overflow-hidden">
+          {full && <div className="fixed inset-0 z-40 bg-ink-950/40" onClick={() => setFull(false)} />}
+          <div className={clsx("panel overflow-hidden", full ? "fixed inset-3 z-50 sm:inset-6" : "relative")}>
             <div className="absolute left-3 right-3 top-3 z-10 flex flex-wrap items-center gap-2">
               {entityId ? (
                 <>
@@ -129,11 +145,17 @@ export function GraphPage() {
                 </>
               ) : <span className="rounded-lg bg-white/90 px-2.5 py-1 text-xs text-ink-600 shadow-card">{t("graph.map.hint", { n: data.nodes.length })}</span>}
               {hood.isFetching && <Spinner />}
+              <div className="ml-auto flex gap-1.5">
+                <button className="btn-secondary btn-sm px-2" onClick={() => fitRef.current()} title={t("graph.map.fit")} aria-label={t("graph.map.fit")}><Scan className="h-3.5 w-3.5" /></button>
+                <button className="btn-secondary btn-sm px-2" onClick={() => setFull((v) => !v)} title={t(full ? "graph.map.collapse" : "graph.map.expand")} aria-label={t(full ? "graph.map.collapse" : "graph.map.expand")} aria-pressed={full}>
+                  {full ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                </button>
+              </div>
             </div>
-            <div className="dotgrid h-[600px] bg-paper/40">
+            <div className={clsx("dotgrid bg-paper/40", full ? "h-full" : "h-[calc(100vh-200px)] min-h-[560px]")}>
               {entityId && hood.error ? <div className="p-16"><ErrorBox error={hood.error} retry={() => hood.refetch()} /></div> : (
                 <Suspense fallback={<Loading />}>
-                  <Graph data={data} selected={entityId} onSelect={open} typeName={(ty) => typeLabel(t, ty)} />
+                  <Graph data={data} selected={entityId} onSelect={open} typeName={(ty) => typeLabel(t, ty)} fitRef={fitRef} />
                 </Suspense>
               )}
             </div>
@@ -145,9 +167,7 @@ export function GraphPage() {
           </div>
 
           {/* chi tiết */}
-          <aside>
-            {entityId ? <EntityPanel entityId={entityId} canEdit={can("editor")} /> : <MapGuide relationTypes={overview.data.relation_types} />}
-          </aside>
+          {entityId && <aside><EntityPanel entityId={entityId} canEdit={can("editor")} /></aside>}
         </div>
       )}
     </Page>
@@ -193,10 +213,63 @@ function EntityRow({ e, active, onClick }: { e: Entity; active: boolean; onClick
   );
 }
 
-function Graph({ data, selected, onSelect, typeName }: { data: { nodes: GNode[]; links: GLink[] }; selected?: string; onSelect: (id: string) => void; typeName: (t: string) => string }) {
+/** Bán kính chấm (đơn vị đồ thị) theo số lần được nhắc. */
+const radius = (n: GNode) => 5 + n.val * 2.4;
+/** Chấm không nhỏ hơn MIN_PX điểm ảnh trên màn hình dù thu nhỏ cỡ nào. */
+const MIN_PX = 4.5;
+const LABEL_PX = 12;
+
+type SimNode = GNode & { vx?: number; vy?: number };
+type Force = ((alpha: number) => void) & { initialize?: (nodes: SimNode[]) => void };
+
+/** Lực chống chồng: hai chấm không đè lên nhau (chừa chỗ cho nhãn bên dưới). */
+function collide(pad: number): Force {
+  let nodes: SimNode[] = [];
+  const f: Force = () => {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = (b.x ?? 0) - (a.x ?? 0), dy = (b.y ?? 0) - (a.y ?? 0);
+        const min = radius(a) + radius(b) + pad;
+        const d2 = dx * dx + dy * dy;
+        if (d2 >= min * min) continue;
+        const d = Math.sqrt(d2) || 0.01;
+        const push = ((min - d) / d) * 0.5;
+        const px = (dx || 0.01) * push, py = dy * push;
+        a.x = (a.x ?? 0) - px; a.y = (a.y ?? 0) - py;
+        b.x = (b.x ?? 0) + px; b.y = (b.y ?? 0) + py;
+      }
+    }
+  };
+  f.initialize = (ns) => { nodes = ns; };
+  return f;
+}
+
+/** Lực kéo nhẹ về tâm: chấm lẻ (không liên kết) không trôi ra xa làm bản đồ phải thu nhỏ. */
+function gravity(strength: number): Force {
+  let nodes: SimNode[] = [];
+  const f: Force = (alpha) => {
+    for (const n of nodes) {
+      n.vx = (n.vx ?? 0) - (n.x ?? 0) * strength * alpha;
+      n.vy = (n.vy ?? 0) - (n.y ?? 0) * strength * alpha;
+    }
+  };
+  f.initialize = (ns) => { nodes = ns; };
+  return f;
+}
+
+interface FGApi {
+  zoomToFit: (ms?: number, px?: number) => void;
+  d3Force: (name: string, f?: unknown) => { strength?: (v: number) => unknown; distance?: (v: (l: GLink) => number) => unknown; distanceMax?: (v: number) => unknown } | undefined;
+  d3ReheatSimulation: () => void;
+}
+
+function Graph({ data, selected, onSelect, typeName, fitRef }: { data: { nodes: GNode[]; links: GLink[] }; selected?: string; onSelect: (id: string) => void; typeName: (t: string) => string; fitRef: React.MutableRefObject<() => void> }) {
   const ref = useRef<HTMLDivElement>(null);
-  const fg = useRef<{ zoomToFit: (ms?: number, px?: number) => void } | null>(null);
+  const fg = useRef<FGApi | null>(null);
+  const fitted = useRef(false);
   const [size, setSize] = useState({ w: 600, h: 600 });
+  const [hover, setHover] = useState<string | null>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -204,17 +277,57 @@ function Graph({ data, selected, onSelect, typeName }: { data: { nodes: GNode[];
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  useEffect(() => {
-    const tm = setTimeout(() => fg.current?.zoomToFit(400, 60), 600);
-    return () => clearTimeout(tm);
-  }, [data]);
   const graphData = useMemo(() => ({ nodes: data.nodes.map((n) => ({ ...n })), links: data.links.map((l) => ({ ...l })) }), [data]);
+  // hàng xóm trực tiếp của mỗi chấm -> rê chuột làm nổi chấm đó cùng các liên kết, làm mờ phần còn lại
+  const neighbors = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const l of data.links) {
+      const a = typeof l.source === "string" ? l.source : l.source.id, b = typeof l.target === "string" ? l.target : l.target.id;
+      if (!m.has(a)) m.set(a, new Set());
+      if (!m.has(b)) m.set(b, new Set());
+      m.get(a)!.add(b);
+      m.get(b)!.add(a);
+    }
+    return m;
+  }, [data]);
+  // chỉ ghi nhãn cho ~14 mục được nhắc nhiều nhất (phóng to thì hiện thêm) -> không chồng chữ
+  const labelMin = useMemo(() => {
+    const vals = data.nodes.map((n) => n.val).sort((a, b) => b - a);
+    return vals[Math.min(13, vals.length - 1)] ?? 0;
+  }, [data]);
+  const focus = hover || selected || null;
+  const lit = useCallback((id: string) => !focus || id === focus || !!neighbors.get(focus)?.has(id), [focus, neighbors]);
+
+  // cấu hình lực ngay khi đồ thị (tải lazy) gắn ref, và mỗi lần đổi dữ liệu
+  const [ready, setReady] = useState(false);
+  const setFg = useCallback((inst: FGApi | null) => { fg.current = inst; setReady(!!inst); }, []);
+  useEffect(() => {
+    const g = fg.current;
+    if (!g || !ready) return;
+    fitted.current = false;
+    const n = data.nodes.length;
+    const deg = (id: string) => neighbors.get(id)?.size ?? 0;
+    g.d3Force("charge")?.strength?.(n > 80 ? -120 : -170);
+    g.d3Force("charge")?.distanceMax?.(280);
+    // nút trung tâm càng nhiều liên kết thì cạnh càng dài -> các nút lá có chỗ xếp vòng quanh, không dính chùm
+    g.d3Force("link")?.distance?.((l: GLink) => {
+      const a = l.source as GNode, b = l.target as GNode;
+      return 28 + radius(a) + radius(b) + 5 * Math.sqrt(Math.max(deg(a.id), deg(b.id)));
+    });
+    g.d3Force("collide", collide(12));
+    g.d3Force("gravity", gravity(0.09));
+    g.d3ReheatSimulation();
+  }, [graphData, data.nodes.length, ready, neighbors]);
+  useEffect(() => { fitRef.current = () => fg.current?.zoomToFit(400, 48); }, [fitRef]);
+
   const paint = useCallback((node: GNode, ctx: CanvasRenderingContext2D, scale: number) => {
-    const r = 3 + node.val * 1.6;
+    const r = Math.max(radius(node), MIN_PX / scale);
     const isSel = node.id === selected;
-    if (isSel) {
+    const on = lit(node.id);
+    ctx.globalAlpha = on ? 1 : 0.18;
+    if (isSel || node.id === hover) {
       ctx.beginPath();
-      ctx.arc(node.x!, node.y!, r + 5 / scale, 0, 2 * Math.PI);
+      ctx.arc(node.x!, node.y!, r + 6 / scale, 0, 2 * Math.PI);
       ctx.fillStyle = "rgba(91,76,245,.18)";
       ctx.fill();
     }
@@ -222,30 +335,45 @@ function Graph({ data, selected, onSelect, typeName }: { data: { nodes: GNode[];
     ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI);
     ctx.fillStyle = color(node.type);
     ctx.fill();
-    ctx.lineWidth = (isSel || node.is_seed ? 2 : 1) / scale;
+    ctx.lineWidth = (isSel || node.is_seed ? 2.5 : 1.5) / scale;
     ctx.strokeStyle = isSel || node.is_seed ? "#1E1B4B" : "#FFFFFF";
     ctx.stroke();
-    if (scale > 0.9 || node.val > 3 || isSel) {
-      const fs = Math.max(11 / scale, 2.5);
-      ctx.font = `${isSel ? 600 : 500} ${fs}px 'Be Vietnam Pro', sans-serif`;
+    // đang rê/chọn 1 chấm: ghi tên mọi hàng xóm nếu ít (≤ 12), nhiều hơn thì chỉ các mục chính -> không chồng chữ
+    const fewNeighbors = (neighbors.get(focus || "")?.size ?? 0) <= 12;
+    const showLabel = isSel || node.id === hover || (focus && fewNeighbors && on) || node.val >= labelMin || scale > 2.2;
+    if (showLabel && (on || !focus)) {
+      const fs = LABEL_PX / scale;
+      ctx.font = `${isSel || node.id === focus ? 600 : 500} ${fs}px 'Be Vietnam Pro', sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      const label = truncate(node.name, 28);
+      const label = truncate(node.name, 30);
       const w = ctx.measureText(label).width;
-      ctx.fillStyle = "rgba(255,255,255,.85)";
-      ctx.fillRect(node.x! - w / 2 - 2 / scale, node.y! + r + 1.5, w + 4 / scale, fs * 1.2);
+      const y = node.y! + r + 3 / scale;
+      ctx.fillStyle = "rgba(255,255,255,.9)";
+      ctx.fillRect(node.x! - w / 2 - 3 / scale, y - 1 / scale, w + 6 / scale, fs * 1.3);
       ctx.fillStyle = "#1E1B4B";
-      ctx.fillText(label, node.x!, node.y! + r + 1.5);
+      ctx.fillText(label, node.x!, y);
     }
-  }, [selected]);
+    ctx.globalAlpha = 1;
+  }, [selected, hover, focus, lit, labelMin, neighbors]);
+  const linkOn = (l: GLink) => {
+    if (!focus) return true;
+    const a = typeof l.source === "string" ? l.source : l.source.id, b = typeof l.target === "string" ? l.target : l.target.id;
+    return a === focus || b === focus;
+  };
   return (
     <div ref={ref} className="h-full w-full">
-      <ForceGraph2D ref={fg as never} width={size.w} height={size.h} graphData={graphData} nodeId="id" nodeCanvasObject={paint as never}
-        nodePointerAreaPaint={((node: GNode, c: string, ctx: CanvasRenderingContext2D) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(node.x!, node.y!, 3 + node.val * 1.6 + 2, 0, 2 * Math.PI); ctx.fill(); }) as never}
-        linkColor={() => "rgba(87,83,143,.28)"} linkWidth={(l) => 0.5 + ((l as GLink).confidence || 0.5) * 1.5} linkDirectionalArrowLength={3} linkDirectionalArrowRelPos={1}
-        linkDirectionalArrowColor={() => "rgba(87,83,143,.5)"}
+      <ForceGraph2D ref={setFg as never} width={size.w} height={size.h} graphData={graphData} nodeId="id" nodeCanvasObject={paint as never}
+        nodePointerAreaPaint={((node: GNode, c: string, ctx: CanvasRenderingContext2D, scale: number) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(node.x!, node.y!, Math.max(radius(node), MIN_PX / scale) + 3 / scale, 0, 2 * Math.PI); ctx.fill(); }) as never}
+        linkColor={(l) => (linkOn(l as GLink) ? (focus ? "rgba(91,76,245,.55)" : "rgba(87,83,143,.3)") : "rgba(87,83,143,.06)")}
+        linkWidth={(l) => (linkOn(l as GLink) && focus ? 2 : 0.6 + ((l as GLink).confidence || 0.5) * 1.2)}
+        linkDirectionalArrowLength={4} linkDirectionalArrowRelPos={1}
+        linkDirectionalArrowColor={(l) => (linkOn(l as GLink) ? "rgba(87,83,143,.55)" : "rgba(87,83,143,.06)")}
         linkLabel={(l) => (l as GLink).label} nodeLabel={(n) => `${(n as GNode).name} (${typeName((n as GNode).type)})`}
-        onNodeClick={(n) => onSelect((n as GNode).id)} cooldownTicks={120} backgroundColor="rgba(0,0,0,0)" enableNodeDrag d3VelocityDecay={0.3} />
+        onNodeHover={(n) => setHover(n ? (n as GNode).id : null)}
+        onNodeClick={(n) => onSelect((n as GNode).id)}
+        onEngineStop={() => { if (!fitted.current) { fitted.current = true; fg.current?.zoomToFit(500, 48); } }}
+        cooldownTicks={200} backgroundColor="rgba(0,0,0,0)" enableNodeDrag d3VelocityDecay={0.35} minZoom={0.3} maxZoom={8} />
     </div>
   );
 }
