@@ -3,7 +3,7 @@ import type {
   AnalyticsAnswer, ApiKey, Artifact, AssistantResponse, Chart, ChatSession, ChunkView, Citation, Conflict, Confidence,
   DecisionTrace, Document, DocumentDetail, DomainPack, Entity, EntityDetail, GraphOverview, Invite, Job, KBHealth,
   KBRecord, Member, Neighborhood, Paged, QueryResult, Report, ReportBlock, ReviewItem, SavedQuery, SessionMessage,
-  TableDetail, TableInfo, TraceSummary, User, Workspace,
+  TableDetail, TableInfo, TableLink, TraceSummary, User, Workspace,
 } from "./types";
 
 import { getLang, translate } from "@/i18n";
@@ -168,6 +168,9 @@ export const api = {
   tableRows: (ws: string, id: string, p: { limit?: number; offset?: number }) => get<QueryResult>(`/w/${ws}/tables/${id}/rows${qs(p)}`),
   runSql: (ws: string, b: { sql: string; limit?: number; chart?: Record<string, unknown> }) => post<{ result: QueryResult; chart: Chart | null }>(`/w/${ws}/analytics/query`, b),
   askData: (ws: string, b: { question: string; document_ids?: string[] }) => post<AnalyticsAnswer>(`/w/${ws}/analytics/ask`, b),
+  tableLinks: (ws: string) => get<{ items: TableLink[]; job: Job | null }>(`/w/${ws}/analytics/relationships`),
+  discoverTableLinks: (ws: string) => post<Job>(`/w/${ws}/analytics/relationships/discover`),
+  reviewTableLink: (ws: string, id: string, status: "approved" | "rejected" | "proposed") => patch<TableLink>(`/w/${ws}/analytics/relationships/${id}`, { status }),
   savedQueries: (ws: string) => get<SavedQuery[]>(`/w/${ws}/analytics/saved`),
   saveQuery: (ws: string, b: { title: string; sql: string; question?: string; chart_spec?: Record<string, unknown> }) => post<{ id: string }>(`/w/${ws}/analytics/saved`, b),
   runSaved: (ws: string, id: string) => post<{ result: QueryResult; chart: Chart | null }>(`/w/${ws}/analytics/saved/${id}/run`),

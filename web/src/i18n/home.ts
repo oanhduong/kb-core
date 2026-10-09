@@ -45,6 +45,7 @@ const en: Record<string, string> = {
   "home.job.report_generate": "Writing a report",
   "home.job.model_analyze": "Reading a workbook",
   "home.job.model_build": "Building a view",
+  "home.job.relations_discover": "Linking tables",
 };
 
 const vi: Record<string, string> = {
@@ -93,6 +94,7 @@ const vi: Record<string, string> = {
   "home.job.report_generate": "Đang soạn báo cáo",
   "home.job.model_analyze": "Đang đọc workbook",
   "home.job.model_build": "Đang dựng view",
+  "home.job.relations_discover": "Đang nối các bảng",
 };
 
 export default { en, vi };

@@ -7,7 +7,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import {
-  ArrowRight, BarChart3, Bookmark, BookmarkPlus, ChevronDown, Code2, Download, Lightbulb, MessageSquareText, Play, Search,
+  ArrowRight, BarChart3, Bookmark, BookmarkPlus, ChevronDown, Code2, Download, Lightbulb, Link2, MessageSquareText, Play, Search,
   Sparkles, Table2, Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -16,6 +16,7 @@ import { columnKind, columnLabel, DataGrid, type ColumnKind } from "@/components
 import {
   Badge, Confirm, CopyButton, Empty, ErrorBox, Field, Loading, Modal, PageHeader, Pagination, Segmented, Spinner, Tabs, useToast,
 } from "@/components/ui";
+import { TableLinksPane } from "@/components/TableLinks";
 import { ChartView } from "@/components/VegaChart";
 import { useT } from "@/i18n";
 import { Page } from "@/layout/AppShell";
@@ -25,7 +26,7 @@ import type { Chart, QueryResult, TableColumn, TableInfo } from "@/lib/types";
 import { useWorkspace } from "@/state/auth";
 import { Advanced, usePrefs } from "@/state/prefs";
 
-export type ExploreMode = "ask" | "browse";
+export type ExploreMode = "ask" | "browse" | "links";
 
 interface Outcome {
   title: string;
@@ -41,7 +42,7 @@ interface Outcome {
 export function AnalyticsPage() {
   const [params] = useSearchParams();
   const [initial] = useState(() => ({
-    mode: (params.get("view") === "tables" && !params.get("q") && !params.get("sql") ? "browse" : "ask") as ExploreMode,
+    mode: (params.get("view") === "links" ? "links" : params.get("view") === "tables" && !params.get("q") && !params.get("sql") ? "browse" : "ask") as ExploreMode,
     table: params.get("table"),
   }));
   const [tableId, setTableId] = useState<string | null>(initial.table);
@@ -161,12 +162,13 @@ export function ExploreView({ initialMode = "ask", tableId, onSelectTable }: {
 
   return (
     <Page wide>
-      <PageHeader title={t("explore.title")} subtitle={t(mode === "ask" ? "explore.subtitle.ask" : "explore.subtitle.browse")}
+      <PageHeader title={t("explore.title")} subtitle={t(`explore.subtitle.${mode}`)}
         actions={!noTables && (
           <Segmented value={mode} onChange={setMode} className="text-sm [&>button]:px-3.5 [&>button]:py-1.5"
             options={[
               { key: "ask", label: <span className="inline-flex items-center gap-1.5"><MessageSquareText className="h-4 w-4" />{t("explore.mode.ask")}</span> },
               { key: "browse", label: <span className="inline-flex items-center gap-1.5"><Table2 className="h-4 w-4" />{t("explore.mode.browse")}</span> },
+              ...((tables.data?.length ?? 0) > 1 ? [{ key: "links" as const, label: <span className="inline-flex items-center gap-1.5"><Link2 className="h-4 w-4" />{t("explore.mode.links")}</span> }] : []),
             ]} />
         )} />
 
@@ -178,6 +180,8 @@ export function ExploreView({ initialMode = "ask", tableId, onSelectTable }: {
             action={<Link to={`/w/${wsId}/documents`} className="btn-primary">{t("explore.noTables.action")}</Link>} />
         </div>
       )}
+
+      {tables.data && tables.data.length > 0 && mode === "links" && <TableLinksPane />}
 
       {tables.data && tables.data.length > 0 && mode === "browse" && (
         <BrowsePane tables={tables.data} tableId={tableId} onSelect={onSelectTable} onAsk={askQuestion}

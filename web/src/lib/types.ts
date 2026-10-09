@@ -273,6 +273,32 @@ export interface TableInfo {
   suggested_questions: string[];
 }
 
+export interface TableLinkSide {
+  table_id: string;
+  table: string | null;
+  title: string | null;
+  document_id: string | null;
+  column: string;
+  label: string;
+  examples: string[];
+  transforms: string[];
+}
+
+/** Quan hệ giữa 2 bảng (khác file/sheet) dò bằng dữ liệu: left = phía tham chiếu, right = bảng danh mục. */
+export interface TableLink {
+  id: string;
+  left: TableLinkSide;
+  right: TableLinkSide;
+  cardinality: "one_to_one" | "many_to_one" | "many_to_many" | string;
+  matched_keys: number;
+  left_coverage: number;
+  right_coverage: number;
+  confidence: number;
+  status: "proposed" | "approved" | "rejected" | string;
+  reviewed_by: string | null;
+  updated_at: string;
+}
+
 export interface TableDetail extends TableInfo {
   stats: Record<string, Record<string, unknown>>;
   preview: QueryResult;
