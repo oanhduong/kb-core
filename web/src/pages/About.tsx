@@ -1,6 +1,10 @@
-// Giới thiệu: video minh họa 3 luồng (nạp dữ liệu, hỏi đáp, mô hình dữ liệu) + so sánh với RAG / Graph RAG + lời thuyết minh.
+// Giới thiệu, 2 tab: Tổng quan (video minh họa 3 luồng + so sánh với RAG / Graph RAG + lời thuyết minh) và Hỏi đáp kỹ thuật
+// (từng bước nhỏ: đọc file, chunking, embedding, tìm nguồn, SQL, nối file...). ?tab=tech mở thẳng tab kỹ thuật.
 import { useRef } from "react";
+import { useSearchParams } from "react-router-dom";
+import { TechFaq } from "@/components/about/TechFaq";
 import { CHAPTERS, rich, Tour, type TourHandle } from "@/components/about/Tour";
+import { Tabs } from "@/components/ui";
 import "@/components/about/tour.css";
 import { useI18n } from "@/i18n";
 import { Page } from "@/layout/AppShell";
@@ -14,6 +18,8 @@ const MATRIX: [number, Mark, Mark, Mark][] = [
 
 export function AboutPage() {
   const { t } = useI18n();
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") === "tech" ? "tech" : "overview";
   const tour = useRef<TourHandle>(null);
   const top = useRef<HTMLDivElement>(null);
   const markLabel = (m: Mark) => t(m === "y" ? "about.cmp.yes" : m === "p" ? "about.cmp.part" : "about.cmp.no");
@@ -27,8 +33,13 @@ export function AboutPage() {
       <header ref={top} className="scroll-mt-6">
         <h1 className="font-display text-[clamp(32px,4.4vw,52px)] font-extrabold leading-[1.04] tracking-tight text-ink-900">{t("about.title")}</h1>
         <p className="mt-3 max-w-3xl text-[17px] leading-7 text-ink-600">{t("about.lead")}</p>
+        <div className="mt-6">
+          <Tabs value={tab} onChange={(k) => setParams(k === "tech" ? { tab: "tech" } : {}, { replace: true })}
+            tabs={[{ key: "overview", label: t("about.tab.overview") }, { key: "tech", label: t("about.tab.tech") }]} />
+        </div>
       </header>
 
+      {tab === "tech" ? <TechFaq /> : <>
       <Tour ref={tour} />
 
       <section className="about-sec flex flex-col gap-5">
@@ -86,6 +97,7 @@ export function AboutPage() {
           ))}
         </div>
       </section>
+      </>}
     </Page>
   );
 }
