@@ -15,7 +15,8 @@ Demo chạy **hoàn toàn trên trình duyệt** (SheetJS đọc file, tính to�
 1. **Wow phải đến từ dữ liệu của chính họ.** Video demo không thuyết phục bằng việc thả file xuất từ Shopee/KiotViet vào và thấy biểu đồ trong 3 giây. Có 3 bộ dữ liệu mẫu cho người chưa có file trong tay.
 2. **Rào chuyển đổi đặt đúng chỗ cầu vượt cung.** Người dùng chỉ bị chặn khi muốn thứ bản thử không làm được (hỏi tự do, xuất file). Lúc đó họ đã thấy giá trị, nên email đổi lấy "trả lời chính câu này khi mở cửa" là giao dịch công bằng. Câu hỏi họ gõ được lưu lại: đó là dữ liệu nhu cầu thật, không phải khảo sát.
 3. **Trung thực về bản thử.** Dòng chữ nhỏ nói rõ bản thử dùng công thức cố định, bản chính thức dùng AI viết SQL. Không hứa thứ chưa có.
-4. **Mọi tương tác đều đo được theo biến thể**, và form waitlist hỏi thêm 2 câu định giá: nhóm công việc và mức sẵn sàng trả.
+4. **Thứ tự thuyết phục: xem → thử → đăng ký.** Cửa sổ sản phẩm tự chạy một kịch bản thật khi mở trang (gõ câu hỏi, viết SQL, vẽ biểu đồ, mở nguồn), xong mới mời thả file của mình, và chỉ mời đăng ký khi người dùng muốn thứ bản thử không làm được.
+5. **Mọi tương tác đều đo được theo biến thể**, và form waitlist hỏi thêm 2 câu định giá: nhóm công việc và mức sẵn sàng trả.
 
 ## Những gì được đo
 
@@ -24,6 +25,8 @@ Mỗi phiên gửi các sự kiện sau (không bao giờ gửi nội dung file,
 | Sự kiện | Ý nghĩa |
 |---|---|
 | `view` | Lượt xem, kèm variant, UTM, referrer, độ rộng màn hình |
+| `autoplay_done` / `autoplay_skip` | Xem hết demo tự chạy / bỏ qua để tự thử (kèm lý do) |
+| `interactive_start` | Lần đầu người dùng tự điều khiển demo, kèm cách vào (cta, skip, overlay, sample, upload) |
 | `demo_sample` / `demo_upload` | Dùng dữ liệu mẫu / **tải file của mình** (tín hiệu ý định mạnh nhất) |
 | `chip_click` | Bấm câu hỏi mẫu nào, lần thứ mấy |
 | `question_typed` | **Câu hỏi tự gõ** (nội dung) |
@@ -35,7 +38,7 @@ Mỗi phiên gửi các sự kiện sau (không bao giờ gửi nội dung file,
 Phễu chính để so A với B:
 
 ```
-view → demo_engaged → own_upload → gate_hit → waitlist
+view → autoplay_done → demo_engaged → own_upload → gate_hit → waitlist
 ```
 
 Ngưỡng gợi ý sau 2 tuần chạy traffic lạnh (ads + nhóm cộng đồng):
