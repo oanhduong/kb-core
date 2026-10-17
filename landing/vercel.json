@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "sh build-standalone.sh",
+  "buildCommand": "sh build-standalone.sh && sh build-standalone.sh wow",
   "outputDirectory": "dist",
   "framework": null,
   "cleanUrls": true,

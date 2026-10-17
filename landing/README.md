@@ -96,3 +96,22 @@ Link giới thiệu sau khi đăng ký có dạng `?ref=<mã>`; `ref` được g
 - [ ] Favicon, ảnh OG (1200×630) cho khi chia sẻ lên Facebook/Zalo
 - [ ] Thử trên điện thoại: thả file từ Zalo/Drive vào được
 - [ ] Ngân sách thử: 2 tuần, 2 kênh, mỗi biến thể tối thiểu 1.000 lượt xem
+
+## Trang chơi 3D (`landing/wow/`)
+
+Biến thể thứ hai, hướng "chơi game" thay vì đọc: `landing/wow/index.html` (cùng chuẩn artifact, không thẻ `<html>`/`<head>`).
+
+| Màn | Người dùng làm gì | Trang đáp lại |
+|---|---|---|
+| **1 · Dọn kho** | Kéo (hoặc bấm) 8 thẻ file 3D lơ lửng vào cổng kho; thả file thật của mình vào sân khấu | Thẻ bay theo đường cong vào cổng, nổ hạt, cộng điểm, combo khi thả nhanh; dòng "đã tìm thấy gì trong file" chạy ở góc; đầy kho thì cổng bùng sáng, camera lao vào, mở màn 2 |
+| **2 · Khai phá** | Bấm 6 ô tính năng | Mỗi ô diễn một hiệu ứng riêng trên sân khấu (hỏi đáp có [n] với tia nối tới nguồn, SQL gõ rồi cột mọc, bản đồ tri thức bung ra, báo cáo tự viết rồi đóng dấu PDF/DOCX, khoá bảng tự dò, lá chắn tin cậy) + thẻ kết quả + huy hiệu; đủ 6 huy hiệu mở "trùm cuối" = CTA giữ chỗ |
+
+Không dùng thư viện ngoài: engine giả lập 3D (chiếu phối cảnh, xoay, sắp xếp theo chiều sâu, hit-test) viết bằng Canvas 2D ngay trong file,
+nên tải nhanh và chạy ổn trên điện thoại. File người dùng thả vào chỉ được đọc tên + dung lượng để vẽ thẻ, không đọc nội dung.
+Tôn trọng `prefers-reduced-motion` (bỏ bay lượn, hạt; vẫn chơi được). Waitlist ghi `localStorage` (`hs_wow_waitlist`) và POST tới `CONFIG.ENDPOINT` nếu có.
+
+```bash
+sh landing/build-standalone.sh wow   # -> landing/dist/wow/index.html
+```
+
+Trên Vercel, trang này là `/wow` (cùng project với trang A/B).

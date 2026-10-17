@@ -1,0 +1,1146 @@
+<title>Hỏi Số Playground</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one dark arcade world. Màn 1 is a full-bleed pseudo-3D stage (canvas) with the copy floating on the left;
+   Màn 2 is a command deck: a stage panel that plays one effect per feature, six feature tiles, a result card, a final unlock. */
+:root{
+  color-scheme:dark;
+  --bg:#070b16; --bg-2:#0b1225; --surface:#101a31; --surface-2:#15213d; --line:#213055; --line-2:#2f4472;
+  --ink:#eaf0ff; --ink-2:#a9b6d8; --ink-3:#6f7ea8;
+  --accent:#4d8dff; --accent-deep:#2f6bff; --accent-soft:rgba(77,141,255,.16); --accent-glow:rgba(77,141,255,.55);
+  --marker:#ffd166; --marker-ink:#2a1f00; --good:#3ddc97; --bad:#ff5d6c; --violet:#a78bfa; --amber:#ffb454; --teal:#2bb5a0;
+  --paper:#f3f6ff; --paper-ink:#141a2b;
+  --display:'Bricolage Grotesque','Be Vietnam Pro',system-ui,sans-serif;
+  --font:'Be Vietnam Pro','Segoe UI',Roboto,Arial,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --gutter-l:max(16px,env(safe-area-inset-left,0px)); --gutter-r:max(16px,env(safe-area-inset-right,0px));
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+h1,h2,h3,h4{margin:0;font-family:var(--display);font-weight:800;letter-spacing:-.025em;text-wrap:balance;line-height:1.08;font-variation-settings:"opsz" 96}
+h1{font-size:clamp(2rem,5.4vw,3.6rem)}
+h2{font-size:clamp(1.5rem,3vw,2.3rem)}
+h3{font-size:1.15rem;font-variation-settings:"opsz" 40}
+p{margin:0}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:where(button,a,input,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)}
+.fine{font-size:.84rem;color:var(--ink-3)}
+.wrap{max-width:1140px;margin:0 auto;padding-left:var(--gutter-l);padding-right:var(--gutter-r)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:12px;padding:12px 20px;font-weight:600;font-size:.98rem;text-decoration:none;line-height:1.1;white-space:nowrap;transition:transform .12s,background .15s,border-color .15s,box-shadow .2s}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 0 0 0 var(--accent-glow)}
+.btn-primary:hover{background:var(--accent-deep);box-shadow:0 10px 30px -10px var(--accent-glow)}
+.btn-ghost{background:rgba(255,255,255,.04);border-color:var(--line-2);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--accent);background:var(--accent-soft)}
+.btn-link{background:none;border:0;padding:0;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;font-weight:500}
+.btn-link:hover{color:var(--ink)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(7,11,22,.72);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:18px;min-height:56px}
+.brand{font-family:var(--display);font-weight:800;letter-spacing:-.02em;text-decoration:none;font-size:1.12rem;display:flex;align-items:center;gap:9px}
+.brand i{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--violet));display:inline-grid;place-items:center;font-style:normal;font-size:.78rem;color:#fff}
+.score{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--ink-2)}
+.score b{font-family:var(--mono);font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 10px;min-width:64px;text-align:center;transition:transform .15s}
+.score b.bump{transform:scale(1.15);border-color:var(--marker);color:var(--marker)}
+.top nav{display:flex;align-items:center;gap:16px;font-size:.9rem}
+.top nav a:not(.btn){text-decoration:none;color:var(--ink-2);font-weight:500}
+.top nav a:not(.btn):hover{color:var(--ink)}
+@media (max-width:720px){.top nav a:not(.btn){display:none}.top .wrap{gap:10px}}
+
+/* ===== Màn 1: the vault stage ===== */
+.stage{position:relative;height:clamp(600px,92vh,880px);height:clamp(600px,92svh,880px);overflow:hidden;background:var(--bg);touch-action:none;user-select:none;-webkit-user-select:none}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+.stage.grabbing canvas{cursor:grabbing}
+.stage.hover canvas{cursor:grab}
+.stage.dropping::after{content:"Thả file vào đây";position:absolute;inset:14px;border:2px dashed var(--accent);border-radius:20px;display:grid;place-items:center;font-family:var(--display);font-size:1.5rem;background:rgba(77,141,255,.08);pointer-events:none;z-index:5}
+.hud{position:absolute;left:var(--gutter-l);right:var(--gutter-r);top:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none;z-index:3;font-size:.84rem}
+.hud .lvl{display:inline-flex;align-items:center;gap:8px;background:rgba(16,26,49,.75);border:1px solid var(--line);border-radius:999px;padding:6px 12px 6px 8px;color:var(--ink-2);backdrop-filter:blur(8px)}
+.hud .lvl b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-family:var(--mono);font-size:.72rem;font-weight:500}
+.hud .vault{display:inline-flex;align-items:center;gap:10px;background:rgba(16,26,49,.75);border:1px solid var(--line);border-radius:999px;padding:6px 14px 6px 8px;backdrop-filter:blur(8px)}
+.hud .vault svg{width:34px;height:34px;transform:rotate(-90deg)}
+.hud .vault circle{fill:none;stroke-width:3.5}
+.hud .vault .trk{stroke:var(--line-2)}
+.hud .vault .bar{stroke:var(--accent);stroke-linecap:round;stroke-dasharray:100.5;stroke-dashoffset:100.5;transition:stroke-dashoffset .5s cubic-bezier(.2,.8,.2,1)}
+.hud .vault .lbl{display:grid;line-height:1.2}
+.hud .vault .lbl small{color:var(--ink-3);font-size:.74rem}
+.hud .vault .lbl span{font-family:var(--mono);font-size:.95rem}
+.hero-copy{position:absolute;left:var(--gutter-l);right:var(--gutter-r);top:72px;max-width:520px;display:grid;gap:16px;z-index:3;pointer-events:none}
+.hero-copy > *{pointer-events:auto}
+.hero-copy .kicker{display:inline-flex;align-items:center;gap:8px;font-size:.84rem;color:var(--ink-2);font-weight:500}
+.hero-copy .kicker i{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 12px var(--good);animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.35}}
+.hero-copy h1 em{font-style:normal;background:linear-gradient(90deg,#8fb6ff,#c7b6ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-copy .sub{color:var(--ink-2);font-size:clamp(.98rem,1.5vw,1.12rem);max-width:34em}
+.hero-copy .cta{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.hero-copy .fine{max-width:34em}
+@media (max-width:860px){
+  .hero-copy{top:64px;max-width:none;gap:10px}
+  .hero-copy h1{font-size:clamp(1.7rem,7.4vw,2.3rem)}
+  .hero-copy .sub{font-size:.95rem}
+  .hero-copy .fine{display:none}
+  .hud{top:10px}
+  .hero-copy .cta .btn{padding:10px 14px;font-size:.9rem}
+}
+.ticker{position:absolute;left:var(--gutter-l);bottom:16px;max-width:min(440px,calc(100% - var(--gutter-l) - var(--gutter-r)));display:grid;gap:4px;z-index:3;pointer-events:none;font-size:.8rem}
+.ticker div{display:flex;gap:8px;align-items:baseline;background:rgba(16,26,49,.7);border:1px solid var(--line);border-radius:8px;padding:5px 10px;color:var(--ink-2);animation:tick .35s cubic-bezier(.2,.8,.2,1) both;min-width:0}
+.ticker div b{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%;flex:none}
+.ticker div span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ticker div i{font-style:normal;color:var(--good);flex:none}
+@keyframes tick{from{opacity:0;transform:translateY(8px)}}
+.pop{position:absolute;z-index:4;pointer-events:none;font-family:var(--display);font-weight:800;font-size:1.3rem;color:var(--marker);text-shadow:0 0 18px rgba(255,209,102,.6);animation:popup .9s ease-out forwards;transform:translate(-50%,-50%)}
+.pop.big{font-size:2rem;color:#fff}
+@keyframes popup{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(1)}}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:6;transition:opacity .25s}
+.flash.on{opacity:.9;transition:none}
+.vault-hint{position:absolute;z-index:3;pointer-events:none;transform:translate(-50%,-50%);font-size:.84rem;color:var(--ink);background:rgba(77,141,255,.25);border:1px solid var(--accent);border-radius:999px;padding:5px 12px;opacity:0;transition:opacity .2s}
+.vault-hint.on{opacity:1}
+.edge-cta{position:absolute;right:var(--gutter-r);bottom:16px;z-index:3;display:flex;gap:8px;align-items:center}
+@media (max-width:860px){.edge-cta{display:none}}
+
+/* ===== Màn 2: command deck ===== */
+.deck{padding-block:40px 56px;background:linear-gradient(180deg,var(--bg) 0,var(--bg-2) 100%);border-top:1px solid var(--line)}
+.deck.in{animation:rise .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}}
+.deck-head{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between;margin-bottom:22px}
+.deck-head .lvl{display:inline-flex;align-items:center;gap:8px;font-size:.84rem;color:var(--ink-2);margin-bottom:10px}
+.deck-head .lvl b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--violet);color:#fff;font-family:var(--mono);font-size:.72rem;font-weight:500}
+.deck-head p{color:var(--ink-2);max-width:40em;margin-top:8px}
+.badges{display:flex;align-items:center;gap:10px;font-size:.86rem;color:var(--ink-2)}
+.badges .dots{display:flex;gap:5px}
+.badges .dots i{width:10px;height:10px;border-radius:50%;background:var(--line-2);transition:background .3s,transform .3s}
+.badges .dots i.on{background:var(--marker);box-shadow:0 0 10px rgba(255,209,102,.6);transform:scale(1.2)}
+.deck-grid{display:grid;grid-template-columns:minmax(0,1fr) 312px;gap:18px;align-items:start}
+@media (max-width:900px){.deck-grid{grid-template-columns:minmax(0,1fr)}}
+.deck-stage{position:relative;height:460px;border-radius:20px;border:1px solid var(--line);background:radial-gradient(120% 90% at 50% 110%,#13204a 0,var(--surface) 45%,#0b1226 100%);overflow:hidden;box-shadow:0 40px 80px -40px rgba(0,0,0,.8)}
+@media (max-width:600px){.deck-stage{height:420px}}
+.deck-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.deck-dom{position:absolute;inset:0;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+@media (max-width:600px){.deck-dom{padding:12px}}
+.idle{margin:auto;text-align:center;max-width:26em;display:grid;gap:8px;justify-items:center}
+.idle h3{font-size:1.35rem}
+.idle p{color:var(--ink-2);font-size:.95rem}
+.idle .arrow{color:var(--ink-3);font-size:.84rem}
+.tiles{display:grid;gap:10px}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:440px){.tiles{grid-template-columns:minmax(0,1fr)}}
+.tile{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);transition:transform .15s,border-color .15s,background .15s,box-shadow .2s;min-width:0}
+.tile:hover{transform:translateY(-2px);border-color:var(--line-2);background:var(--surface-2)}
+.tile.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset,0 12px 30px -16px var(--accent-glow)}
+.tile i{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--bg-2);border:1px solid var(--line);font-style:normal}
+.tile i svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tile b{display:block;font-weight:600;font-size:.95rem;line-height:1.25}
+.tile small{display:block;color:var(--ink-3);font-size:.78rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile em{font-style:normal;width:22px;height:22px;border-radius:50%;border:1px solid var(--line-2);display:grid;place-items:center;font-size:.7rem;color:var(--ink-3);transition:all .25s}
+.tile.done em{background:var(--marker);border-color:var(--marker);color:var(--marker-ink);transform:rotate(360deg)}
+.tile.done em::before{content:"✓"}
+.result{margin-top:14px;padding:16px 18px;border-radius:16px;border:1px solid var(--line);background:var(--surface);display:grid;gap:8px;animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.result h3{font-size:1.05rem}
+.result ul{margin:0;padding-left:1.1em;color:var(--ink-2);display:grid;gap:4px;font-size:.93rem}
+.result .tag{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--good);font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--surface-2);border:1px solid var(--marker);color:var(--ink);padding:10px 16px;border-radius:999px;font-size:.9rem;display:flex;gap:10px;align-items:center;opacity:0;transition:all .3s cubic-bezier(.2,.8,.2,1);z-index:50;pointer-events:none;white-space:nowrap;max-width:calc(100% - 32px)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast b{color:var(--marker)}
+.unlock{margin-top:26px;padding:26px 24px;border-radius:20px;border:1px solid var(--marker);background:linear-gradient(135deg,rgba(255,209,102,.1),rgba(167,139,250,.1));display:grid;gap:12px;position:relative;overflow:hidden;animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+.unlock h2{font-size:clamp(1.35rem,2.6vw,1.9rem)}
+.unlock p{color:var(--ink-2);max-width:44em}
+.unlock .cta{display:flex;flex-wrap:wrap;gap:10px}
+.unlock canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.unlock > *:not(canvas){position:relative}
+
+/* ----- effect DOM pieces (inside deck-dom) ----- */
+.chat{display:flex;flex-direction:column;gap:10px;height:100%;min-height:0}
+.msg{max-width:88%;padding:10px 14px;border-radius:16px;font-size:.93rem;line-height:1.45;animation:rise .35s both}
+.msg.me{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px;min-height:40px}
+.msg.ai{align-self:flex-start;background:var(--paper);color:var(--paper-ink);border-bottom-left-radius:4px}
+.msg .caret{display:inline-block;width:2px;height:1em;background:currentColor;vertical-align:-2px;margin-left:1px;animation:blink .8s infinite}
+.cite{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:6px;background:var(--marker);color:var(--marker-ink);font-family:var(--mono);font-size:.72rem;font-weight:500;vertical-align:1px;margin:0 1px;cursor:pointer;transition:transform .15s}
+.cite:hover,.cite.hot{transform:scale(1.2)}
+.srcs{margin-top:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.src{border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.03);padding:8px 10px;font-size:.78rem;display:grid;gap:3px;opacity:.35;transition:all .3s;min-width:0;position:relative}
+.src b{display:flex;gap:6px;align-items:center;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.src b i{width:8px;height:8px;border-radius:2px;flex:none;font-style:normal}
+.src span{color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.src.lit{opacity:1;border-color:var(--accent);background:var(--accent-soft)}
+.src.ok::after{content:"✓";position:absolute;right:8px;top:6px;color:var(--good);font-weight:700}
+.src.hot{border-color:var(--marker);background:rgba(255,209,102,.12)}
+.src mark{background:var(--marker);color:var(--marker-ink);border-radius:3px;padding:0 3px;font-size:.74rem;white-space:normal;display:none}
+.src.hot mark{display:inline}
+.trace{display:flex;gap:4px;font-size:.72rem;color:var(--ink-3);flex-wrap:wrap}
+.trace span{padding:3px 8px;border-radius:999px;border:1px solid var(--line);transition:all .3s;white-space:nowrap}
+.trace span.on{border-color:var(--accent);color:var(--ink);background:var(--accent-soft)}
+.trace span.ok{border-color:var(--good);color:var(--good)}
+.qline{font-size:.93rem;color:var(--ink);display:flex;gap:8px;align-items:baseline;min-height:1.4em}
+.qline::before{content:"Hỏi";font-size:.72rem;color:var(--ink-3);border:1px solid var(--line);border-radius:999px;padding:1px 7px;flex:none}
+.code{margin:0;font-family:var(--mono);font-size:.78rem;line-height:1.5;color:#cfe0ff;background:#070c1c;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:5.4em;white-space:pre-wrap;overflow:hidden}
+.code .kw{color:#8fb6ff}.code .fn{color:var(--amber)}.code .str{color:var(--good)}
+.slot{flex:1;min-height:0;position:relative}
+.caption{font-size:.8rem;color:var(--ink-3)}
+.legend{display:flex;gap:6px;flex-wrap:wrap;font-size:.76rem;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.2)}
+.legend i{width:8px;height:8px;border-radius:50%}
+.tip{position:absolute;z-index:2;background:var(--paper);color:var(--paper-ink);padding:8px 11px;border-radius:10px;font-size:.8rem;max-width:230px;box-shadow:0 12px 30px -10px rgba(0,0,0,.7);animation:rise .3s both;pointer-events:none}
+.tip b{display:block;font-weight:700}
+.page{background:var(--paper);color:var(--paper-ink);border-radius:8px;padding:18px 22px;flex:1;min-height:0;overflow:hidden;display:grid;gap:10px;align-content:start;font-size:.82rem;line-height:1.45;box-shadow:0 30px 50px -30px rgba(0,0,0,.9);transform-origin:top center}
+.page h4{font-family:var(--display);font-size:1.15rem;color:#141a2b;min-height:1.3em;font-weight:800}
+.page h5{margin:0;font-size:.84rem;font-weight:700;color:#1f2a44;animation:rise .3s both}
+.page .sk{display:grid;gap:5px}
+.page .sk i{height:9px;border-radius:4px;background:linear-gradient(90deg,#e1e6f3,#f0f3fa,#e1e6f3);background-size:200% 100%;animation:sheen 1s linear infinite;display:block}
+@keyframes sheen{to{background-position:-200% 0}}
+.page p{color:#2b3550;animation:rise .3s both}
+.page .mini{display:flex;gap:4px;align-items:flex-end;height:46px;padding:4px 0}
+.page .mini i{flex:1;background:var(--accent);border-radius:3px 3px 0 0;transform-origin:bottom;animation:grow .6s cubic-bezier(.2,.8,.2,1) both}
+.page .mini i.bad{background:var(--bad)}
+@keyframes grow{from{transform:scaleY(0)}}
+.stamps{position:absolute;right:18px;bottom:18px;display:flex;gap:8px}
+.stamps span{font-family:var(--mono);font-size:.8rem;font-weight:500;padding:8px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--ink);animation:slam .5s cubic-bezier(.2,1.4,.3,1) both;box-shadow:0 10px 24px -10px rgba(0,0,0,.8)}
+.stamps span.go{background:var(--accent);border-color:var(--accent);color:#fff}
+@keyframes slam{from{opacity:0;transform:scale(2.4) rotate(-8deg)}}
+.tables{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start}
+@media (max-width:600px){.tables{gap:6px}}
+.tbl{border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.25);overflow:hidden;font-size:.74rem;animation:rise .4s both;min-width:0}
+.tbl b{display:block;padding:6px 9px;background:var(--surface-2);font-family:var(--mono);font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbl ul{list-style:none;margin:0;padding:4px 0}
+.tbl li{padding:3px 9px;color:var(--ink-2);display:flex;justify-content:space-between;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .3s}
+.tbl li small{color:var(--ink-3);font-size:.68rem}
+.tbl li.key.glow{color:var(--marker);background:rgba(255,209,102,.1)}
+.view{margin-top:auto;border-radius:12px;border:1px solid var(--good);background:rgba(61,220,151,.08);padding:10px 12px;font-size:.8rem;display:grid;gap:3px;animation:rise .5s both}
+.view b{font-family:var(--mono);font-weight:500;color:var(--good)}
+.view span{color:var(--ink-2)}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:auto}
+.metric{border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.25);padding:8px 11px;display:grid;gap:1px;animation:rise .4s both;min-width:0}
+.metric b{font-family:var(--display);font-size:1.35rem;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1}
+.metric span{font-size:.74rem;color:var(--ink-2)}
+.metric.good b{color:var(--good)}.metric.warn b{color:var(--amber)}
+
+/* ===== plain sections ===== */
+.how{padding-block:56px;border-top:1px solid var(--line)}
+.how .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}
+@media (max-width:760px){.how .grid{grid-template-columns:minmax(0,1fr)}}
+.how article{display:grid;gap:8px;padding:18px;border-radius:16px;border:1px solid var(--line);background:var(--surface)}
+.how article p{color:var(--ink-2);font-size:.95rem}
+.signup{padding-block:56px 64px;border-top:1px solid var(--line);background:var(--bg-2)}
+.signup .wrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:center}
+@media (max-width:820px){.signup .wrap{grid-template-columns:minmax(0,1fr)}}
+.signup p{color:var(--ink-2);margin-top:10px;max-width:36em}
+form.wl{display:grid;gap:10px;padding:20px;border-radius:18px;border:1px solid var(--line);background:var(--surface)}
+form.wl label{display:grid;gap:5px;font-size:.86rem;color:var(--ink-2)}
+form.wl input,form.wl textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line-2);border-radius:10px;padding:11px 12px;min-width:0;width:100%}
+form.wl textarea{resize:vertical;min-height:64px}
+form.wl .ok{display:grid;gap:6px;padding:14px;border-radius:12px;border:1px solid var(--good);background:rgba(61,220,151,.08)}
+form.wl .ok b{color:var(--good)}
+footer{padding-block:26px 40px;color:var(--ink-3);font-size:.84rem;border-top:1px solid var(--line)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+
+<header class="top"><div class="wrap">
+  <a class="brand" href="#act1"><i>H</i>Hỏi Số</a>
+  <div class="score">Điểm <b id="score" class="num">0</b></div>
+  <nav><a href="#act2" id="navDeck">Tính năng</a><a href="#signup" class="btn btn-ghost" style="padding:8px 14px;font-size:.88rem">Giữ chỗ</a></nav>
+</div></header>
+
+<main>
+<section class="stage" id="act1" aria-label="Màn 1: thả file vào kho">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div class="hud">
+    <span class="lvl"><b>1</b> Dọn kho</span>
+    <span class="vault"><svg viewBox="0 0 36 36"><circle class="trk" cx="18" cy="18" r="16"/><circle class="bar" id="ring" cx="18" cy="18" r="16"/></svg><span class="lbl"><small>Kho thông minh</small><span class="num" id="count">0 / 8</span></span></span>
+  </div>
+  <div class="hero-copy">
+    <span class="kicker"><i></i>Chơi thử ngay, không cần đăng nhập</span>
+    <h1>Đống file rối thành <em>một kho biết trả lời</em>.</h1>
+    <p class="sub">Kéo từng file vào cổng kho, hoặc chỉ cần bấm. Excel, PDF scan, Word, ghi âm họp: vào tới đâu, hệ thống đọc hiểu tới đó. Đầy kho là mở màn 2.</p>
+    <div class="cta">
+      <button class="btn btn-primary" id="btnAll" type="button">Hút tất cả vào kho</button>
+      <button class="btn btn-ghost" id="btnOwn" type="button">Thả file của bạn</button>
+      <input type="file" id="ownFiles" multiple hidden>
+    </div>
+    <p class="fine">File bạn thả vào không rời khỏi máy. Trang chỉ lấy tên và đuôi file để vẽ, không đọc nội dung.</p>
+  </div>
+  <div class="ticker" id="ticker" aria-live="polite"></div>
+  <div class="edge-cta"><button class="btn-link" id="skip" type="button">Bỏ qua màn 1</button></div>
+  <div class="vault-hint" id="vaultHint">Thả vào kho</div>
+  <div class="flash" id="flash"></div>
+</section>
+
+<section class="deck" id="act2" hidden aria-label="Màn 2: khám phá tính năng">
+  <div class="wrap">
+    <div class="deck-head">
+      <div>
+        <span class="lvl"><b>2</b> Khai phá</span>
+        <h2>Kho đã nạp. Giờ bắt nó làm việc.</h2>
+        <p>Mỗi ô là một việc hệ thống làm được trên đúng những file vừa thả. Bấm để xem nó diễn ra. Mở đủ 6 ô để nhận phần thưởng cuối.</p>
+      </div>
+      <div class="badges"><span>Huy hiệu</span><span class="dots" id="dots"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="num" id="doneCount">0/6</span></div>
+    </div>
+    <div class="deck-grid">
+      <div>
+        <div class="deck-stage" id="deckStage"><canvas id="fx" aria-hidden="true"></canvas><div class="deck-dom" id="fxDom"></div></div>
+        <div id="result" hidden></div>
+      </div>
+      <div class="tiles" id="tiles"></div>
+    </div>
+    <div class="unlock" id="unlock" hidden>
+      <canvas id="confetti" aria-hidden="true"></canvas>
+      <span class="lvl" style="color:var(--marker);font-size:.84rem;font-weight:600">Trùm cuối đã mở</span>
+      <h2>Bạn vừa chơi với 8 file mẫu. Phiên bản thật chơi với file của bạn.</h2>
+      <p>Hỏi Số đang mở cửa theo đợt. Giữ chỗ bằng email, kèm câu hỏi đầu tiên bạn muốn hỏi kho của mình: khi tới lượt, chúng tôi trả lời đúng câu đó trên dữ liệu thật của bạn.</p>
+      <div class="cta"><a class="btn btn-primary" href="#signup">Giữ chỗ dùng trước</a><button class="btn btn-ghost" type="button" id="replay">Chơi lại từ đầu</button></div>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <div class="wrap">
+    <h2>Trang này diễn, sản phẩm thì thật</h2>
+    <div class="grid">
+      <article><h3>Màn chơi dùng số minh hoạ</h3><p>8 file mẫu, bảng số liệu và câu trả lời trên trang này là kịch bản dựng sẵn để bạn thấy cách hệ thống làm việc trong một phút, không phải kết quả tính trên file của bạn.</p></article>
+      <article><h3>Bản chính thức làm đúng như vậy</h3><p>AI đọc file thật của bạn, viết SQL để tính số, trích thực thể thành bản đồ tri thức, và mọi khẳng định đều có chỉ số [n] trỏ về đoạn gốc. Mã kiểm tra trích dẫn, không phải model tự khai.</p></article>
+      <article><h3>File của bạn ở yên trên máy</h3><p>Khi bạn thả file vào màn 1, trình duyệt chỉ đọc tên và dung lượng để vẽ chiếc thẻ 3D. Không có gì được tải lên, không có máy chủ phía sau trang này.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="signup" id="signup">
+  <div class="wrap">
+    <div>
+      <h2>Giữ chỗ, kèm câu hỏi đầu tiên của bạn</h2>
+      <p>Chúng tôi mở theo đợt nhỏ để làm kỹ từng workspace. Người giữ chỗ trước được 1 tháng Pro, và câu hỏi bạn ghi ở đây sẽ được trả lời trên dữ liệu thật của bạn ngay buổi mở cửa.</p>
+    </div>
+    <form class="wl" id="wl" novalidate>
+      <label>Email<input type="email" id="wlEmail" name="email" required placeholder="ban@congty.vn" autocomplete="email"></label>
+      <label>Câu hỏi đầu tiên bạn muốn hỏi kho của mình<textarea id="wlQ" name="q" placeholder="Ví dụ: Tháng này chi nhánh nào lãi gộp thấp hơn tháng trước, vì sao?"></textarea></label>
+      <button class="btn btn-primary" type="submit" id="wlBtn">Giữ chỗ dùng trước</button>
+      <p class="fine" id="wlErr" hidden></p>
+    </form>
+  </div>
+</section>
+</main>
+<footer><div class="wrap"><span>© 2026 Hỏi Số</span><span>Liên hệ: hello@hoiso.vn</span></div></footer>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Shared helpers
+   ============================================================ */
+const CONFIG = { BRAND: 'Hỏi Số', ENDPOINT: '' };
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const lerp = (a, b, t) => a + (b - a) * t;
+const nf = new Intl.NumberFormat('vi-VN');
+const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const ease = {
+  linear: t => t,
+  outCubic: t => 1 - Math.pow(1 - t, 3),
+  inCubic: t => t * t * t,
+  inOutCubic: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  outBack: t => { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
+  outExpo: t => t >= 1 ? 1 : 1 - Math.pow(2, -10 * t),
+  outElastic: t => t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - .75) * (2 * Math.PI / 3)) + 1
+};
+const tweens = new Set();
+function tween(obj, to, dur, o = {}){
+  const from = {}; for (const k in to) from[k] = obj[k];
+  const tw = { obj, from, to, dur: reduced ? Math.min(dur, 80) : dur, e: o.ease || ease.outCubic, start: performance.now() + (o.delay || 0), onUpdate: o.onUpdate, onDone: o.onDone };
+  tweens.add(tw); return tw;
+}
+function stepTweens(now){
+  for (const tw of tweens){
+    if (now < tw.start) continue;
+    const p = Math.min(1, (now - tw.start) / tw.dur), v = tw.e(p);
+    for (const k in tw.to) tw.obj[k] = tw.from[k] + (tw.to[k] - tw.from[k]) * v;
+    tw.onUpdate && tw.onUpdate(v, p);
+    if (p >= 1){ tweens.delete(tw); tw.onDone && tw.onDone(); }
+  }
+}
+function rr(ctx, x, y, w, h, r){ r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function hexA(hex, a){ const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+function vibrate(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch {} }
+function fmtSize(b){ return b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(0) + ' KB' : (b / 1048576).toFixed(1) + ' MB'; }
+
+const game = { score: 0, act: 1 };
+function addScore(n){
+  game.score += n; const el = $('#score'); el.textContent = nf.format(game.score);
+  el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 200);
+}
+let toastT;
+function toast(html){ const t = $('#toast'); t.innerHTML = html; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2400); }
+
+/* ============================================================
+   File catalogue (illustrative, names a Vietnamese retail shop would have)
+   ============================================================ */
+const EXT = {
+  xlsx: { c: '#21a366', k: 'sheet', label: 'bảng số liệu' }, xls: { c: '#21a366', k: 'sheet', label: 'bảng số liệu' }, csv: { c: '#2bb5a0', k: 'sheet', label: 'bảng số liệu' },
+  pdf: { c: '#e5484d', k: 'doc', label: 'tài liệu, OCR nếu là scan' }, docx: { c: '#2b7cd3', k: 'doc', label: 'tài liệu' }, doc: { c: '#2b7cd3', k: 'doc', label: 'tài liệu' },
+  txt: { c: '#8b97b8', k: 'doc', label: 'ghi chú' }, md: { c: '#8b97b8', k: 'doc', label: 'ghi chú' },
+  jpg: { c: '#f5a524', k: 'img', label: 'ảnh, đọc bằng vision' }, jpeg: { c: '#f5a524', k: 'img', label: 'ảnh, đọc bằng vision' }, png: { c: '#f5a524', k: 'img', label: 'ảnh, đọc bằng vision' },
+  mp3: { c: '#a78bfa', k: 'audio', label: 'ghi âm, chép lời' }, wav: { c: '#a78bfa', k: 'audio', label: 'ghi âm, chép lời' }, m4a: { c: '#a78bfa', k: 'audio', label: 'ghi âm, chép lời' }, mp4: { c: '#a78bfa', k: 'audio', label: 'video, chép lời' },
+  pptx: { c: '#d04423', k: 'slides', label: 'slide' }, ppt: { c: '#d04423', k: 'slides', label: 'slide' }
+};
+const EXT_DEFAULT = { c: '#8b97b8', k: 'doc', label: 'tài liệu' };
+const FILE_DEFS = [
+  { name: 'Doanh_thu_T9_2025.xlsx', found: '3 sheet, 1.240 dòng, 14 cột thành bảng số liệu' },
+  { name: 'KiotViet_don_hang.csv', found: '8.512 đơn, tự nhận cột ngày và mã SP' },
+  { name: 'Hop_dong_NCC_Vinamilk.pdf', found: '12 trang, 4 điều khoản giá, 2 mốc hạn' },
+  { name: 'Hoa_don_scan_0921.jpg', found: 'OCR 1 trang, 6 dòng hàng, tổng 4.280.000' },
+  { name: 'Quy_trinh_nhap_kho.docx', found: 'tóm tắt 1 đoạn, 9 đối tượng, 3 bước' },
+  { name: 'Hop_ban_hang_T9.mp3', found: 'chép lời 14 phút, 3 quyết định, 2 người nói' },
+  { name: 'Ke_hoach_Q4.pptx', found: '18 slide, 5 chỉ tiêu, 1 bảng' },
+  { name: 'ghi_chu_zalo.txt', found: '2 KB, 3 địa điểm, 1 số điện thoại' }
+];
+const extOf = name => (name.split('.').pop() || '').toLowerCase();
+
+/* ============================================================
+   Màn 1: pseudo-3D vault stage (Canvas 2D, no libraries)
+   ============================================================ */
+const act1 = (() => {
+  const sec = $('#act1'), cv = $('#scene'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, DPR = 1, k = 1, F = 760, mobile = false, cx0 = 0, cy0 = 0;
+  const CAMZ = 900;
+  const cam = { rotY: 0, rotX: 0.42, tx: 0, ty: 0, baseY: 0 };
+  const VAULT = { x: 0, y: 250, z: 0, r: 175 };
+  const st = { files: [], parts: [], stars: [], t: 0, pulse: 0, beam: .22, ringScale: 1, zoom: 1, hunger: 0, count: 0, total: 0, combo: 0, lastDrop: 0, active: true, done: false, hover: null, drag: null, vaultEl: { x: 0, y: 0, rx: 1, ry: 1 } };
+  const LIGHT = (() => { const v = { x: -.35, y: -.55, z: -.75 }; const l = Math.hypot(v.x, v.y, v.z); return { x: v.x / l, y: v.y / l, z: v.z / l }; })();
+
+  function resize(){
+    W = sec.clientWidth; H = sec.clientHeight; DPR = Math.min(2, devicePixelRatio || 1);
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    mobile = W < 860;
+    k = clamp(Math.min(W / 760, H / 640), .55, 1.3);
+    F = 760 * k;
+    cx0 = mobile ? W * .5 : W * .68;
+    cy0 = mobile ? H * .6 : H * .52;
+    if (!st.stars.length) for (let i = 0; i < 110; i++) st.stars.push({ x: Math.random(), y: Math.random(), s: rand(.4, 1.6), p: rand(0, 6.28) });
+  }
+  function camRot(p){
+    const cy = Math.cos(cam.rotY), sy = Math.sin(cam.rotY);
+    const x1 = p.x * cy + p.z * sy, z1 = -p.x * sy + p.z * cy;
+    const cx = Math.cos(cam.rotX), sx = Math.sin(cam.rotX);
+    return { x: x1, y: p.y * cx - z1 * sx, z: p.y * sx + z1 * cx };
+  }
+  function proj(p){
+    const r = camRot(p); const zc = r.z + CAMZ; const s = F * st.zoom / zc;
+    return { x: cx0 + r.x * s, y: cy0 + r.y * s, s, z: zc };
+  }
+  function unproj(sx, sy, zc){
+    const s = F * st.zoom / zc; const x1 = (sx - cx0) / s, y1 = (sy - cy0) / s, z2 = zc - CAMZ;
+    const cx = Math.cos(cam.rotX), sxn = Math.sin(cam.rotX);
+    const y = y1 * cx + z2 * sxn, z1 = -y1 * sxn + z2 * cx;
+    const cy = Math.cos(cam.rotY), syn = Math.sin(cam.rotY);
+    return { x: x1 * cy - z1 * syn, y, z: x1 * syn + z1 * cy };
+  }
+  function rot3(v, r){
+    let { x, y, z } = v, c, s, t;
+    c = Math.cos(r.x); s = Math.sin(r.x); t = y * c - z * s; z = y * s + z * c; y = t;
+    c = Math.cos(r.y); s = Math.sin(r.y); t = x * c + z * s; z = -x * s + z * c; x = t;
+    c = Math.cos(r.z); s = Math.sin(r.z); t = x * c - y * s; y = x * s + y * c; x = t;
+    return { x, y, z };
+  }
+
+  /* --- files --- */
+  function makeFile(def, i, n, own){
+    const ext = extOf(def.name), meta = EXT[ext] || EXT_DEFAULT;
+    const a = (i / n) * Math.PI * 2 + rand(-.3, .3);
+    const base = own ? { x: rand(-120, 120), y: -300, z: rand(-80, 80) }
+      : { x: Math.cos(a) * rand(170, 330), y: rand(-200, 80), z: Math.sin(a) * rand(120, 260) };
+    return { id: def.name + i, name: def.name, ext, meta, found: def.found, own: !!own, w: 118, h: 148, scale: own ? 0 : 1,
+      base, pos: { ...base }, rot: { x: rand(-.5, .5), y: rand(-.6, .6), z: rand(-.25, .25) },
+      spin: { x: rand(-.25, .25), y: rand(-.35, .35), z: rand(-.1, .1) }, spinMul: 1, phase: rand(0, 6.28), state: 'float', fly: 0, poly: null, depth: 0, glow: 0, lift: 0 };
+  }
+  function seed(){
+    st.files = FILE_DEFS.map((d, i) => makeFile(d, i, FILE_DEFS.length));
+    st.total = st.files.length; st.count = 0; updateHud();
+  }
+  function updateHud(){
+    $('#count').textContent = `${st.count} / ${st.total}`;
+    $('#ring').style.strokeDashoffset = 100.5 * (1 - (st.total ? st.count / st.total : 0));
+  }
+  function tickerLine(f){
+    const t = $('#ticker'); const d = document.createElement('div');
+    d.innerHTML = `<i>✓</i><b>${f.name.replace(/[<>&]/g, '')}</b><span>${f.found}</span>`;
+    t.prepend(d); while (t.children.length > 4) t.lastChild.remove();
+  }
+  function pop(text, x, y, big){
+    const p = document.createElement('div'); p.className = 'pop' + (big ? ' big' : ''); p.textContent = text;
+    p.style.left = x + 'px'; p.style.top = y + 'px'; sec.appendChild(p); setTimeout(() => p.remove(), 950);
+  }
+  function burst(color, n, spread){
+    const c = proj(VAULT);
+    for (let i = 0; i < n; i++){
+      st.parts.push({ pos: { x: VAULT.x + rand(-30, 30) * (spread || 1), y: VAULT.y - 10, z: VAULT.z + rand(-30, 30) * (spread || 1) },
+        vel: { x: rand(-120, 120) * (spread || 1), y: rand(-420, -120), z: rand(-120, 120) * (spread || 1) }, life: 1, decay: rand(.55, 1.1), size: rand(1.5, 4.5) * k, color: Math.random() < .5 ? color : '#8fb6ff' });
+    }
+    void c;
+  }
+  function flyIn(f){
+    if (f.state === 'fly' || f.state === 'gone') return;
+    f.state = 'fly'; f.fly = 0; f.spinMul = 7; f.glow = 1;
+    const p0 = { ...f.pos }, p2 = { x: VAULT.x, y: VAULT.y - 6, z: VAULT.z };
+    const p1 = { x: (p0.x + p2.x) / 2 + rand(-60, 60), y: Math.min(p0.y, p2.y) - 230, z: (p0.z + p2.z) / 2 + rand(-60, 60) };
+    const dist = Math.hypot(p2.x - p0.x, p2.y - p0.y, p2.z - p0.z);
+    tween(f, { fly: 1 }, 560 + dist * .55, { ease: ease.inOutCubic, onUpdate: (v, p) => {
+      const u = 1 - v;
+      f.pos.x = u * u * p0.x + 2 * u * v * p1.x + v * v * p2.x;
+      f.pos.y = u * u * p0.y + 2 * u * v * p1.y + v * v * p2.y;
+      f.pos.z = u * u * p0.z + 2 * u * v * p1.z + v * v * p2.z;
+      f.scale = lerp(1.1, .08, ease.inCubic(p));
+      if (p > .6) st.hunger = Math.max(st.hunger, (p - .6) / .4);
+    }, onDone: () => deposit(f) });
+  }
+  function deposit(f){
+    f.state = 'gone';
+    const now = performance.now();
+    st.combo = now - st.lastDrop < 1900 ? st.combo + 1 : 1; st.lastDrop = now;
+    st.count++; updateHud(); tickerLine(f);
+    st.pulse = 1; st.beam = 1; tween(st, { beam: .22 }, 900);
+    burst(f.meta.c, reduced ? 0 : 34);
+    const v = proj(VAULT);
+    const pts = 100 * st.combo; addScore(pts);
+    pop(st.combo > 1 ? `Combo x${st.combo}  +${pts}` : `+${pts}`, v.x, v.y - 90 * k, st.combo > 2);
+    vibrate(12);
+    if (st.count >= st.total && !st.done) setTimeout(ignite, 350);
+  }
+  function springBack(f){
+    f.state = 'float'; f.glow = 0;
+    const to = { ...f.base };
+    const p = { ...f.pos };
+    tween(p, to, 650, { ease: ease.outBack, onUpdate: () => { f.pos.x = p.x; f.pos.y = p.y; f.pos.z = p.z; } });
+  }
+  function ignite(){
+    st.done = true; game.act = 2;
+    burst('#ffd166', reduced ? 0 : 180, 2.2);
+    tween(st, { ringScale: 2.6 }, 1100, { ease: ease.outCubic });
+    tween(st, { beam: 1.6 }, 400);
+    tween(st, { zoom: 2.1 }, 1300, { ease: ease.inCubic, delay: 250 });
+    const v = proj(VAULT); pop('Kho đã đầy', v.x, v.y - 150 * k, true);
+    addScore(500);
+    setTimeout(() => { const fl = $('#flash'); fl.classList.add('on'); setTimeout(() => fl.classList.remove('on'), 60); }, reduced ? 100 : 1350);
+    setTimeout(() => deck.show(), reduced ? 200 : 1450);
+  }
+  function suckAll(){
+    const fl = st.files.filter(f => f.state === 'float' || f.state === 'drag');
+    st.drag = null; sec.classList.remove('grabbing');
+    fl.sort((a, b) => b.pos.y - a.pos.y).forEach((f, i) => setTimeout(() => flyIn(f), i * (reduced ? 20 : 150)));
+  }
+  function spawnOwn(list){
+    const arr = [...list].slice(0, 8);
+    if (!arr.length) return;
+    arr.forEach((file, i) => {
+      const ext = extOf(file.name), meta = EXT[ext] || EXT_DEFAULT;
+      const f = makeFile({ name: file.name, found: `${fmtSize(file.size)}, sẽ đọc như ${meta.label}` }, i, arr.length, true);
+      st.files.push(f); st.total++;
+      tween(f, { scale: 1 }, 500, { ease: ease.outBack, delay: i * 120 });
+      setTimeout(() => flyIn(f), 700 + i * 220);
+    });
+    updateHud();
+    toast(`Nhận <b>${arr.length}</b> file của bạn. Không có gì rời khỏi máy.`);
+    if (st.done){ st.done = false; } /* allow another ignite if the user keeps feeding the vault */
+  }
+
+  /* --- drawing --- */
+  function drawBackground(){
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0a1124'); g.addColorStop(1, '#040710');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const s of st.stars){ const a = .25 + .35 * (.5 + .5 * Math.sin(st.t * 1.3 + s.p)); ctx.fillStyle = `rgba(170,195,255,${a})`; ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.s * k, 0, 6.28); ctx.fill(); }
+    ctx.restore();
+    // floor grid
+    ctx.save(); ctx.strokeStyle = 'rgba(77,141,255,.09)'; ctx.lineWidth = 1;
+    for (let x = -720; x <= 720; x += 120){ const a = proj({ x, y: VAULT.y, z: -620 }), b = proj({ x, y: VAULT.y, z: 620 }); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+    for (let z = -600; z <= 600; z += 120){ const a = proj({ x: -720, y: VAULT.y, z }), b = proj({ x: 720, y: VAULT.y, z }); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+    ctx.restore();
+  }
+  function drawVault(){
+    const R = VAULT.r * st.ringScale;
+    const c = proj(VAULT);
+    // projected extents of the outer ring → ellipse for the glow disc
+    let minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+    const N = 120, ringPts = [];
+    for (let i = 0; i < N; i++){ const a = i / N * 6.283 + st.t * .45; const p = proj({ x: Math.cos(a) * R, y: VAULT.y, z: Math.sin(a) * R }); ringPts.push({ p, a }); minx = Math.min(minx, p.x); maxx = Math.max(maxx, p.x); miny = Math.min(miny, p.y); maxy = Math.max(maxy, p.y); }
+    const rx = (maxx - minx) / 2, ry = Math.max(6, (maxy - miny) / 2), ex = (minx + maxx) / 2, ey = (miny + maxy) / 2;
+    st.vaultEl = { x: ex, y: ey, rx, ry };
+    const glow = .35 + st.pulse * .6 + st.hunger * .3;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    // disc
+    ctx.save(); ctx.translate(ex, ey); ctx.scale(1, ry / rx);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx * 1.15);
+    g.addColorStop(0, `rgba(120,170,255,${.55 * glow})`); g.addColorStop(.5, `rgba(77,141,255,${.22 * glow})`); g.addColorStop(1, 'rgba(77,141,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx * 1.15, 0, 6.283); ctx.fill();
+    for (let i = 1; i <= 3; i++){ ctx.strokeStyle = `rgba(120,170,255,${(.12 + st.pulse * .25) / i})`; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(0, 0, rx * (1 - i * .22), 0, 6.283); ctx.stroke(); }
+    ctx.restore();
+    // beam
+    const bw = 70 * k * c.s / (F / CAMZ), top = -40;
+    const bg = ctx.createLinearGradient(0, c.y, 0, top);
+    bg.addColorStop(0, `rgba(140,185,255,${.45 * st.beam})`); bg.addColorStop(.5, `rgba(120,160,255,${.14 * st.beam})`); bg.addColorStop(1, 'rgba(120,160,255,0)');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.moveTo(c.x - bw, c.y); ctx.lineTo(c.x + bw, c.y); ctx.lineTo(c.x + bw * .35, top); ctx.lineTo(c.x - bw * .35, top); ctx.closePath(); ctx.fill();
+    // core
+    const cg = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, 60 * k * st.zoom);
+    cg.addColorStop(0, `rgba(255,255,255,${.7 * glow})`); cg.addColorStop(.3, `rgba(160,200,255,${.4 * glow})`); cg.addColorStop(1, 'rgba(77,141,255,0)');
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(c.x, c.y, 60 * k * st.zoom, 0, 6.283); ctx.fill();
+    // ring particles
+    for (const { p, a } of ringPts){
+      const tw = .5 + .5 * Math.sin(st.t * 3 + a * 5);
+      const r = (1.6 + tw * 1.6) * k * (p.s / (F / CAMZ)) + st.pulse * 2;
+      ctx.fillStyle = `rgba(150,195,255,${.35 + tw * .6})`; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 6.283); ctx.fill();
+    }
+    // inner counter-rotating ring
+    for (let i = 0; i < 60; i++){ const a = i / 60 * 6.283 - st.t * .8; const p = proj({ x: Math.cos(a) * R * .55, y: VAULT.y - 4, z: Math.sin(a) * R * .55 }); const tw = .5 + .5 * Math.sin(st.t * 4 - a * 3); ctx.fillStyle = `rgba(199,182,255,${.3 + tw * .5})`; ctx.beginPath(); ctx.arc(p.x, p.y, (1.2 + tw) * k, 0, 6.283); ctx.fill(); }
+    ctx.restore();
+  }
+  function drawParticles(dt){
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = st.parts.length - 1; i >= 0; i--){
+      const p = st.parts[i];
+      p.pos.x += p.vel.x * dt; p.pos.y += p.vel.y * dt; p.pos.z += p.vel.z * dt;
+      p.vel.x *= 1 - 1.6 * dt; p.vel.z *= 1 - 1.6 * dt; p.vel.y *= 1 - .9 * dt;
+      p.life -= p.decay * dt;
+      if (p.life <= 0){ st.parts.splice(i, 1); continue; }
+      const q = proj(p.pos);
+      ctx.fillStyle = hexA(p.color, Math.max(0, p.life) * .9); ctx.beginPath(); ctx.arc(q.x, q.y, p.size * q.s / (F / CAMZ) * (0.4 + p.life), 0, 6.283); ctx.fill();
+    }
+    ctx.restore();
+  }
+  function fileIcon(f, w, h, shade){
+    const c = f.meta.c, k2 = f.meta.k;
+    ctx.fillStyle = c; rr(ctx, 0, 0, w, 24, 10); ctx.fill(); ctx.fillRect(0, 12, w, 12);
+    ctx.fillStyle = '#fff'; ctx.font = '500 11px JetBrains Mono, ui-monospace, Menlo, monospace'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    ctx.fillText(f.ext.toUpperCase().slice(0, 5), 10, 12);
+    ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.arc(w - 12, 12, 3, 0, 6.283); ctx.fill();
+    const y0 = 36, bodyH = h - 36 - 26;
+    ctx.strokeStyle = 'rgba(20,26,43,.18)'; ctx.lineWidth = 1;
+    if (k2 === 'sheet'){
+      const cols = 4, rows = 5, cw = (w - 20) / cols, rh = bodyH / rows;
+      for (let r = 0; r <= rows; r++){ ctx.beginPath(); ctx.moveTo(10, y0 + r * rh); ctx.lineTo(w - 10, y0 + r * rh); ctx.stroke(); }
+      for (let cc = 0; cc <= cols; cc++){ ctx.beginPath(); ctx.moveTo(10 + cc * cw, y0); ctx.lineTo(10 + cc * cw, y0 + bodyH); ctx.stroke(); }
+      ctx.fillStyle = hexA(c, .35); ctx.fillRect(10, y0, w - 20, rh);
+      ctx.fillStyle = hexA(c, .55); ctx.fillRect(10 + cw * 3, y0 + rh * 2, cw, rh); ctx.fillRect(10 + cw, y0 + rh * 4, cw, rh);
+    } else if (k2 === 'img'){
+      ctx.fillStyle = hexA(c, .18); rr(ctx, 10, y0, w - 20, bodyH, 6); ctx.fill();
+      ctx.fillStyle = hexA(c, .9); ctx.beginPath(); ctx.arc(w - 30, y0 + 18, 7, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(20,26,43,.45)'; ctx.beginPath(); ctx.moveTo(14, y0 + bodyH - 4); ctx.lineTo(42, y0 + 28); ctx.lineTo(60, y0 + 50); ctx.lineTo(74, y0 + 36); ctx.lineTo(w - 14, y0 + bodyH - 4); ctx.closePath(); ctx.fill();
+    } else if (k2 === 'audio'){
+      const n = 16, bw = (w - 20) / n;
+      for (let i = 0; i < n; i++){ const hh = (0.25 + 0.75 * Math.abs(Math.sin(i * 1.7 + f.phase))) * bodyH * .8; ctx.fillStyle = hexA(c, .75); ctx.fillRect(10 + i * bw + 1, y0 + bodyH / 2 - hh / 2, bw - 2, hh); }
+    } else if (k2 === 'slides'){
+      ctx.fillStyle = 'rgba(20,26,43,.55)'; ctx.fillRect(10, y0, w * .5, 5);
+      const vals = [.5, .8, .35, .95, .6];
+      vals.forEach((v, i) => { ctx.fillStyle = hexA(c, .8); const bw = (w - 20) / 5; ctx.fillRect(10 + i * bw + 3, y0 + bodyH - v * (bodyH - 14), bw - 6, v * (bodyH - 14)); });
+    } else {
+      const lines = 6; for (let i = 0; i < lines; i++){ const lw = (w - 20) * (i === 0 ? .55 : [.95, .8, .9, .7, .85][i - 1]); ctx.fillStyle = i === 0 ? 'rgba(20,26,43,.6)' : 'rgba(20,26,43,.22)'; ctx.fillRect(10, y0 + i * (bodyH / lines) + 2, lw, i === 0 ? 6 : 4); }
+    }
+    // name
+    ctx.fillStyle = '#141a2b'; ctx.font = '600 10px Be Vietnam Pro, system-ui, sans-serif'; ctx.textBaseline = 'alphabetic';
+    let name = f.name; while (name.length > 4 && ctx.measureText(name).width > w - 20) name = name.slice(0, -2);
+    if (name !== f.name) name = name.slice(0, -1) + '…';
+    ctx.fillText(name, 10, h - 10);
+    void shade;
+  }
+  function drawFile(f){
+    const hw = f.w / 2 * f.scale, hh = f.h / 2 * f.scale;
+    const local = [{ x: -hw, y: -hh, z: 0 }, { x: hw, y: -hh, z: 0 }, { x: hw, y: hh, z: 0 }, { x: -hw, y: hh, z: 0 }];
+    const P = local.map(c => { const r = rot3(c, f.rot); return proj({ x: f.pos.x + r.x, y: f.pos.y + r.y - f.lift, z: f.pos.z + r.z }); });
+    f.poly = P; f.depth = (P[0].z + P[2].z) / 2;
+    const a = (P[1].x - P[0].x) / f.w, b = (P[1].y - P[0].y) / f.w, c = (P[3].x - P[0].x) / f.h, d = (P[3].y - P[0].y) / f.h;
+    const det = a * d - b * c;
+    if (Math.abs(det) < 1e-4) return;
+    const n = camRot(rot3({ x: 0, y: 0, z: 1 }, f.rot));
+    const shade = .5 + .5 * Math.abs(n.x * LIGHT.x + n.y * LIGHT.y + n.z * LIGHT.z);
+    ctx.save();
+    if (f.glow > 0 || st.hover === f){ ctx.shadowColor = f.meta.c; ctx.shadowBlur = 28 * k; }
+    ctx.transform(a, b, c, d, P[0].x, P[0].y);
+    if (det > 0){
+      ctx.fillStyle = '#f3f6ff'; rr(ctx, 0, 0, f.w, f.h, 10); ctx.fill();
+      ctx.shadowBlur = 0;
+      fileIcon(f, f.w, f.h, shade);
+      ctx.fillStyle = `rgba(8,14,36,${(1 - shade) * .55})`; rr(ctx, 0, 0, f.w, f.h, 10); ctx.fill();
+      if (st.hover === f && f.state === 'float'){ ctx.strokeStyle = f.meta.c; ctx.lineWidth = 3; rr(ctx, 1.5, 1.5, f.w - 3, f.h - 3, 9); ctx.stroke(); }
+    } else {
+      ctx.fillStyle = hexA(f.meta.c, .85); rr(ctx, 0, 0, f.w, f.h, 10); ctx.fill();
+      ctx.fillStyle = `rgba(8,14,36,${(1 - shade) * .6})`; rr(ctx, 0, 0, f.w, f.h, 10); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1; rr(ctx, 6, 6, f.w - 12, f.h - 12, 7); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function frame(dt, now){
+    st.t += dt;
+    st.pulse = Math.max(0, st.pulse - dt * 1.6); st.hunger = Math.max(0, st.hunger - dt * 1.2);
+    cam.baseY += dt * .06;
+    cam.rotY += ((cam.baseY + cam.tx) - cam.rotY) * .06;
+    cam.rotX += ((0.42 + cam.ty) - cam.rotX) * .06;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    drawBackground();
+    // update files
+    for (const f of st.files){
+      if (f.state === 'float'){
+        if (!reduced){
+          f.pos.x = f.base.x + Math.sin(st.t * .7 + f.phase) * 14;
+          f.pos.y = f.base.y + Math.cos(st.t * .5 + f.phase) * 10;
+          f.pos.z = f.base.z + Math.sin(st.t * .6 + f.phase * 1.3) * 18;
+        }
+        f.rot.x += f.spin.x * dt; f.rot.y += f.spin.y * dt; f.rot.z += f.spin.z * dt;
+        f.lift += ((st.hover === f ? 18 : 0) - f.lift) * .15;
+      } else if (f.state === 'drag'){
+        f.rot.x += (0 - f.rot.x) * .12; f.rot.y += (0 - f.rot.y) * .12; f.rot.z += (0 - f.rot.z) * .12;
+      } else if (f.state === 'fly'){
+        f.rot.x += f.spin.x * f.spinMul * dt; f.rot.y += f.spin.y * f.spinMul * dt; f.rot.z += (f.spin.z + .6) * f.spinMul * dt;
+      }
+    }
+    // draw order: far → near; vault sits at y=250, files behind it (z>0) draw before it
+    const live = st.files.filter(f => f.state !== 'gone');
+    for (const f of live) f.depth = camRot(f.pos).z + CAMZ;
+    live.sort((p, q) => q.depth - p.depth);
+    const vz = camRot(VAULT).z + CAMZ;
+    let vaultDrawn = false;
+    for (const f of live){
+      if (!vaultDrawn && f.depth < vz){ drawVault(); vaultDrawn = true; }
+      drawFile(f);
+    }
+    if (!vaultDrawn) drawVault();
+    drawParticles(dt);
+    // hint near vault while dragging
+    const hint = $('#vaultHint');
+    if (st.drag){ hint.style.left = st.vaultEl.x + 'px'; hint.style.top = (st.vaultEl.y - st.vaultEl.ry - 26) + 'px'; hint.classList.add('on'); hint.textContent = st.hunger > .5 ? 'Thả!' : 'Thả vào kho'; }
+    else hint.classList.remove('on');
+    void now;
+  }
+
+  /* --- input --- */
+  function pointInPoly(x, y, P){
+    let inside = false;
+    for (let i = 0, j = P.length - 1; i < P.length; j = i++){
+      const xi = P[i].x, yi = P[i].y, xj = P[j].x, yj = P[j].y;
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+  function hit(x, y){
+    const live = st.files.filter(f => f.state === 'float' && f.poly).sort((p, q) => p.depth - q.depth);
+    for (const f of live) if (pointInPoly(x, y, f.poly)) return f;
+    return null;
+  }
+  function inVault(x, y){
+    const e = st.vaultEl; const dx = (x - e.x) / (e.rx * 1.25), dy = (y - e.y) / (Math.max(e.ry, 30) * 1.6);
+    return dx * dx + dy * dy <= 1;
+  }
+  const pt = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  cv.addEventListener('pointerdown', e => {
+    const p = pt(e); const f = hit(p.x, p.y);
+    if (!f) return;
+    e.preventDefault();
+    f.state = 'drag'; f.glow = 1; f.lift = 0;
+    const r = camRot(f.pos); const zc = r.z + CAMZ;
+    st.drag = { f, zc, sx: p.x, sy: p.y, moved: false, lastX: p.x, lastY: p.y, vx: 0, vy: 0 };
+    tween(f, { scale: 1.15 }, 160);
+    sec.classList.add('grabbing');
+    try { cv.setPointerCapture(e.pointerId); } catch {}
+  });
+  cv.addEventListener('pointermove', e => {
+    const p = pt(e);
+    cam.tx = (p.x / W - .5) * .4; cam.ty = (p.y / H - .5) * .14;
+    if (st.drag){
+      const d = st.drag;
+      if (Math.hypot(p.x - d.sx, p.y - d.sy) > 8) d.moved = true;
+      d.vx = p.x - d.lastX; d.vy = p.y - d.lastY; d.lastX = p.x; d.lastY = p.y;
+      const w = unproj(p.x, p.y - 20, d.zc); d.f.pos.x = w.x; d.f.pos.y = w.y; d.f.pos.z = w.z;
+      st.hunger = inVault(p.x, p.y) ? 1 : Math.max(st.hunger, .2);
+      return;
+    }
+    const f = hit(p.x, p.y);
+    st.hover = f; sec.classList.toggle('hover', !!f);
+  });
+  function release(e){
+    if (!st.drag) return;
+    const d = st.drag, p = pt(e); st.drag = null; sec.classList.remove('grabbing');
+    const f = d.f; tween(f, { scale: 1 }, 200);
+    const throwing = d.moved && d.vy > 6 && inVault(p.x + d.vx * 12, p.y + d.vy * 12);
+    if (!d.moved || inVault(p.x, p.y) || throwing) flyIn(f);
+    else { springBack(f); const v = proj(f.pos); pop('Chưa tới kho', v.x, v.y - 40, false); }
+  }
+  cv.addEventListener('pointerup', release);
+  cv.addEventListener('pointercancel', release);
+  cv.addEventListener('pointerleave', () => { cam.tx = 0; cam.ty = 0; st.hover = null; sec.classList.remove('hover'); });
+  // keyboard: Enter/Space on the stage pulls the next file in
+  cv.tabIndex = 0; cv.setAttribute('aria-label', 'Sân khấu: nhấn Enter để hút file tiếp theo vào kho');
+  cv.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); const f = st.files.find(x => x.state === 'float'); if (f) flyIn(f); } });
+  // own files
+  $('#btnAll').addEventListener('click', suckAll);
+  $('#btnOwn').addEventListener('click', () => $('#ownFiles').click());
+  $('#ownFiles').addEventListener('change', e => { spawnOwn(e.target.files); e.target.value = ''; });
+  let dragDepth = 0;
+  sec.addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; sec.classList.add('dropping'); });
+  sec.addEventListener('dragover', e => { e.preventDefault(); });
+  sec.addEventListener('dragleave', () => { if (--dragDepth <= 0){ dragDepth = 0; sec.classList.remove('dropping'); } });
+  sec.addEventListener('drop', e => { e.preventDefault(); dragDepth = 0; sec.classList.remove('dropping'); if (e.dataTransfer?.files?.length) spawnOwn(e.dataTransfer.files); });
+  $('#skip').addEventListener('click', () => { game.act = 2; deck.show(); });
+
+  function reset(){
+    st.parts = []; st.done = false; st.zoom = 1; st.ringScale = 1; st.beam = .22; st.combo = 0; st.drag = null; st.hover = null;
+    seed();
+  }
+  resize(); seed();
+  addEventListener('resize', resize);
+  return { frame, resize, st, reset, spawnOwn, suckAll };
+})();
+
+/* ============================================================
+   Màn 2: command deck. Six features, one stage, one effect each.
+   ============================================================ */
+const ICONS = {
+  ask: '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>',
+  sql: '<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  graph: '<svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7l7.5 1M7.5 7.5l3.5 8.5M16.5 10l-3.5 6"/></svg>',
+  report: '<svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>',
+  model: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="6" rx="1.5"/><rect x="13" y="14" width="8" height="6" rx="1.5"/><rect x="13" y="4" width="8" height="6" rx="1.5"/><path d="M11 7h2M7 10v7h6"/></svg>',
+  trust: '<svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>'
+};
+
+const deck = (() => {
+  const sec = $('#act2'), stage = $('#deckStage'), cv = $('#fx'), ctx = cv.getContext('2d'), dom = $('#fxDom'), tilesEl = $('#tiles'), resultEl = $('#result');
+  let W = 0, H = 0, DPR = 1, cur = null, timers = [], drawFn = null, hoverFn = null, t0 = 0, shown = false;
+  const done = new Set();
+  const F = FEATURES();
+
+  function resize(){ W = stage.clientWidth; H = stage.clientHeight; DPR = Math.min(2, devicePixelRatio || 1); cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); }
+  function later(ms, fn){ timers.push(setTimeout(fn, reduced ? Math.min(ms, 60) : ms)); }
+  function clear(){ timers.forEach(clearTimeout); timers = []; drawFn = null; hoverFn = null; dom.innerHTML = ''; }
+  function rectOf(el){ const a = stage.getBoundingClientRect(), b = el.getBoundingClientRect(); return { x: b.left - a.left, y: b.top - a.top, w: b.width, h: b.height, cx: b.left - a.left + b.width / 2, cy: b.top - a.top + b.height / 2 }; }
+  function typeInto(el, text, cps, cb){
+    let i = 0; el.textContent = ''; const caret = document.createElement('i'); caret.className = 'caret'; el.appendChild(caret);
+    const step = () => { i++; el.firstChild.nodeValue !== undefined && el.firstChild.nodeType === 3 ? (el.firstChild.nodeValue = text.slice(0, i)) : el.insertBefore(document.createTextNode(text.slice(0, i)), caret); if (i < text.length) later(1000 / cps + (text[i - 1] === ' ' ? 18 : 0), step); else { caret.remove(); cb && cb(); } };
+    later(80, step);
+  }
+  function stream(el, parts, cb){
+    const items = [];
+    for (const p of parts){ if (typeof p === 'string') p.split(/(\s+)/).filter(Boolean).forEach(w => items.push(w)); else items.push(p); }
+    let i = 0; const caret = document.createElement('i'); caret.className = 'caret'; el.appendChild(caret);
+    const step = () => {
+      const it = items[i++]; if (it === undefined){ caret.remove(); cb && cb(); return; }
+      if (typeof it === 'string') el.insertBefore(document.createTextNode(it), caret);
+      else { const c = document.createElement('span'); c.className = 'cite'; c.textContent = it.cite; c.dataset.src = it.src; el.insertBefore(c, caret); }
+      later(typeof it === 'string' ? 30 : 110, step);
+    };
+    step();
+  }
+  function showResult(title, items, tag){
+    resultEl.hidden = false; resultEl.className = 'result';
+    resultEl.innerHTML = `<span class="tag">${tag || 'Hoàn thành'}</span><h3>${title}</h3><ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+  }
+  function idle(){
+    dom.innerHTML = `<div class="idle"><h3>Kho đã nạp ${act1.st.total} file.</h3><p>Chọn một tính năng để xem hệ thống làm gì với chúng. Mỗi ô mở xong là một huy hiệu.</p><span class="arrow">${innerWidth > 900 ? 'Các ô ở bên phải' : 'Các ô ở bên dưới'}</span></div>`;
+    const dots = Array.from({ length: 40 }, (_, i) => ({ a: i / 40 * 6.283, r: rand(.5, 1), s: rand(.4, 1.2), sp: rand(.2, .5) }));
+    drawFn = (c, w, h, t) => {
+      c.save(); c.globalCompositeOperation = 'lighter';
+      for (const d of dots){ const a = d.a + t * d.sp; const x = w / 2 + Math.cos(a) * w * .42 * d.r, y = h / 2 + Math.sin(a) * h * .4 * d.r; c.fillStyle = `rgba(120,160,255,${.25 + .3 * Math.sin(t * 2 + d.a)})`; c.beginPath(); c.arc(x, y, 1.5 + d.s, 0, 6.283); c.fill(); }
+      c.restore();
+    };
+  }
+  function run(id){
+    if (cur === id && !done.has(id)) return;
+    clear(); cur = id; t0 = performance.now(); resize();
+    $$('.tile', tilesEl).forEach(b => b.classList.toggle('on', b.dataset.id === id));
+    resultEl.hidden = true;
+    F[id].run({ ctx, dom, later, rectOf, typeInto, stream, W: () => W, H: () => H, setDraw: fn => drawFn = fn, setHover: fn => hoverFn = fn, finish: () => complete(id) });
+  }
+  function complete(id){
+    const f = F[id];
+    showResult(f.result.title, f.result.items, f.result.tag);
+    if (done.has(id)) return;
+    done.add(id);
+    $(`.tile[data-id="${id}"]`).classList.add('done');
+    $$('#dots i')[done.size - 1].classList.add('on');
+    $('#doneCount').textContent = `${done.size}/6`;
+    addScore(250); toast(`Huy hiệu mới: <b>${f.title}</b>`); vibrate(20);
+    if (done.size === 6) later(600, unlock);
+  }
+  function unlock(){
+    const u = $('#unlock'); if (!u.hidden) return;
+    u.hidden = false; addScore(1000);
+    toast('<b>Trùm cuối đã mở</b> Thưởng 1.000 điểm');
+    u.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+    confetti($('#confetti'));
+  }
+  function confetti(canvas){
+    if (reduced) return;
+    const c = canvas.getContext('2d'); const w = canvas.clientWidth, h = canvas.clientHeight; canvas.width = w * DPR; canvas.height = h * DPR; c.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const cols = ['#ffd166', '#4d8dff', '#a78bfa', '#3ddc97', '#ff5d6c', '#ffffff'];
+    const ps = Array.from({ length: 140 }, () => ({ x: rand(0, w), y: rand(-h, 0), vx: rand(-40, 40), vy: rand(120, 260), r: rand(3, 7), a: rand(0, 6.28), va: rand(-6, 6), col: cols[Math.floor(rand(0, cols.length))] }));
+    let last = performance.now(); const t1 = performance.now();
+    (function loop(now){
+      const dt = Math.min(.05, (now - last) / 1000); last = now; c.clearRect(0, 0, w, h);
+      let alive = false;
+      for (const p of ps){ p.x += p.vx * dt; p.y += p.vy * dt; p.a += p.va * dt; if (p.y < h + 10) alive = true; c.save(); c.translate(p.x, p.y); c.rotate(p.a); c.fillStyle = p.col; c.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); c.restore(); }
+      if (alive && now - t1 < 6000) requestAnimationFrame(loop); else c.clearRect(0, 0, w, h);
+    })(performance.now());
+  }
+  function frame(dt, now){
+    if (!shown) return;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+    if (drawFn) drawFn(ctx, W, H, (now - t0) / 1000, dt);
+  }
+  function show(){
+    if (shown){ sec.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); return; }
+    shown = true; sec.hidden = false; sec.classList.add('in'); resize(); idle();
+    requestAnimationFrame(() => sec.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }));
+  }
+  function reset(){
+    clear(); done.clear(); cur = null; shown = false; sec.hidden = true; resultEl.hidden = true; $('#unlock').hidden = true;
+    $$('.tile', tilesEl).forEach(b => b.classList.remove('done', 'on')); $$('#dots i').forEach(i => i.classList.remove('on')); $('#doneCount').textContent = '0/6';
+  }
+  // tiles
+  for (const id of Object.keys(F)){
+    const f = F[id]; const b = document.createElement('button'); b.type = 'button'; b.className = 'tile'; b.dataset.id = id;
+    b.innerHTML = `<i style="color:${f.color}">${ICONS[f.icon]}</i><span><b>${f.title}</b><small>${f.sub}</small></span><em></em>`;
+    b.addEventListener('click', () => run(id)); tilesEl.appendChild(b);
+  }
+  cv.addEventListener('pointermove', e => { if (hoverFn){ const r = cv.getBoundingClientRect(); hoverFn(e.clientX - r.left, e.clientY - r.top); } });
+  dom.addEventListener('click', e => { const c = e.target.closest('.cite'); if (!c) return; $$('.src', dom).forEach(s => s.classList.toggle('hot', s.dataset.src === c.dataset.src)); $$('.cite', dom).forEach(x => x.classList.toggle('hot', x === c)); });
+  addEventListener('resize', () => { if (shown) resize(); });
+  $('#replay').addEventListener('click', () => { reset(); act1.reset(); game.act = 1; $('#act1').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); });
+  $('#navDeck').addEventListener('click', e => { e.preventDefault(); game.act = 2; show(); });
+  return { show, frame, reset, done, get shown(){ return shown; } };
+})();
+
+/* ---------- the six features ---------- */
+function FEATURES(){
+  const SRC = [
+    { id: 'xlsx', name: 'Doanh_thu_T9_2025.xlsx', c: '#21a366', where: 'sheet Theo_CN, dòng 44', quote: 'Gò Vấp | T8: 412.000.000 | T9: 338.000.000' },
+    { id: 'mp3', name: 'Hop_ban_hang_T9.mp3', c: '#a78bfa', where: 'phút 06:12', quote: '"Gò Vấp nghỉ sửa mặt tiền hai tuần đầu tháng"' },
+    { id: 'pdf', name: 'Hop_dong_NCC_Vinamilk.pdf', c: '#e5484d', where: 'trang 4, điều 3.2', quote: 'Giá nhập tăng 4% từ 01/09/2025' }
+  ];
+  const srcCard = s => `<div class="src" data-src="${s.id}"><b><i style="background:${s.c}"></i>${s.name}</b><span>${s.where}</span><mark>${s.quote}</mark></div>`;
+  const bezier = (c, p0, p1, p2) => { c.beginPath(); c.moveTo(p0.x, p0.y); c.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y); c.stroke(); };
+  const qpt = (p0, p1, p2, t) => ({ x: (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * p1.x + t * t * p2.x, y: (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y });
+
+  return {
+    ask: {
+      title: 'Hỏi đáp có nguồn', sub: 'Hỏi bằng tiếng Việt, trả lời kèm [n]', icon: 'ask', color: '#4d8dff',
+      result: { title: 'Mỗi câu trả lời đi kèm đường đi của nó', items: ['Trợ lý dùng công cụ thật: tìm trong tài liệu, tính trên bảng, tra bản đồ tri thức.', 'Chỉ số [n] do mã kiểm tra trỏ về đúng đoạn gốc, bấm vào là thấy.', 'Không đủ bằng chứng thì từ chối đoán, thay vì bịa.'], tag: 'Huy hiệu: Người hỏi khó' },
+      run(k){
+        k.dom.innerHTML = `<div class="chat"><div class="msg me" id="q"></div><div class="msg ai" id="a" hidden></div><div class="trace" id="tr"><span>Hiểu câu hỏi</span><span>Tra ở đâu</span><span>Tìm được gì</span><span>Kiểm chứng</span><span>Tin cậy</span></div><div class="srcs" id="srcs">${SRC.map(srcCard).join('')}</div></div>`;
+        const tr = $$('#tr span', k.dom), srcs = $$('.src', k.dom);
+        const lit = [];
+        k.typeInto($('#q', k.dom), 'Tháng 9 chi nhánh nào giảm doanh thu so với tháng 8? Vì sao?', 34, () => {
+          tr[0].classList.add('on');
+          k.later(500, () => { tr[1].classList.add('on'); const a = $('#a', k.dom); a.hidden = false; a.innerHTML = '<i class="caret"></i>';
+            k.setDraw((c, w, h, t) => {
+              const A = k.rectOf(a); const from = { x: A.x + 24, y: A.y + A.h };
+              c.save(); c.lineWidth = 2;
+              lit.forEach((s, i) => { const R = k.rectOf(s); const to = { x: R.cx, y: R.y }; const mid = { x: (from.x + to.x) / 2, y: from.y + 30 }; c.strokeStyle = 'rgba(77,141,255,.45)'; bezier(c, from, mid, to); const p = qpt(from, mid, to, (t * 1.1 + i * .33) % 1); c.fillStyle = '#9ec2ff'; c.shadowColor = '#4d8dff'; c.shadowBlur = 12; c.beginPath(); c.arc(p.x, p.y, 4, 0, 6.283); c.fill(); });
+              c.restore();
+            });
+          });
+          srcs.forEach((s, i) => k.later(900 + i * 480, () => { s.classList.add('lit'); lit.push(s); if (i === 0) tr[2].classList.add('on'); }));
+          k.later(2500, () => { tr[3].classList.add('on'); srcs.forEach((s, i) => k.later(i * 200, () => s.classList.add('ok'))); });
+          k.later(3200, () => {
+            const a = $('#a', k.dom); a.innerHTML = '';
+            k.stream(a, ['Chỉ có ', { cite: '1', src: 'xlsx' }, ' Gò Vấp giảm: 412 triệu xuống 338 triệu, tức −18%. Năm chi nhánh còn lại đều tăng 3–9% ', { cite: '1', src: 'xlsx' }, '. Lý do nhiều khả năng là chi nhánh nghỉ sửa mặt tiền hai tuần đầu tháng, theo họp bán hàng ', { cite: '2', src: 'mp3' }, '. Giá nhập cũng tăng 4% từ 01/09 ', { cite: '3', src: 'pdf' }, ' nên biên lợi nhuận bị ép thêm.'],
+              () => { tr[3].classList.add('ok'); tr[4].classList.add('on'); tr[4].textContent = 'Tin cậy 96%'; tr[4].classList.add('ok'); k.later(400, k.finish); });
+          });
+        });
+      }
+    },
+    sql: {
+      title: 'Số liệu tính bằng SQL', sub: 'Hỏi bằng lời, máy viết SQL rồi vẽ', icon: 'sql', color: '#3ddc97',
+      result: { title: 'Số không do model đoán, mà do máy tính', items: ['Câu hỏi được dịch thành SQL chạy trên bảng đã trích từ Excel/CSV của bạn.', 'Biểu đồ và từng con số đều mở ra được phép tính phía sau.', 'Lưu câu hỏi để tháng sau chỉ cần bấm lại.'], tag: 'Huy hiệu: Kế toán tự động' },
+      run(k){
+        k.dom.innerHTML = `<div class="qline" id="q"></div><pre class="code" id="sql"></pre><div class="slot" id="slot"></div><div class="caption" id="cap"></div>`;
+        const lines = ['<span class="kw">SELECT</span> chi_nhanh, <span class="fn">SUM</span>(doanh_thu) <span class="kw">AS</span> t9,', '       <span class="fn">LAG</span>(<span class="fn">SUM</span>(doanh_thu)) <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> chi_nhanh <span class="kw">ORDER BY</span> thang) <span class="kw">AS</span> t8', '<span class="kw">FROM</span> doanh_thu_t9_2025 <span class="kw">WHERE</span> thang <span class="kw">IN</span> (<span class="str">8</span>, <span class="str">9</span>)', '<span class="kw">GROUP BY</span> chi_nhanh, thang <span class="kw">ORDER BY</span> (t9 - t8) / t8;'];
+        const data = [{ n: 'Quận 1', v: 612, d: 6 }, { n: 'Quận 3', v: 455, d: 4 }, { n: 'Quận 7', v: 528, d: 9 }, { n: 'Thủ Đức', v: 398, d: 3 }, { n: 'Gò Vấp', v: 338, d: -18 }, { n: 'Bình Thạnh', v: 471, d: 5 }];
+        const anim = { p: 0, flag: 0 };
+        k.typeInto($('#q', k.dom), 'So doanh thu từng chi nhánh tháng 9 với tháng 8', 40, () => {
+          const pre = $('#sql', k.dom);
+          lines.forEach((l, i) => k.later(200 + i * 380, () => { pre.innerHTML += (i ? '\n' : '') + l; }));
+          k.later(200 + lines.length * 380 + 200, () => {
+            tween(anim, { p: 1 }, 1100, { ease: ease.outBack });
+            $('#cap', k.dom).textContent = 'Doanh thu tháng 9 (triệu đồng), tính trên 1.240 dòng của file Doanh_thu_T9_2025.xlsx.';
+            k.setDraw((c, w, h) => {
+              const R = k.rectOf($('#slot', k.dom)); if (R.h < 40) return;
+              const pad = 8, n = data.length, gap = 10, bw = (R.w - pad * 2 - gap * (n - 1)) / n, maxv = 700, base = R.y + R.h - 22;
+              c.font = '500 11px Be Vietnam Pro, system-ui, sans-serif'; c.textAlign = 'center';
+              data.forEach((d, i) => {
+                const x = R.x + pad + i * (bw + gap); const hh = (R.h - 44) * d.v / maxv * clamp(anim.p, 0, 1.2);
+                const bad = d.d < 0; c.fillStyle = bad ? (anim.flag ? '#ff5d6c' : '#3ddc97') : '#3ddc97';
+                if (bad && anim.flag){ c.shadowColor = '#ff5d6c'; c.shadowBlur = 16; }
+                rr(c, x, base - hh, bw, hh, 4); c.fill(); c.shadowBlur = 0;
+                c.fillStyle = '#eaf0ff'; c.fillText(Math.round(d.v * clamp(anim.p, 0, 1)), x + bw / 2, base - hh - 6);
+                c.fillStyle = '#a9b6d8'; c.fillText(d.n, x + bw / 2, base + 14);
+                if (anim.flag > 0){ c.fillStyle = bad ? '#ff5d6c' : '#3ddc97'; c.font = '600 11px JetBrains Mono, monospace'; c.fillText((d.d > 0 ? '+' : '') + d.d + '%', x + bw / 2, base - hh - 20); c.font = '500 11px Be Vietnam Pro, system-ui, sans-serif'; }
+              });
+              void w; void h;
+            });
+            k.later(1300, () => { anim.flag = 1; $('#cap', k.dom).textContent = 'Gò Vấp là chi nhánh duy nhất giảm (−18%). Bấm vào cột để xem dòng gốc trong Excel.'; });
+            k.later(2200, k.finish);
+          });
+        });
+      }
+    },
+    graph: {
+      title: 'Bản đồ tri thức', sub: 'Người, tổ chức, sản phẩm nối với nhau', icon: 'graph', color: '#a78bfa',
+      result: { title: 'Mọi thứ được nhắc tới, nối lại thành một bản đồ', items: ['Thực thể trích tự động từ Word, PDF, ghi âm, Excel: ai, cái gì, ở đâu.', 'Mỗi nút nhớ nó xuất hiện trong file nào, đoạn nào.', 'Bạn sửa, gộp, xoá được; câu hỏi "liên quan thế nào" tra thẳng trên bản đồ này.'], tag: 'Huy hiệu: Thám tử' },
+      run(k){
+        const T = { org: '#4d8dff', person: '#ffb454', product: '#3ddc97', place: '#a78bfa' };
+        const nodes = [
+          { id: 'GreenMart', t: 'org', r: 16 }, { id: 'Vinamilk', t: 'org', r: 13 }, { id: 'KiotViet', t: 'org', r: 10 },
+          { id: 'Chị Lan (KD)', t: 'person', r: 10 }, { id: 'Anh Hùng (kho)', t: 'person', r: 10 },
+          { id: 'Sữa tươi 1L', t: 'product', r: 10 }, { id: 'Mì Hảo Hảo', t: 'product', r: 9 },
+          { id: 'CN Gò Vấp', t: 'place', r: 11 }, { id: 'CN Quận 7', t: 'place', r: 10 }
+        ];
+        const edges = [['GreenMart', 'Vinamilk', 'mua từ'], ['GreenMart', 'KiotViet', 'bán qua'], ['Chị Lan (KD)', 'GreenMart', 'làm việc'], ['Anh Hùng (kho)', 'GreenMart', 'làm việc'], ['Vinamilk', 'Sữa tươi 1L', 'cung cấp'], ['Sữa tươi 1L', 'CN Gò Vấp', 'bán tại'], ['Mì Hảo Hảo', 'CN Quận 7', 'bán tại'], ['Chị Lan (KD)', 'CN Gò Vấp', 'phụ trách'], ['Anh Hùng (kho)', 'CN Quận 7', 'phụ trách'], ['GreenMart', 'CN Gò Vấp', 'chi nhánh'], ['GreenMart', 'CN Quận 7', 'chi nhánh']];
+        const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
+        const W = k.W(), H = k.H();
+        nodes.forEach((n, i) => { n.x = W / 2 + rand(-6, 6); n.y = H / 2 - 20 + rand(-6, 6); n.vx = Math.cos(i) * 260; n.vy = Math.sin(i * 1.3) * 200; n.a = 0; });
+        const E = edges.map(([a, b, l]) => ({ a: byId[a], b: byId[b], l }));
+        k.dom.innerHTML = `<div class="legend">${Object.entries({ org: 'Tổ chức', person: 'Người', product: 'Sản phẩm', place: 'Địa điểm' }).map(([t, l]) => `<span><i style="background:${T[t]}"></i>${l}</span>`).join('')}</div>`;
+        let hot = null, spot = null;
+        k.setHover((x, y) => { hot = null; for (const n of nodes) if (Math.hypot(n.x - x, n.y - y) < n.r + 8) hot = n; });
+        k.setDraw((c, w, h, t, dt) => {
+          const L = 95 * Math.min(1, w / 520);
+          for (const n of nodes) for (const m of nodes) if (n !== m){ let dx = n.x - m.x, dy = n.y - m.y; let d2 = dx * dx + dy * dy + .01; const f = 9000 / d2; n.vx += dx * f * dt * 4; n.vy += dy * f * dt * 4; }
+          for (const e of E){ const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y, d = Math.hypot(dx, dy) + .01, f = (d - L) * 1.6; e.a.vx += dx / d * f * dt * 4; e.a.vy += dy / d * f * dt * 4; e.b.vx -= dx / d * f * dt * 4; e.b.vy -= dy / d * f * dt * 4; }
+          for (const n of nodes){ n.vx += (w / 2 - n.x) * .35 * dt * 4; n.vy += (h / 2 + 6 - n.y) * .35 * dt * 4; n.vx *= .86; n.vy *= .86; n.x = clamp(n.x + n.vx * dt, 30, w - 30); n.y = clamp(n.y + n.vy * dt, 48, h - 24); n.a = Math.min(1, n.a + dt * 1.5); }
+          const focus = hot || spot;
+          c.lineWidth = 1.2; c.font = '500 10px Be Vietnam Pro, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+          for (const e of E){ const on = focus && (e.a === focus || e.b === focus); c.strokeStyle = on ? 'rgba(255,209,102,.9)' : 'rgba(169,182,216,.28)'; c.beginPath(); c.moveTo(e.a.x, e.a.y); c.lineTo(e.b.x, e.b.y); c.stroke(); if (on || !focus){ c.fillStyle = on ? '#ffd166' : 'rgba(169,182,216,.55)'; c.fillText(e.l, (e.a.x + e.b.x) / 2, (e.a.y + e.b.y) / 2 - 6); } }
+          c.font = '600 11px Be Vietnam Pro, system-ui, sans-serif';
+          for (const n of nodes){ const on = n === focus; const r = n.r * ease.outBack(n.a) * (on ? 1.25 : 1); c.save(); if (on){ c.shadowColor = '#ffd166'; c.shadowBlur = 24; } c.fillStyle = T[n.t]; c.beginPath(); c.arc(n.x, n.y, Math.max(0, r), 0, 6.283); c.fill(); c.restore(); if (on){ c.strokeStyle = '#ffd166'; c.lineWidth = 2; c.beginPath(); c.arc(n.x, n.y, r + 4 + Math.sin(t * 6) * 1.5, 0, 6.283); c.stroke(); } c.fillStyle = '#eaf0ff'; c.fillText(n.id, n.x, n.y + r + 11); }
+          const tip = $('.tip', k.dom); if (tip && spot){ tip.style.left = clamp(spot.x + 16, 8, w - 240) + 'px'; tip.style.top = clamp(spot.y - 70, 8, h - 90) + 'px'; }
+        });
+        k.later(2300, () => { spot = byId['Vinamilk']; const tip = document.createElement('div'); tip.className = 'tip'; tip.innerHTML = '<b>Vinamilk</b>Nhắc trong 3 file: hợp đồng NCC (giá), Excel doanh thu (mã SP), ghi âm họp (phút 09:40).'; k.dom.appendChild(tip); });
+        k.later(4000, k.finish);
+      }
+    },
+    report: {
+      title: 'Báo cáo trong 2 phút', sub: 'AI lập dàn ý, viết từng mục từ số thật', icon: 'report', color: '#ffb454',
+      result: { title: 'Báo cáo tháng viết xong khi bạn pha ly cà phê', items: ['Dàn ý do AI đề xuất, từng mục viết bằng công cụ thật trên dữ liệu của bạn, có [n].', 'Chỉnh như trình soạn thảo, ghim thêm kết quả chat vào.', 'Xuất PDF, Word, Excel, HTML để gửi sếp.'], tag: 'Huy hiệu: Tổng biên tập' },
+      run(k){
+        k.dom.innerHTML = `<div class="page" id="pg"><h4 id="ttl"></h4></div><div class="stamps" id="st"></div>`;
+        const pg = $('#pg', k.dom);
+        const secs = [
+          { h: '1. Tổng quan tháng 9', p: ['Doanh thu toàn hệ thống đạt 2,8 tỷ, tăng 3,4% so với tháng 8 ', { cite: '1', src: 'xlsx' }, '. Năm trong sáu chi nhánh tăng trưởng; Gò Vấp giảm 18% do nghỉ sửa mặt tiền hai tuần ', { cite: '2', src: 'mp3' }, '.'] },
+          { h: '2. Doanh thu theo chi nhánh', mini: [.87, .65, .75, .57, .48, .67], bad: 4 },
+          { h: '3. Rủi ro biên lợi nhuận', p: ['Giá nhập Vinamilk tăng 4% từ 01/09 theo hợp đồng ', { cite: '3', src: 'pdf' }, '. Nếu giữ giá bán, lãi gộp ngành sữa giảm khoảng 1,2 điểm.'] }
+        ];
+        k.typeInto($('#ttl', k.dom), 'Báo cáo kinh doanh tháng 9/2025', 30, () => {
+          secs.forEach((s, i) => k.later(300 + i * 1000, () => {
+            const h5 = document.createElement('h5'); h5.textContent = s.h; pg.appendChild(h5);
+            if (s.mini){ const m = document.createElement('div'); m.className = 'mini'; m.innerHTML = s.mini.map((v, j) => `<i style="height:${v * 100}%;animation-delay:${j * 70}ms" class="${j === s.bad ? 'bad' : ''}"></i>`).join(''); pg.appendChild(m); return; }
+            const sk = document.createElement('div'); sk.className = 'sk'; sk.innerHTML = '<i style="width:92%"></i><i style="width:78%"></i>'; pg.appendChild(sk);
+            k.later(500, () => { const p = document.createElement('p'); sk.replaceWith(p); k.stream(p, s.p); });
+          }));
+          k.later(300 + secs.length * 1000 + 700, () => { const st = $('#st', k.dom); ['PDF', 'DOCX', 'XLSX'].forEach((x, i) => k.later(i * 160, () => { const s = document.createElement('span'); s.textContent = x; if (i === 0) s.className = 'go'; st.appendChild(s); })); });
+          k.later(300 + secs.length * 1000 + 1500, k.finish);
+        });
+      }
+    },
+    model: {
+      title: 'Mô hình dữ liệu từ Excel', sub: 'Sheet thành bảng, khoá tự dò, view cho BI', icon: 'model', color: '#2bb5a0',
+      result: { title: 'Excel của bạn thành một mô hình dữ liệu đúng nghĩa', items: ['Mỗi sheet thành một bảng; quan hệ và logic cột đọc từ công thức, pivot, rồi dò lại trên dữ liệu.', 'Bạn duyệt bằng câu nghiệp vụ, không cần biết SQL.', 'View tính lại sẵn cho Superset, đối chiếu từng dòng với Excel gốc.'], tag: 'Huy hiệu: Kiến trúc sư' },
+      run(k){
+        const T = [
+          { n: 'don_hang', cols: [['ma_don', 'PK'], ['ngay', 'date'], ['ma_sp', 'FK'], ['so_luong', 'int'], ['ma_cn', 'FK']] },
+          { n: 'san_pham', cols: [['ma_sp', 'PK'], ['ten', 'text'], ['gia_ban', 'money'], ['ncc', 'text']] },
+          { n: 'chi_nhanh', cols: [['ma_cn', 'PK'], ['ten', 'text'], ['quan', 'text']] }
+        ];
+        k.dom.innerHTML = `<div class="tables">${T.map((t, i) => `<div class="tbl" style="animation-delay:${i * 180}ms"><b>${t.n}</b><ul>${t.cols.map(c => `<li data-col="${t.n}.${c[0]}" class="${c[1] === 'PK' || c[1] === 'FK' ? 'key' : ''}">${c[0]}<small>${c[1]}</small></li>`).join('')}</ul></div>`).join('')}</div><div class="caption" id="cap">Đọc 3 sheet trong Doanh_thu_T9_2025.xlsx, mỗi sheet thành một bảng Postgres.</div>`;
+        const links = [['don_hang.ma_sp', 'san_pham.ma_sp'], ['don_hang.ma_cn', 'chi_nhanh.ma_cn']];
+        const prog = links.map(() => ({ p: 0, ok: 0 }));
+        k.setDraw((c, w, h) => {
+          c.lineWidth = 2; const badges = [];
+          links.forEach((l, i) => {
+            if (prog[i].p <= 0) return;
+            const A = k.rectOf($(`[data-col="${l[0]}"]`, k.dom)), B = k.rectOf($(`[data-col="${l[1]}"]`, k.dom));
+            const T = k.rectOf($('.tables', k.dom));
+            // route the link down into the free space under the tables, where the badge can sit without covering a column
+            const from = { x: A.x + A.w - 4, y: A.cy }, to = { x: B.x + 4, y: B.cy }, mid = { x: (from.x + to.x) / 2, y: T.y + T.h + 22 + i * 26 };
+            c.strokeStyle = prog[i].ok ? '#3ddc97' : '#ffd166'; c.setLineDash([600]); c.lineDashOffset = 600 * (1 - prog[i].p); c.shadowColor = c.strokeStyle; c.shadowBlur = 8;
+            c.beginPath(); c.moveTo(from.x, from.y); c.quadraticCurveTo(from.x + 30, mid.y, mid.x, mid.y); c.quadraticCurveTo(to.x - 30, mid.y, to.x, to.y); c.stroke(); c.setLineDash([]); c.shadowBlur = 0;
+            if (prog[i].ok) badges.push({ mx: mid.x, my: mid.y, label: l[0].split('.')[1] + ': 1.240/1.240 khớp' });
+          });
+          for (const b of badges){ c.fillStyle = '#0b1226'; rr(c, b.mx - 62, b.my - 10, 124, 20, 10); c.fill(); c.strokeStyle = '#3ddc97'; c.lineWidth = 1; c.stroke(); c.fillStyle = '#3ddc97'; c.font = '500 10px JetBrains Mono, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(b.label, b.mx, b.my); }
+          void w; void h;
+        });
+        k.later(900, () => { $$('.key', k.dom).forEach(li => li.classList.add('glow')); $('#cap', k.dom).textContent = 'Dò khoá: cột nào tham chiếu cột nào, kiểm tra trên toàn bộ dữ liệu.'; });
+        links.forEach((l, i) => k.later(1400 + i * 650, () => tween(prog[i], { p: 1 }, 600, { onDone: () => { prog[i].ok = 1; } })));
+        k.later(3100, () => { $('#cap', k.dom).textContent = 'Hai khoá được kiểm chứng trên 1.240/1.240 dòng. Bạn chỉ cần duyệt bằng một câu nghiệp vụ.'; });
+        k.later(3600, () => { $('#cap', k.dom).remove(); const v = document.createElement('div'); v.className = 'view'; v.innerHTML = '<b>v_doanh_thu_theo_chi_nhanh</b><span>don_hang ⋈ san_pham ⋈ chi_nhanh, có cột lai_gop tính lại. Sẵn sàng cho Superset và đối chiếu từng dòng với Excel.</span>'; k.dom.appendChild(v); });
+        k.later(4300, k.finish);
+      }
+    },
+    trust: {
+      title: 'Trung tâm tin cậy', sub: 'Đo được bao nhiêu câu có nguồn, bao nhiêu lần từ chối', icon: 'trust', color: '#ffd166',
+      result: { title: 'Tin cậy là thứ đo được, không phải lời hứa', items: ['Tỉ lệ câu có nguồn, số lần từ chối đoán, nguồn mâu thuẫn: tính trên hỏi đáp thật của workspace.', 'Câu trả lời liên quan tiền có thể bắt buộc người duyệt trước khi hiện.', 'Người dùng 👍/👎, biên tập viên xem được câu hỏi nào thiếu tài liệu.'], tag: 'Huy hiệu: Người gác cổng' },
+      run(k){
+        const W = k.W(), H = k.H();
+        const cx = W / 2, cy = H * .36, S = Math.min(W, H) * .3;
+        const outline = []; const path = [[0, -1], [.85, -.62], [.85, .1], [0, 1], [-.85, .1], [-.85, -.62]];
+        for (let i = 0; i < 90; i++){ const seg = Math.floor(i / 15), f = (i % 15) / 15; const a = path[seg], b = path[(seg + 1) % 6]; outline.push({ tx: cx + lerp(a[0], b[0], f) * S, ty: cy + lerp(a[1], b[1], f) * S, x: rand(0, W), y: rand(0, H), p: 0 }); }
+        const anim = { p: 0, line: 0, check: 0 };
+        tween(anim, { p: 1 }, 1500, { ease: ease.inOutCubic });
+        k.later(1500, () => tween(anim, { line: 1 }, 600));
+        k.later(2000, () => tween(anim, { check: 1 }, 500));
+        k.dom.innerHTML = `<div class="metrics" id="m">${[['98%', 'câu trả lời có nguồn', 'good', 98, '%'], ['23', 'lần từ chối đoán vì thiếu tài liệu', '', 23, ''], ['4', 'nguồn mâu thuẫn được báo', 'warn', 4, ''], ['2', 'câu về tiền chờ người duyệt', 'warn', 2, '']].map((m, i) => `<div class="metric ${m[2]}" style="animation-delay:${1800 + i * 150}ms"><b class="num" data-to="${m[3]}" data-suf="${m[4]}">0${m[4]}</b><span>${m[1]}</span></div>`).join('')}</div><div class="caption">Số minh hoạ. Trong sản phẩm, các chỉ số này tính trên hỏi đáp thật của workspace bạn.</div>`;
+        $$('.metric b', k.dom).forEach((b, i) => { const o = { v: 0 }; tween(o, { v: +b.dataset.to }, 900, { delay: 1900 + i * 150, onUpdate: () => { b.textContent = Math.round(o.v) + b.dataset.suf; } }); });
+        k.setDraw((c, w, h, t) => {
+          c.save(); c.globalCompositeOperation = 'lighter';
+          for (const o of outline){ const x = lerp(o.x, o.tx, anim.p), y = lerp(o.y, o.ty, anim.p); c.fillStyle = `rgba(255,209,102,${.4 + .5 * anim.p})`; c.beginPath(); c.arc(x, y, 2 + anim.p * 1.2, 0, 6.283); c.fill(); }
+          c.restore();
+          if (anim.line > 0){
+            c.save(); c.strokeStyle = '#ffd166'; c.lineWidth = 2.5; c.shadowColor = '#ffd166'; c.shadowBlur = 18; c.setLineDash([1200]); c.lineDashOffset = 1200 * (1 - anim.line);
+            c.beginPath(); path.forEach((p, i) => { const x = cx + p[0] * S, y = cy + p[1] * S; i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.closePath(); c.stroke();
+            c.fillStyle = `rgba(255,209,102,${.08 + .04 * Math.sin(t * 3)})`; c.fill();
+            if (anim.check > 0){ c.strokeStyle = '#3ddc97'; c.shadowColor = '#3ddc97'; c.lineWidth = 4; c.setLineDash([200]); c.lineDashOffset = 200 * (1 - anim.check); c.beginPath(); c.moveTo(cx - S * .32, cy - S * .02); c.lineTo(cx - S * .08, cy + S * .22); c.lineTo(cx + S * .36, cy - S * .3); c.stroke(); }
+            c.restore();
+          }
+          void w; void h;
+        });
+        k.later(3400, k.finish);
+      }
+    }
+  };
+}
+
+/* ============================================================
+   Waitlist form
+   ============================================================ */
+$('#wl').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('#wlEmail').value.trim(), q = $('#wlQ').value.trim(), err = $('#wlErr');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.hidden = false; err.textContent = 'Email chưa đúng, bạn xem lại giúp.'; $('#wlEmail').focus(); return; }
+  err.hidden = true; $('#wlBtn').disabled = true;
+  const row = { email, q, score: game.score, badges: deck.done.size, at: new Date().toISOString(), ref: new URLSearchParams(location.search).get('ref') || '' };
+  const list = store.get('hs_wow_waitlist') || []; list.push(row); store.set('hs_wow_waitlist', list);
+  if (CONFIG.ENDPOINT){ try { await fetch(CONFIG.ENDPOINT, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ type: 'waitlist', ...row }) }); } catch {} }
+  $('#wl').innerHTML = `<div class="ok"><b>Đã giữ chỗ cho ${email.replace(/[<>&]/g, '')}.</b><span>Khi tới lượt, bạn nhận email kèm link workspace riêng${q ? ' và câu trả lời cho câu hỏi bạn vừa ghi' : ''}.</span></div>`;
+  addScore(300); toast('Giữ chỗ thành công <b>+300</b>');
+});
+
+/* ============================================================
+   Main loop, visibility, hot reload state
+   ============================================================ */
+let last = performance.now(), act1Visible = true;
+new IntersectionObserver(en => { act1Visible = en[0].isIntersecting; }, { threshold: .02 }).observe($('#act1'));
+function loop(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  stepTweens(now);
+  if (!document.hidden){ if (act1Visible) act1.frame(dt, now); deck.frame(dt, now); }
+  requestAnimationFrame(loop);
+}
+function start(saved){
+  if (saved && saved.act === 2){ act1.suckAll(); }
+  requestAnimationFrame(loop);
+}
+try { window.claude?.hot?.snapshot?.(() => ({ act: game.act })); } catch {}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
