@@ -1,0 +1,1100 @@
+<title>Hỏi Số</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: airy white page with soft mint/yellow washes; the chat demo sits right under a short headline so the first screen already shows the product. */
+:root{
+  --bg:#ffffff; --bg-2:#f3faf6; --wash-1:#dff5ea; --wash-2:#fff1c2; --surface:#ffffff; --line:#e3ebe6; --ink:#1f2d3a; --ink-2:#55657a; --ink-3:#8c9aab;
+  --accent:#12a37a; --accent-ink:#ffffff; --accent-soft:#e2f6ee; --accent-deep:#0b7d5c;
+  --sun:#ffc63d; --sun-soft:#fff5d6; --good:#12a37a; --good-soft:#e2f6ee; --bad:#e2533d; --bad-soft:#fdeae6;
+  --bubble:#12a37a; --bubble-ink:#ffffff; --card:#f4f8f6; --s1:#12a37a; --s2:#ff9f1c;
+  --font-h:'Plus Jakarta Sans',"Segoe UI",Roboto,Arial,sans-serif; --font:'Nunito Sans',"Segoe UI",Roboto,Arial,sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0f1715; --bg-2:#141f1b; --wash-1:#15302a; --wash-2:#332b12; --surface:#162220; --line:#27352f; --ink:#eaf2ee; --ink-2:#a9b8b0; --ink-3:#73847b; --accent:#36c79a; --accent-ink:#06211a; --accent-soft:#17342a; --accent-deep:#8fe3c6; --sun:#f0bb3e; --sun-soft:#3a3114; --good:#36c79a; --good-soft:#17342a; --bad:#f07a66; --bad-soft:#3a1f1a; --bubble:#36c79a; --bubble-ink:#06211a; --card:#1d2a26; --s1:#36c79a; --s2:#f6a94a; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#0f1715; --bg-2:#141f1b; --wash-1:#15302a; --wash-2:#332b12; --surface:#162220; --line:#27352f; --ink:#eaf2ee; --ink-2:#a9b8b0; --ink-3:#73847b; --accent:#36c79a; --accent-ink:#06211a; --accent-soft:#17342a; --accent-deep:#8fe3c6; --sun:#f0bb3e; --sun-soft:#3a3114; --good:#36c79a; --good-soft:#17342a; --bad:#f07a66; --bad-soft:#3a1f1a; --bubble:#36c79a; --bubble-ink:#06211a; --card:#1d2a26; --s1:#36c79a; --s2:#f6a94a; color-scheme:dark; }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img,svg{max-width:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3,h4{margin:0;font-family:var(--font-h);font-weight:800;letter-spacing:-.02em;text-wrap:balance;line-height:1.12}
+h1{font-size:clamp(1.9rem,5.4vw,3.3rem)}
+h2{font-size:clamp(1.4rem,2.8vw,2.1rem)}
+h3{font-size:1.1rem;font-weight:700}
+p{margin:0}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:where(button,a,input,select):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px}
+.narrow{max-width:760px;margin-inline:auto}
+.muted{color:var(--ink-2)}
+.small{font-size:.875rem}
+.num{font-variant-numeric:tabular-nums}
+mark{background:linear-gradient(transparent 50%,var(--sun-soft) 50%);color:inherit;padding:0 .1em}
+.ic{width:1.15em;height:1.15em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:1px solid transparent;border-radius:14px;padding:13px 22px;font-weight:700;font-size:1rem;text-decoration:none;line-height:1.1;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s,box-shadow .15s}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 8px 20px -10px rgba(18,163,122,.7)}
+.btn-primary:hover{background:var(--accent-deep);color:#fff}
+.btn-ghost{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--ink-3)}
+.btn-sun{background:var(--sun);color:#3a2a00}
+.btn-sm{padding:9px 14px;font-size:.9rem;border-radius:10px}
+.btn-link{background:none;border:0;padding:0;color:var(--accent-deep);font-weight:700;display:inline-flex;align-items:center;gap:6px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px)}
+.top .wrap{display:flex;align-items:center;gap:24px;min-height:58px}
+.brand{font-family:var(--font-h);font-weight:800;letter-spacing:-.02em;text-decoration:none;font-size:1.1rem;display:flex;align-items:center;gap:8px}
+.brand i{width:28px;height:28px;border-radius:9px;background:var(--accent);color:#fff;display:inline-grid;place-items:center;font-style:normal;font-weight:800;font-size:.85rem}
+.top nav{margin-left:auto;display:flex;align-items:center;gap:22px;font-size:.92rem}
+.top nav a:not(.btn){text-decoration:none;color:var(--ink-2);font-weight:600}
+.top nav a:not(.btn):hover{color:var(--ink)}
+@media (max-width:720px){.top nav a:not(.btn){display:none}}
+
+/* hero: short, demo visible on first screen */
+.hero{position:relative;padding-block:clamp(22px,5vw,56px) 18px;text-align:center}
+.hero::before{content:"";position:absolute;inset:-80px 0 0;z-index:-1;background:radial-gradient(60% 55% at 20% 20%,var(--wash-1),transparent 70%),radial-gradient(45% 45% at 85% 25%,var(--wash-2),transparent 70%)}
+.hero .narrow{display:grid;gap:14px;justify-items:center}
+.hero .sub{font-size:clamp(1rem,1.6vw,1.18rem);color:var(--ink-2);max-width:32em}
+.hero .cta{display:flex;flex-wrap:wrap;gap:10px 18px;justify-content:center;align-items:center;margin-top:4px}
+.hero .fine{font-size:.84rem;color:var(--ink-3);display:inline-flex;gap:6px;align-items:center}
+@media (max-width:480px){.hero{padding-top:18px}.hero .sub{font-size:.98rem}.hero .cta .btn-primary{width:100%}}
+
+/* use-case tabs with icons */
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:none;margin-inline:-20px;padding-inline:20px}.tabs::-webkit-scrollbar{display:none}}
+.tab{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 14px 9px 10px;font-size:.9rem;font-weight:700;white-space:nowrap;color:var(--ink-2)}
+.tab .ic{width:1.3em;height:1.3em}
+.tab:hover{border-color:var(--accent);color:var(--accent-deep)}
+.tab.active{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.persona{display:none}
+
+/* 4 hint tiles */
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.step{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;background:var(--bg-2);color:var(--ink-3);font-size:.86rem;font-weight:700;min-width:0;transition:background .2s,color .2s;position:relative}
+.step .ic{width:1.3em;height:1.3em;flex:none}
+.step b{flex:none;position:absolute;left:-4px;top:-6px;width:18px;height:18px;border-radius:50%;background:var(--surface);border:1px solid var(--line);color:var(--ink-3);display:grid;place-items:center;font-size:.66rem;font-weight:800}
+.step span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step.on{background:var(--sun-soft);color:#3a2a00}.step.on b{background:var(--sun);border-color:var(--sun);color:#3a2a00}
+.step.done{color:var(--accent-deep);background:var(--accent-soft)}.step.done b{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (max-width:600px){.steps{display:flex;gap:6px}.step{flex:0 0 auto;padding:8px 10px;justify-content:center}.step span{display:none}.step.on{flex:1 1 auto}.step.on span{display:inline}}
+
+/* chat window */
+.window{background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:0 30px 70px -36px rgba(31,45,58,.45);overflow:hidden;position:relative}
+.wbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg-2)}
+.wbar .ava{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:var(--font-h);font-weight:800;font-size:.9rem;flex:none}
+.wbar .who{display:grid;line-height:1.2;min-width:0}
+.wbar .who b{font-size:.95rem}
+.wbar .who span{font-size:.76rem;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wbar .state{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:.8rem;color:var(--ink-3);white-space:nowrap}
+.wbar .live i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-right:6px;animation:pulse 1.2s infinite}
+.chat{padding:16px;display:grid;gap:14px;min-height:280px;align-content:start;background:var(--surface)}
+@media (max-width:600px){.chat{padding:12px;min-height:220px}}
+.msg{display:flex;gap:10px;max-width:100%}
+.msg.me{justify-content:flex-end}
+.bubble{background:var(--bubble);color:var(--bubble-ink);border-radius:18px 18px 4px 18px;padding:11px 16px;max-width:85%;font-size:.98rem;animation:pop .25s ease-out;font-weight:600}
+.msg.sys .bubble{background:var(--card);color:var(--ink);border-radius:18px 18px 18px 4px;font-weight:400}
+@keyframes pop{from{transform:translateY(6px);opacity:0}to{transform:none;opacity:1}}
+.filemsg{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;max-width:92%;animation:pop .35s ease-out;min-width:0}
+.filemsg .fic{flex:none;width:42px;height:42px;border-radius:12px;background:var(--good-soft);color:var(--good);display:grid;place-items:center;font-weight:800;font-size:.7rem;font-family:var(--font-h)}
+.filemsg .nm{font-weight:700;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.filemsg .meta{font-size:.82rem;color:var(--ink-2)}
+.filemsg .meta b{color:var(--good);font-weight:700}
+.cols{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.col{font-size:.72rem;padding:3px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.col.date{border-color:#bcd3ff}.col.number{border-color:#9fdcc4}.col.category{border-color:#ffd9a8}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px 18px 18px 4px;padding:14px 16px;display:grid;gap:12px;max-width:94%;min-width:0;animation:pop .3s ease-out;box-shadow:0 10px 30px -22px rgba(31,45,58,.35)}
+.card .lead{font-family:var(--font-h);font-weight:700;font-size:1.02rem}
+.thinking{display:inline-flex;gap:4px;padding:12px 16px;background:var(--card);border-radius:18px 18px 18px 4px}
+.thinking i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);animation:bounce 1s infinite}
+.thinking i:nth-child(2){animation-delay:.15s}.thinking i:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
+.chart{position:relative;height:210px;min-width:0;background:var(--bg-2);border-radius:12px;padding:8px}
+@media (max-width:600px){.chart{height:190px}}
+.chart canvas{max-width:100%}
+.answer{display:grid;gap:6px;font-size:.95rem}
+.answer b{font-weight:700}
+.up{color:var(--good);font-weight:700}.down{color:var(--bad);font-weight:700}
+.foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:.8rem;color:var(--ink-3);border-top:1px solid var(--line);padding-top:10px}
+.foot .btn-link{font-size:.84rem}
+.cite{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:5px;background:var(--accent-soft);color:var(--accent-deep);font-family:var(--mono);font-size:.68rem;border:0;vertical-align:middle;margin-left:2px;cursor:pointer}
+.source{border:1px solid var(--line);border-left:3px solid var(--sun);padding:10px 12px;background:var(--bg-2);border-radius:10px;font-size:.82rem;color:var(--ink-2);display:grid;gap:8px}
+.source .tbl{overflow-x:auto}
+.source table{border-collapse:collapse;font-family:var(--mono);font-size:.7rem;width:100%}
+.source th,.source td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+details.sql{border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+details.sql summary{list-style:none;cursor:pointer;padding:7px 12px;font-size:.78rem;color:var(--ink-3)}
+details.sql summary::-webkit-details-marker{display:none}
+details.sql pre{margin:0;padding:0 12px 10px;font-family:var(--mono);font-size:.72rem;line-height:1.5;overflow-x:auto;color:var(--ink-2)}
+details.sql b{color:var(--accent-deep);font-weight:500}
+.table-wrap{overflow-x:auto}
+table.plain{border-collapse:collapse;width:100%;font-size:.84rem}
+table.plain th,table.plain td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.plain th{font-weight:700;color:var(--ink-2);font-size:.76rem}
+table.plain td.n,table.plain th.n{text-align:right}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}
+.kpi{background:var(--bg-2);border-radius:12px;padding:10px 12px;display:grid;gap:2px}
+.kpi .l{font-size:.72rem;color:var(--ink-3)}.kpi .v{font-family:var(--font-h);font-weight:800;font-size:1.15rem;letter-spacing:-.01em}.kpi .d{font-size:.76rem}
+.report{display:grid;gap:12px}
+.report-head h3{font-size:1.15rem}
+.sec{display:grid;gap:10px;padding-top:6px;border-top:1px solid var(--line)}
+.sec h4{font-size:.98rem}
+.composer{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:var(--surface)}
+@media (max-width:600px){.composer{padding:10px 12px}}
+.composer input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg-2);border-radius:999px;padding:12px 16px;font:inherit;font-size:16px;color:var(--ink)}
+.composer input::placeholder{color:var(--ink-3)}
+.composer .btn{border-radius:999px}
+.sugg{display:flex;gap:6px;padding:10px 16px 0;flex-wrap:wrap}
+@media (max-width:600px){.sugg{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-inline:12px}.sugg::-webkit-scrollbar{display:none}}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:7px 12px;font-size:.84rem;font-weight:600;line-height:1.2;white-space:nowrap}
+.chip:hover{border-color:var(--accent);color:var(--accent-deep)}
+.chip.active{border-color:var(--accent);color:var(--accent-deep);background:var(--accent-soft)}
+.drop{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 16px 14px;border:1.5px dashed var(--accent);border-radius:14px;padding:13px;color:var(--accent-deep);font-size:.92rem;font-weight:700;cursor:pointer;text-align:center;background:var(--accent-soft)}
+.drop:hover,.drop.over{background:var(--wash-1)}
+.drop .ic{width:1.4em;height:1.4em}
+.drop small{font-weight:400;color:var(--ink-2)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+@media (max-width:600px){.drop{margin:0 12px 12px;flex-direction:column;gap:4px}}
+.caption{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--sun-soft);color:#3a2a00;font-size:.9rem;font-weight:700;border-top:1px solid var(--line)}
+.caption .ic{width:1.3em;height:1.3em}
+.caption .btn-link{margin-left:auto;font-size:.84rem;white-space:nowrap;color:#3a2a00}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--surface) 78%,transparent);backdrop-filter:blur(4px);padding:20px;z-index:3}
+.overlay .box{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:grid;gap:12px;justify-items:center;text-align:center;max-width:380px;width:100%;box-shadow:0 20px 50px -20px rgba(31,45,58,.35)}
+.overlay h3{font-size:1.25rem}
+.overlay .row{display:grid;gap:8px;width:100%}
+.typing::after{content:"";display:inline-block;width:2px;height:1em;background:var(--ink);margin-left:2px;vertical-align:-2px;animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.alert{padding:10px 14px;border-radius:12px;background:var(--sun-soft);font-size:.9rem}
+@media (prefers-reduced-motion:reduce){.bubble,.filemsg,.card{animation:none}.thinking i,.wbar .live i,.typing::after{animation:none}}
+
+/* sections */
+section.block{padding-block:clamp(40px,7vw,80px)}
+section.tint{background:var(--bg-2)}
+.sec-head{text-align:center;display:grid;gap:8px;max-width:40em;margin:0 auto 28px}
+.sec-head p{color:var(--ink-2);font-size:1rem}
+.cases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.cases{grid-template-columns:1fr}}
+.case{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:12px;align-content:start}
+.case .ch{display:flex;align-items:center;gap:10px}
+.case .ch .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--sun-soft);color:#7a5a00;flex:none}
+.case .ch .ico .ic{width:1.3em;height:1.3em}
+.case h3{font-size:1.02rem}
+.case p{color:var(--ink-3);font-size:.84rem}
+.case ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.case li button{width:100%;text-align:left;border:1px solid var(--line);background:var(--bg-2);border-radius:12px;padding:10px 12px;font-size:.92rem;font-weight:600;display:flex;gap:10px;align-items:center;color:var(--ink)}
+.case li button .ic{color:var(--accent);width:1.2em;height:1.2em}
+.case li button::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--ink-3);border-top:2px solid var(--ink-3);transform:rotate(45deg);flex:none}
+.case li button:hover{border-color:var(--accent);background:var(--accent-soft)}
+.ba{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:860px;margin-inline:auto}
+@media (max-width:640px){.ba{grid-template-columns:1fr}}
+.ba > div{border-radius:18px;padding:22px;display:grid;gap:10px;align-content:start}
+.ba .before{background:var(--surface);border:1px solid var(--line)}
+.ba .after{background:var(--accent-soft)}
+.ba ul{margin:0;padding-left:0;list-style:none;display:grid;gap:8px;color:var(--ink-2);font-size:.95rem}
+.ba li{display:flex;gap:10px;align-items:flex-start}
+.ba li .ic{margin-top:3px}
+.ba .before li .ic{color:var(--bad)}.ba .after li .ic{color:var(--good)}
+.ba .t{font-family:var(--font-h);font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+.why{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+@media (max-width:720px){.why{grid-template-columns:1fr;gap:16px}}
+.why > div{display:grid;gap:8px;padding:20px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.why .ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-deep)}
+.why .ico .ic{width:1.4em;height:1.4em}
+.why p{color:var(--ink-2);font-size:.93rem}
+.pricing{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:760px;margin-inline:auto}
+@media (max-width:600px){.pricing{grid-template-columns:1fr}}
+.plan{border:1px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:10px;background:var(--surface)}
+.plan.pro{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.plan .name{font-size:.78rem;color:var(--ink-3);font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.plan .price{font-family:var(--font-h);font-size:1.9rem;font-weight:800;letter-spacing:-.02em}
+.plan .price small{font-family:var(--font);font-size:.9rem;font-weight:600;color:var(--ink-3)}
+.plan ul{margin:0;padding-left:0;list-style:none;display:grid;gap:7px;color:var(--ink-2);font-size:.95rem}
+.plan li{display:flex;gap:8px;align-items:center}.plan li .ic{color:var(--good)}
+.faq{max-width:760px;margin-inline:auto}
+.faq details{border-top:1px solid var(--line);padding:15px 0}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px;font-size:1rem}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--ink-3);flex:none}
+.faq details[open] summary::after{content:"–"}
+.faq details p{margin-top:8px;color:var(--ink-2);font-size:.95rem}
+.final{text-align:center;display:grid;gap:14px;justify-items:center;background:linear-gradient(135deg,var(--wash-1),var(--wash-2));border-radius:24px;padding:clamp(28px,5vw,48px)}
+.final p{color:var(--ink-2);max-width:32em;font-size:1rem}
+footer{padding-block:28px 40px;color:var(--ink-3);font-size:.84rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
+
+/* mobile bar */
+.mbar{position:fixed;left:0;right:0;bottom:0;z-index:15;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:none}
+.mbar .btn{width:100%}
+@media (max-width:720px){.mbar.show{display:block}body.has-mbar{padding-bottom:72px}}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(20,30,26,.5)}
+.modal .box{position:relative;background:var(--surface);color:var(--ink);border-radius:20px;max-width:480px;width:100%;padding:24px;display:grid;gap:14px;max-height:calc(100vh - 32px);overflow:auto}
+@media (max-width:600px){.modal{place-items:end;padding:0}.modal .box{border-radius:20px 20px 0 0;max-height:92vh;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}}
+.modal h3{font-size:1.3rem}
+.modal .x{position:absolute;right:14px;top:10px;border:0;background:transparent;font-size:1.6rem;color:var(--ink-3);line-height:1}
+.field{display:grid;gap:6px}
+.field label{font-size:.88rem;font-weight:700}
+.field input:not([type=radio]):not([type=checkbox]),.field select{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;font:inherit;font-size:16px;color:var(--ink);width:100%}
+.radios{display:flex;flex-wrap:wrap;gap:8px}
+.radios label{border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:.86rem;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.radios input[type=radio]{margin:0;width:16px;height:16px;flex:none;accent-color:var(--accent)}
+.radios label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent-deep)}
+.err{color:var(--bad);font-size:.86rem}
+.thanks{display:grid;gap:12px}
+.copy{display:flex;gap:8px}
+.copy input{flex:1;min-width:0;font-family:var(--mono);font-size:.78rem}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.88rem;z-index:60;max-width:calc(100vw - 32px);text-align:center}
+
+/* results */
+.results{padding-block:32px;display:grid;gap:18px}
+.results .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.results .card{border-radius:12px;max-width:none;animation:none;background:var(--surface);border:1px solid var(--line);box-shadow:none}
+.results .card h3{font-size:.92rem;color:var(--ink-2)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.bar.b i{background:var(--s2)}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0 4 4m-4-4-4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/><path d="M12 11v7m0 0-3-3m3 3 3-3"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 10 5 4h14l1 6"/><path d="M4 10c0 2 1.5 3 3 3s3-1 3-3c0 2 1.5 3 3 3s3-1 3-3c0 2 1.5 3 3 3s3-1 3-3"/><path d="M5 13v7h14v-7M10 20v-5h4v5"/></symbol>
+  <symbol id="i-mega" viewBox="0 0 24 24"><path d="M4 10v4h3l7 4V6l-7 4z"/><path d="M17 9a4 4 0 0 1 0 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6-5.5 6-11a6 6 0 0 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></symbol>
+  <symbol id="i-vn" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6 4.4 2.3 7L12 16l-6.3 4.4 2.3-7L2 9h7.6z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14"/><path d="M21 3 14 21l-4-7-7-4z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><i>Σ</i><span class="brandRef">Hỏi Số</span></a>
+    <nav>
+      <a href="#demo">Xem thử</a>
+      <a href="#cases">Hỏi được gì</a>
+      <a href="#pricing">Giá</a>
+      <a href="#waitlist" class="btn btn-ghost btn-sm" data-cta="top"><svg class="ic"><use href="#i-spark"/></svg>Giữ chỗ</a>
+    </nav>
+  </div>
+</header>
+
+<main id="landing">
+<section class="hero" id="top">
+  <div class="wrap narrow">
+    <h1 data-variant="a">Có file Excel bán hàng? <mark>Hỏi gì cũng ra số.</mark></h1>
+    <h1 data-variant="b">Báo cáo tháng từ Excel, <mark>xong trong 2 phút.</mark></h1>
+    <p class="sub" data-variant="a">Thả file vào, hỏi như nhắn tin. Có số đúng, có biểu đồ, có luôn chỗ lấy số.</p>
+    <p class="sub" data-variant="b">Thả file xuất từ Shopee, KiotViet, Misa vào. Có biểu đồ, nhận xét, số nào cũng chỉ rõ nguồn.</p>
+    <div class="cta">
+      <a href="#demo" class="btn btn-primary" data-cta="hero"><svg class="ic"><use href="#i-upload"/></svg>Thử với file của tôi</a>
+      <a href="#demo" class="btn-link" data-cta="hero2" data-watch><svg class="ic"><use href="#i-play"/></svg>Xem demo 30 giây</a>
+    </div>
+    <p class="fine"><svg class="ic"><use href="#i-lock"/></svg>Không cần đăng ký. File nằm nguyên trên máy anh chị.</p>
+  </div>
+</section>
+
+<section class="wrap" id="demo">
+  <div class="tabs" id="tabs">
+    <button class="tab" data-case="shopee"><svg class="ic"><use href="#i-bag"/></svg>Bán trên sàn</button>
+    <button class="tab" data-case="kiotviet"><svg class="ic"><use href="#i-store"/></svg>Chuỗi cửa hàng</button>
+    <button class="tab" data-case="ads"><svg class="ic"><use href="#i-mega"/></svg>Chạy quảng cáo</button>
+    <button class="tab" data-case="upload"><svg class="ic"><use href="#i-file"/></svg>File của tôi</button>
+  </div>
+  <p class="persona" id="persona" hidden></p>
+  <div class="steps" id="steps">
+    <div class="step" data-step="1"><b>1</b><svg class="ic"><use href="#i-upload"/></svg><span>Thả file</span></div>
+    <div class="step" data-step="2"><b>2</b><svg class="ic"><use href="#i-chat"/></svg><span data-variant="a">Hỏi</span><span data-variant="b">Bấm làm</span></div>
+    <div class="step" data-step="3"><b>3</b><svg class="ic"><use href="#i-chart"/></svg><span data-variant="a">Có số</span><span data-variant="b">Máy viết</span></div>
+    <div class="step" data-step="4"><b>4</b><svg class="ic"><use href="#i-eye"/></svg><span data-variant="a">Xem nguồn</span><span data-variant="b">Xuất PDF</span></div>
+  </div>
+  <div class="window">
+    <div class="wbar">
+      <span class="ava">Σ</span>
+      <div class="who"><b class="brandRef">Hỏi Số</b><span id="fileName">Chưa có file</span></div>
+      <span class="state"><span class="live" id="liveState" hidden><i></i>Đang chạy thử</span></span>
+    </div>
+    <div class="chat" id="chat"></div>
+    <div id="composerA" hidden>
+      <div class="sugg" id="sugg"></div>
+      <form class="composer" id="askForm"><input id="askInput" type="text" placeholder="Hỏi gì về file này cũng được..." maxlength="200" autocomplete="off"><button class="btn btn-primary btn-sm" type="submit" aria-label="Gửi"><svg class="ic"><use href="#i-send"/></svg></button></form>
+    </div>
+    <div id="composerB" hidden><div class="composer"><button class="btn btn-primary" id="makeReport" style="flex:1"><svg class="ic"><use href="#i-spark"/></svg>Làm báo cáo tháng</button></div></div>
+    <label class="drop" id="drop"><svg class="ic"><use href="#i-upload"/></svg><span>Thả file .xlsx / .csv của anh chị vào đây <small>· hoặc bấm để chọn</small></span><input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.xlsm"></label>
+    <div class="caption" id="caption" hidden><svg class="ic"><use href="#i-spark"/></svg><span id="captionText"></span><button class="btn-link" id="skipBtn">Tự thử</button></div>
+    <div class="overlay" id="overlay" hidden>
+      <div class="box">
+        <h3>Đến lượt anh chị</h3>
+        <div class="row"><button class="btn btn-primary" id="ovUpload"><svg class="ic"><use href="#i-upload"/></svg>Thả file của tôi</button><button class="btn btn-ghost" id="ovSample"><svg class="ic"><use href="#i-chat"/></svg>Hỏi tiếp trên file mẫu</button></div>
+        <p class="small muted">Không cần đăng ký. File không tải đi đâu.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="cases">
+  <div class="wrap">
+    <div class="sec-head"><h2>Anh chị hay cần hỏi gì?</h2><p>Bấm một câu, máy chạy thử ngay.</p></div>
+    <div class="cases" id="caseCards"></div>
+  </div>
+</section>
+
+<section class="block tint">
+  <div class="wrap">
+    <div class="sec-head"><h2>Trước đây và bây giờ</h2></div>
+    <div class="ba">
+      <div class="before"><h3>Cuối tháng trước đây</h3><ul><li><svg class="ic"><use href="#i-x"/></svg>Kéo pivot, lọc đi lọc lại</li><li><svg class="ic"><use href="#i-x"/></svg>Vẽ biểu đồ xong còn kiểm lại số</li><li><svg class="ic"><use href="#i-x"/></svg>Sếp hỏi "số này ở đâu ra?" lại mở file dò</li></ul><div class="t">Mất cả buổi</div></div>
+      <div class="after"><h3>Với Hỏi Số</h3><ul><li><svg class="ic"><use href="#i-check"/></svg>Thả file, hỏi bằng lời thường</li><li><svg class="ic"><use href="#i-check"/></svg>Có số, có biểu đồ ngay</li><li><svg class="ic"><use href="#i-check"/></svg>Bấm là thấy dòng gốc, xuất PDF gửi đi</li></ul><div class="t">Khoảng 2 phút</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><h2>Vì sao tin được con số?</h2></div>
+    <div class="why">
+      <div><span class="ico"><svg class="ic"><use href="#i-calc"/></svg></span><h3>Không bịa số</h3><p>Máy tính thật trên bảng của anh chị. AI chỉ lo hiểu câu hỏi. Thiếu dữ liệu thì nói thiếu.</p></div>
+      <div><span class="ico"><svg class="ic"><use href="#i-pin"/></svg></span><h3>Số nào cũng chỉ được nguồn</h3><p>Sếp hỏi "số này ở đâu ra?", bấm một cái là thấy sheet, cột, dòng.</p></div>
+      <div><span class="ico"><svg class="ic"><use href="#i-vn"/></svg></span><h3>Ăn được file kiểu Việt Nam</h3><p>Dấu chấm hàng nghìn, ngày 31/12, tiêu đề nằm dòng 5. Thả nguyên file, không cần dọn.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block tint" id="pricing">
+  <div class="wrap">
+    <div class="sec-head"><h2>Giá khi ra mắt</h2><p>Dùng thử miễn phí, không cần thẻ.</p></div>
+    <div class="pricing">
+      <div class="plan"><span class="name">Miễn phí</span><span class="price">0đ</span><ul><li><svg class="ic"><use href="#i-check"/></svg>3 file, 30 câu hỏi mỗi tháng</li><li><svg class="ic"><use href="#i-check"/></svg>Biểu đồ và nguồn đầy đủ</li></ul></div>
+      <div class="plan pro"><span class="name">Pro</span><span class="price">199.000đ <small>/ tháng</small></span><ul><li><svg class="ic"><use href="#i-check"/></svg>50 file, 300 câu hỏi mỗi tháng</li><li><svg class="ic"><use href="#i-check"/></svg>Xuất PDF, Word, Excel</li><li><svg class="ic"><use href="#i-check"/></svg>Báo cáo tự động hàng tháng</li><li><svg class="ic"><use href="#i-check"/></svg>Mời đồng nghiệp cùng xem</li></ul></div>
+    </div>
+    <p class="small muted" style="text-align:center;margin-top:16px">Giữ chỗ bây giờ: dùng trước, tặng 1 tháng Pro.</p>
+  </div>
+</section>
+
+<section class="block faq" id="faq">
+  <div class="wrap">
+    <div class="sec-head"><h2>Hỏi nhanh đáp gọn</h2></div>
+    <details><summary>File của tôi có bị đưa đi đâu không?</summary><p>Bản thử chạy hoàn toàn trong trình duyệt, không có gì rời khỏi máy anh chị. Bản chính thức lưu trong không gian riêng, không dùng để dạy AI, xoá là mất hẳn.</p></details>
+    <details><summary>Nó có đoán bừa số không?</summary><p>Không. AI chỉ dịch câu hỏi thành phép tính, phép tính chạy trên bảng thật. Câu nào cũng kèm nguồn. Thiếu dữ liệu thì máy nói thiếu.</p></details>
+    <details><summary>File xuất từ đâu cũng dùng được?</summary><p>Shopee, Lazada, TikTok Shop, KiotViet, Sapo, Misa, Google Ads, Facebook Ads hay bảng tự làm trong Excel, Google Sheets. Bản chính thức nhận thêm Word, PDF.</p></details>
+    <details><summary>Khi nào dùng được?</summary><p>Đầu 2027. Ai giữ chỗ trước được mời trước.</p></details>
+  </div>
+</section>
+
+<section class="block" id="waitlist-section">
+  <div class="wrap"><div class="final">
+    <h2>Giữ chỗ dùng trước</h2>
+    <p>Mở cửa là mời anh chị đầu tiên, kèm 1 tháng Pro. Không gửi gì khác.</p>
+    <a href="#waitlist" class="btn btn-primary" data-cta="final"><svg class="ic"><use href="#i-spark"/></svg>Giữ chỗ cho tôi</a>
+  </div></div>
+</section>
+</main>
+
+<section class="results wrap" id="results" hidden>
+  <h2>Phễu theo biến thể</h2><p class="muted small" id="resultsNote"></p>
+  <div id="resultsBody"></div>
+</section>
+
+<footer><div class="wrap"><span>© 2026 <span class="brandRef">Hỏi Số</span></span><span>Liên hệ: <span id="contactMail">hello@hoiso.vn</span></span></div></footer>
+
+<div class="mbar" id="mbar"><a href="#demo" class="btn btn-primary" id="mbarBtn" data-cta="mbar">Thử với file của tôi</a></div>
+
+<div class="modal" id="modal" hidden>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="x" id="modalClose" aria-label="Đóng">×</button>
+    <form id="wlForm" novalidate>
+      <div style="display:grid;gap:14px">
+        <div style="display:grid;gap:4px"><h3 id="modalTitle">Giữ chỗ dùng trước</h3><p class="muted small" id="modalLead">Mở cửa là mời anh chị đầu tiên, kèm 1 tháng Pro.</p></div>
+        <div class="field"><label for="wlEmail">Email</label><input id="wlEmail" type="email" autocomplete="email" placeholder="ban@congty.vn" required></div>
+        <div class="field"><label for="wlSegment">Anh chị đang làm gì?</label>
+          <select id="wlSegment" required>
+            <option value="">Chọn một</option>
+            <option value="ecom">Bán hàng trên Shopee / Lazada / TikTok Shop</option>
+            <option value="retail">Cửa hàng, chuỗi (KiotViet, Sapo, POS)</option>
+            <option value="finance">Kế toán, tài chính</option>
+            <option value="marketing">Marketing, agency</option>
+            <option value="ops">Vận hành, nhân sự, khác</option>
+          </select></div>
+        <div class="field"><span style="font-size:.88rem;font-weight:600">Nếu đúng như vậy, anh chị sẵn sàng trả mỗi tháng</span>
+          <div class="radios" id="wlWtp">
+            <label><input type="radio" name="wtp" value="0">Chỉ dùng miễn phí</label>
+            <label><input type="radio" name="wtp" value="lt100">Dưới 100.000đ</label>
+            <label><input type="radio" name="wtp" value="100-300">100.000 đến 300.000đ</label>
+            <label><input type="radio" name="wtp" value="gt300">Trên 300.000đ</label>
+          </div></div>
+        <div class="field"><label for="wlQuestion" id="wlQuestionLabel">Câu đầu tiên anh chị muốn hỏi (không bắt buộc)</label><input id="wlQuestion" type="text" maxlength="200" placeholder="VD: Hàng nào lãi thật sau khi trừ phí sàn?"></div>
+        <p class="err" id="wlErr" hidden></p>
+        <button class="btn btn-primary" type="submit" id="wlSubmit">Giữ chỗ cho tôi</button>
+        <p class="small muted">Chỉ dùng email để báo mở cửa. Không chia sẻ cho ai.</p>
+      </div>
+    </form>
+    <div class="thanks" id="wlThanks" hidden>
+      <h3>Xong rồi. Anh chị ở vị trí <span id="wlPos" class="num">—</span>.</h3>
+      <p class="muted small">Gửi link này cho bạn bè: mỗi người đăng ký qua link, cả hai cùng được thêm 1 tháng Pro.</p>
+      <div class="copy"><input id="refLink" readonly aria-label="Link giới thiệu"><button class="btn btn-ghost btn-sm" id="copyRef">Sao chép</button></div>
+      <p class="small muted" id="wlStored"></p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+/* ============================================================
+   CONFIG — đổi trước khi đưa lên domain riêng
+   ============================================================ */
+const CONFIG = { BRAND: 'Hỏi Số', ENDPOINT: '', SPLIT_A: 0.5, MAX_FILE_MB: 20, AUTOPLAY: true };
+
+/* ============================================================
+   Session, variant, tracking
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMobile = () => innerWidth <= 600;
+function readParams(){
+  const q = new URLSearchParams(location.search); const tokens = location.hash.replace('#', '').split(/[&,]/).filter(Boolean); const utm = {};
+  ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'ref'].forEach(k => { const v = q.get(k); if (v) utm[k] = v.slice(0, 80); });
+  let forced = q.get('v'); if (tokens.includes('a')) forced = 'a'; if (tokens.includes('b')) forced = 'b';
+  return { utm, forced, results: tokens.includes('results') || q.get('view') === 'results' };
+}
+const params = readParams();
+function pickVariant(){ if (params.forced === 'a' || params.forced === 'b') { store.set('lp_variant', params.forced); return params.forced; } const saved = store.get('lp_variant'); if (saved === 'a' || saved === 'b') return saved; const v = Math.random() < CONFIG.SPLIT_A ? 'a' : 'b'; store.set('lp_variant', v); return v; }
+const S = { sid: uid(), vid: store.get('lp_vid') || (() => { const v = uid(); store.set('lp_vid', v); return v; })(), variant: pickVariant(), utm: params.utm, referrer: document.referrer ? document.referrer.slice(0, 120) : '', width: innerWidth, lang: navigator.language, startedAt: new Date().toISOString(), events: [],
+  flags: { demo_engaged: false, own_upload: false, gate_hit: false, waitlist: false, scroll50: false, scroll90: false, autoplay_done: false, interactive: false }, demo: null };
+let dbRef = null, dbWritable = null, writeChain = Promise.resolve(), flushTimer = null;
+function sessionDoc(){ return { sid: S.sid, vid: S.vid, variant: S.variant, utm: S.utm, referrer: S.referrer, width: S.width, lang: S.lang, startedAt: S.startedAt, updatedAt: new Date().toISOString(), flags: S.flags, demo: S.demo, events: S.events.slice(-80) }; }
+function persistLocal(){ const all = store.get('lp_sessions') || {}; all[S.sid] = sessionDoc(); const keys = Object.keys(all); if (keys.length > 200) delete all[keys[0]]; store.set('lp_sessions', all); }
+function flush(){ persistLocal(); if (dbRef && dbWritable !== false) writeChain = writeChain.then(() => dbRef.collection('sessions').doc(S.sid).set(sessionDoc())).catch(e => { if (e && e.code === 'invalid_argument') dbWritable = false; }); }
+function post(payload){ if (!CONFIG.ENDPOINT) return; try { fetch(CONFIG.ENDPOINT, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); } catch {} }
+const SEND = new Set(['view', 'demo_sample', 'demo_upload', 'chip_click', 'question_typed', 'gate', 'cta_click', 'waitlist_open', 'waitlist_submit', 'scroll_90', 'autoplay_done', 'autoplay_skip', 'interactive_start', 'case_switch']);
+function track(name, props = {}){
+  const ev = { t: Date.now(), name, ...props }; S.events.push(ev);
+  if (name === 'demo_sample' || name === 'demo_upload') S.flags.demo_engaged = true;
+  if (name === 'demo_upload') S.flags.own_upload = true;
+  if (name === 'gate') S.flags.gate_hit = true;
+  if (name === 'waitlist_submit') S.flags.waitlist = true;
+  if (name === 'autoplay_done') S.flags.autoplay_done = true;
+  if (SEND.has(name)) post({ type: 'event', sid: S.sid, vid: S.vid, variant: S.variant, ...S.utm, referrer: S.referrer, ...ev });
+  window.dataLayer = window.dataLayer || []; window.dataLayer.push({ event: 'lp_' + name, variant: S.variant, ...props });
+  clearTimeout(flushTimer); flushTimer = setTimeout(flush, 700);
+}
+
+/* ============================================================
+   Formatting helpers
+   ============================================================ */
+const nfVN = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 });
+const nf2 = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
+function fmt(n, unit){
+  if (n == null || isNaN(n)) return '—';
+  const s = Math.abs(n) >= 1000 ? nfVN.format(n) : (Number.isInteger(n) ? nfVN.format(n) : nf2.format(n));
+  return unit ? s + unit : s;
+}
+function compact(n){
+  const a = Math.abs(n);
+  if (a >= 1e9) return nf1.format(n / 1e9) + ' tỷ';
+  if (a >= 1e6) return nf1.format(n / 1e6) + ' tr';
+  if (a >= 1e3) return nf1.format(n / 1e3) + ' k';
+  return nf1.format(n);
+}
+const pct = (a, b) => (b === 0 || b == null) ? null : (a - b) / Math.abs(b) * 100;
+const fmtPct = p => p == null ? '—' : (p > 0 ? '+' : '') + nf1.format(p) + '%';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const lower = s => String(s ?? '').toLowerCase();
+const moneyHint = /tiền|doanh thu|revenue|chi phí|cost|phí|giá|amount|sales|gmv|total|thanh toán|công nợ|lợi nhuận|ngân sách|spend/i;
+
+/* ============================================================
+   Parsing: numbers, dates, header detection
+   ============================================================ */
+function parseNum(v){
+  if (typeof v === 'number') return isFinite(v) ? v : null;
+  if (v == null) return null;
+  let s = String(v).trim();
+  if (!s) return null;
+  s = s.replace(/₫|đồng|vnđ|vnd|\$|€|usd/gi, '').replace(/\s/g, '');
+  let neg = false;
+  if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
+  if (s.startsWith('-')) { neg = !neg; s = s.slice(1); }
+  const isPct = s.endsWith('%'); if (isPct) s = s.slice(0, -1);
+  if (!/^[\d.,]+$/.test(s) || !/\d/.test(s)) return null;
+  const dots = (s.match(/\./g) || []).length, commas = (s.match(/,/g) || []).length;
+  if (dots && commas) {
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.'); else s = s.replace(/,/g, '');
+  } else if (dots > 1) s = s.replace(/\./g, '');
+  else if (commas > 1) s = s.replace(/,/g, '');
+  else if (dots === 1) { const [i, f] = s.split('.'); if (f.length === 3 && i.length <= 3) s = i + f; }
+  else if (commas === 1) { const [i, f] = s.split(','); s = (f.length === 3) ? i + f : i + '.' + f; }
+  const n = parseFloat(s);
+  if (!isFinite(n)) return null;
+  return neg ? -n : n;
+}
+function parseDate(v, colHint){
+  if (v instanceof Date) return isNaN(v) ? null : v;
+  if (typeof v === 'number') {
+    if (colHint && v > 20000 && v < 80000) return new Date(Date.UTC(1899, 11, 30) + v * 86400000);
+    return null;
+  }
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  let m;
+  if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})(?:[ T](\d{1,2}):(\d{2}))?/))) {
+    const d = new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0));
+    return (d.getMonth() === +m[2] - 1) ? d : null;
+  }
+  if ((m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?/))) {
+    const d = new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0));
+    return isNaN(d) ? null : d;
+  }
+  if ((m = s.match(/^(\d{1,2})[\/\-](\d{4})$/))) return new Date(+m[2], +m[1] - 1, 1);
+  return null;
+}
+function detectHeader(arrays){
+  const widths = arrays.slice(0, 40).map(r => r.filter(c => c != null && c !== '').length);
+  const maxW = Math.max(1, ...widths);
+  for (let i = 0; i < Math.min(arrays.length - 1, 30); i++) {
+    const row = arrays[i];
+    const filled = row.filter(c => c != null && c !== '');
+    const strings = filled.filter(c => typeof c === 'string').length;
+    if (filled.length >= Math.max(2, maxW * 0.6) && strings >= filled.length * 0.7) return i;
+  }
+  return 0;
+}
+function toTable(arrays, hi){
+  const hdr = arrays[hi].map((h, i) => { const s = String(h ?? '').trim(); return s || ('Cột ' + (i + 1)); });
+  const seen = {}; const headers = hdr.map(h => { seen[h] = (seen[h] || 0) + 1; return seen[h] > 1 ? h + ' (' + seen[h] + ')' : h; });
+  const rows = [];
+  for (let r = hi + 1; r < arrays.length; r++) {
+    const a = arrays[r]; if (!a || a.every(c => c == null || c === '')) continue;
+    const o = {}; headers.forEach((h, i) => { o[h] = a[i] ?? null; }); rows.push(o);
+  }
+  return { headers, rows };
+}
+
+/* ============================================================
+   Profiling & choosing metric / dimension / date
+   ============================================================ */
+function profile(table){
+  const { headers, rows } = table;
+  const n = rows.length;
+  return headers.map(name => {
+    let nonEmpty = 0, nNum = 0, nDate = 0, sum = 0, ints = 0;
+    const distinct = new Set();
+    const dateHint = /ngày|date|thời gian|time|tháng|month|kỳ/i.test(name);
+    for (const r of rows) {
+      const v = r[name]; if (v == null || v === '') continue;
+      nonEmpty++;
+      if (distinct.size < 5000) distinct.add(typeof v === 'object' ? +v : v);
+      const d = parseDate(v, dateHint); if (d) { nDate++; }
+      if (!(v instanceof Date)) { const x = parseNum(v); if (x != null && !(dateHint && typeof v === 'number')) { nNum++; sum += x; if (Number.isInteger(x)) ints++; } }
+    }
+    let kind = 'text';
+    const ln = lower(name);
+    if (nonEmpty && nDate / nonEmpty >= 0.7) kind = 'date';
+    else if (nonEmpty && nNum / nonEmpty >= 0.85) kind = (distinct.size === nonEmpty && ints === nNum && /mã|id|số|stt|code|sku|no\.?$/.test(ln) ? 'id' : 'number');
+    else if (distinct.size >= 2 && distinct.size <= Math.max(50, n * 0.2)) kind = 'category';
+    if (kind !== 'number' && kind !== 'date' && /^(mã|id|sku|code|số hóa đơn|số đơn|order id|mã đơn)/i.test(name) && distinct.size > n * 0.5) kind = 'id';
+    return { name, kind, nonEmpty, missing: n - nonEmpty, distinct: distinct.size, sum, dateHint };
+  });
+}
+const METRIC_HINTS = [[/doanh thu thuần|net revenue|lợi nhuận|profit/, 14], [/doanh thu|revenue|thành tiền|tổng tiền|tổng cộng|gmv|sales|số tiền|amount|total|giá trị|thanh toán/, 10], [/chi phí|cost|spend|ngân sách|phí/, 5], [/số lượng|qty|quantity|lượt|đơn hàng|orders|clicks|nhấp|hóa đơn/, 3]];
+const METRIC_PENALTY = [[/giá bán|đơn giá|unit price|price$|giá$/, -8], [/%|tỉ lệ|tỷ lệ|rate|ratio/, -6], [/mã|id|stt|code|năm|year|tháng|month/, -12], [/giảm giá|discount|thuế|tax/, -4]];
+const DIM_HINTS = [/sản phẩm|product|tên hàng|mặt hàng|item/, /cửa hàng|chi nhánh|store|branch|shop/, /chiến dịch|campaign/, /danh mục|category|nhóm hàng|ngành hàng|loại/, /kênh|channel|nguồn|platform|sàn/, /khu vực|tỉnh|thành phố|region|province|city|quận/, /nhân viên|staff|seller|người bán/, /khách hàng|customer/, /trạng thái|status/];
+function choose(cols){
+  const date = cols.filter(c => c.kind === 'date').sort((a, b) => b.nonEmpty - a.nonEmpty)[0] || null;
+  const nums = cols.filter(c => c.kind === 'number').map(c => {
+    let score = 0; const ln = lower(c.name);
+    METRIC_HINTS.forEach(([re, w]) => { if (re.test(ln)) score += w; });
+    METRIC_PENALTY.forEach(([re, w]) => { if (re.test(ln)) score += w; });
+    score += Math.min(4, Math.log10(Math.abs(c.sum) + 1) / 3);
+    if (c.missing > c.nonEmpty) score -= 3;
+    return { c, score };
+  }).sort((a, b) => b.score - a.score);
+  const metric = nums[0]?.c || null;
+  const metric2 = nums.find(x => x.c !== metric && !/giá bán|đơn giá|%/.test(lower(x.c.name)))?.c || null;
+  const cats = cols.filter(c => c.kind === 'category').map(c => {
+    let score = 0; const ln = lower(c.name);
+    DIM_HINTS.forEach((re, i) => { if (re.test(ln)) score += 8 - i * 0.5; });
+    if (c.distinct >= 3 && c.distinct <= 30) score += 4; else if (c.distinct > 60) score -= 6;
+    if (c.distinct === 2) score -= 2;
+    return { c, score };
+  }).sort((a, b) => b.score - a.score);
+  const dim = cats[0]?.c || null;
+  const dim2 = cats.find(x => x.c !== dim && x.c.distinct >= 2 && x.c.distinct <= 40)?.c || null;
+  return { date, metric, metric2, dim, dim2 };
+}
+
+/* ============================================================
+   Aggregation
+   ============================================================ */
+const MONTHS = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+function periodKeyFn(rows, dateCol){
+  const ds = rows.map(r => parseDate(r[dateCol.name], dateCol.dateHint)).filter(Boolean);
+  if (!ds.length) return null;
+  const min = Math.min(...ds.map(d => +d)), max = Math.max(...ds.map(d => +d));
+  const span = (max - min) / 86400000;
+  if (span >= 50) return { name: 'tháng', unit: 'month', key: d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), label: k => MONTHS[+k.slice(5) - 1] + '/' + k.slice(0, 4), sql: `strftime("${dateCol.name}", '%Y-%m')` , span, min: new Date(min), max: new Date(max) };
+  if (span >= 10) return { name: 'tuần', unit: 'week', key: d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x.toISOString().slice(0, 10); }, label: k => 'Tuần ' + k.slice(8, 10) + '/' + k.slice(5, 7), sql: `date_trunc('week', "${dateCol.name}")`, span, min: new Date(min), max: new Date(max) };
+  return { name: 'ngày', unit: 'day', key: d => d.toISOString().slice(0, 10), label: k => k.slice(8, 10) + '/' + k.slice(5, 7), sql: `CAST("${dateCol.name}" AS DATE)`, span, min: new Date(min), max: new Date(max) };
+}
+function groupSum(rows, keyFn, metricCol){
+  const m = new Map();
+  for (const r of rows) {
+    const k = keyFn(r); if (k == null) continue;
+    const v = parseNum(r[metricCol.name]); if (v == null) continue;
+    const o = m.get(k) || { sum: 0, n: 0 }; o.sum += v; o.n++; m.set(k, o);
+  }
+  return m;
+}
+function byPeriod(rows, dateCol, metricCol, P){
+  const m = groupSum(rows, r => { const d = parseDate(r[dateCol.name], dateCol.dateHint); return d ? P.key(d) : null; }, metricCol);
+  return [...m.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).map(([k, o]) => ({ key: k, label: P.label(k), sum: o.sum, n: o.n }));
+}
+function byDim(rows, dimCol, metricCol){
+  const m = groupSum(rows, r => { const v = r[dimCol.name]; return v == null || v === '' ? null : String(v); }, metricCol);
+  return [...m.entries()].map(([k, o]) => ({ key: k, sum: o.sum, n: o.n })).sort((a, b) => b.sum - a.sum);
+}
+function dimChange(rows, dimCol, dateCol, metricCol, P){
+  const per = byPeriod(rows, dateCol, metricCol, P);
+  if (per.length < 2) return null;
+  const last = per[per.length - 1].key, prev = per[per.length - 2].key;
+  const sub = (k) => rows.filter(r => { const d = parseDate(r[dateCol.name], dateCol.dateHint); return d && P.key(d) === k; });
+  const a = byDim(sub(last), dimCol, metricCol), b = byDim(sub(prev), dimCol, metricCol);
+  const bm = new Map(b.map(x => [x.key, x.sum]));
+  const out = a.map(x => ({ key: x.key, last: x.sum, prev: bm.get(x.key) ?? 0, pct: pct(x.sum, bm.get(x.key) ?? 0) })).filter(x => x.prev > 0 || x.last > 0);
+  out.sort((x, y) => (x.pct ?? 999) - (y.pct ?? 999));
+  return { last: P.label(last), prev: P.label(prev), items: out };
+}
+function missingReport(table, cols){
+  const n = table.rows.length;
+  const miss = cols.filter(c => c.missing > 0).map(c => ({ name: c.name, missing: c.missing, pct: c.missing / n * 100 })).sort((a, b) => b.missing - a.missing);
+  const idCol = cols.find(c => c.kind === 'id');
+  let dup = 0;
+  if (idCol) { const seen = new Set(); for (const r of table.rows) { const v = r[idCol.name]; if (v == null) continue; if (seen.has(v)) dup++; else seen.add(v); } }
+  return { miss, idCol, dup, n };
+}
+
+/* ============================================================
+   Sample data (seeded)
+   ============================================================ */
+function rng(seed){ let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function dateRange(start, days){ const out = []; for (let i = 0; i < days; i++) { const d = new Date(start); d.setDate(d.getDate() + i); out.push(d); } return out; }
+const SAMPLES = {
+  shopee: { file: 'don-hang-shopee-T4-T9-2026.xlsx', sheet: 'Đơn hàng', title: 'Đơn hàng Shopee', build(){
+    const r = rng(7); const rows = [];
+    const prods = [['Ốp lưng iPhone 15 trong suốt','Phụ kiện điện thoại',59000],['Cáp sạc nhanh Type-C 1m','Phụ kiện điện thoại',89000],['Tai nghe Bluetooth TWS M10','Âm thanh',189000],['Loa mini chống nước','Âm thanh',249000],['Bình giữ nhiệt 500ml','Nhà bếp',159000],['Hộp cơm giữ nhiệt 3 ngăn','Nhà bếp',219000],['Đèn ngủ cảm ứng','Gia dụng',129000],['Quạt mini cầm tay','Gia dụng',99000],['Kệ để điện thoại gấp gọn','Phụ kiện điện thoại',45000],['Sạc dự phòng 10.000mAh','Phụ kiện điện thoại',259000],['Thớt gỗ tre 30cm','Nhà bếp',79000],['Máy xay cầm tay','Nhà bếp',349000]];
+    const prov = ['TP. Hồ Chí Minh','Hà Nội','Đà Nẵng','Bình Dương','Đồng Nai','Cần Thơ','Hải Phòng','Nghệ An'];
+    const status = ['Hoàn thành','Hoàn thành','Hoàn thành','Hoàn thành','Hoàn thành','Đã hủy','Trả hàng/Hoàn tiền'];
+    let id = 240400001;
+    dateRange(new Date(2026, 3, 1), 183).forEach((d, i) => {
+      const month = d.getMonth();
+      const base = 4 + i / 40 + (d.getDay() === 0 || d.getDay() === 6 ? 2 : 0) + (d.getDate() <= 3 ? 3 : 0);
+      const n = Math.round(base + r() * 3);
+      for (let k = 0; k < n; k++) {
+        let p = prods[Math.floor(r() * prods.length)];
+        if (p[1] === 'Phụ kiện điện thoại' && month === 8 && r() < 0.45) p = prods[2 + Math.floor(r() * 6)];
+        const qty = r() < 0.8 ? 1 : 2 + Math.floor(r() * 3);
+        const total = qty * p[2];
+        const st = status[Math.floor(r() * status.length)];
+        rows.push({ 'Mã đơn hàng': String(id++), 'Ngày đặt hàng': `${String(d.getDate()).padStart(2,'0')}/${String(month + 1).padStart(2,'0')}/${d.getFullYear()} ${String(8 + Math.floor(r() * 14)).padStart(2,'0')}:${String(Math.floor(r() * 60)).padStart(2,'0')}`,
+          'Tên sản phẩm': p[0], 'Danh mục': p[1], 'Số lượng': qty, 'Giá bán': p[2], 'Tổng tiền hàng': total, 'Phí sàn': Math.round(total * 0.08), 'Tỉnh/Thành phố': prov[Math.floor(r() * r() * prov.length)], 'Trạng thái': st, 'Ghi chú': r() < 0.08 ? 'Giao giờ hành chính' : null });
+      }
+    });
+    return rows;
+  } },
+  kiotviet: { file: 'bao-cao-ban-hang-4-chi-nhanh.xlsx', sheet: 'BanHang', title: 'Bán hàng chuỗi cửa hàng', build(){
+    const r = rng(11); const rows = [];
+    const branches = [['Quận 1', 1.3], ['Quận 7', 1.0], ['Thủ Đức', 0.8], ['Gò Vấp', 0.9]];
+    const groups = [['Đồ uống', 3200000], ['Bánh ngọt', 1800000], ['Đồ ăn nhẹ', 1400000], ['Cà phê hạt', 900000], ['Quà tặng', 500000]];
+    dateRange(new Date(2026, 3, 1), 183).forEach((d, i) => {
+      const month = d.getMonth();
+      branches.forEach(([b, w]) => groups.forEach(([g, base]) => {
+        let f = w * (1 + i / 400) * (d.getDay() >= 5 || d.getDay() === 0 ? 1.35 : 1) * (0.8 + r() * 0.4);
+        if (b === 'Quận 7' && month === 8) f *= (g === 'Đồ uống' ? 0.72 : 0.95);
+        if (b === 'Thủ Đức' && month >= 7) f *= 1.15;
+        const dt = Math.round(base * f / 1000) * 1000;
+        const gg = r() < 0.3 ? Math.round(dt * 0.05 / 1000) * 1000 : 0;
+        rows.push({ 'Ngày': new Date(d.getFullYear(), month, d.getDate()), 'Chi nhánh': b, 'Nhóm hàng': g, 'Số hóa đơn': Math.round(dt / (g === 'Đồ uống' ? 45000 : 60000)), 'Doanh thu': dt, 'Giảm giá': gg, 'Doanh thu thuần': dt - gg });
+      }));
+    });
+    return rows;
+  } },
+  ads: { file: 'chi-phi-quang-cao-2026.csv', sheet: 'chi-phi-quang-cao-2026', title: 'Chi phí quảng cáo', build(){
+    const r = rng(23); const rows = [];
+    const camps = [['FB - Tai nghe TWS', 'Facebook', 1800000, 0.028], ['FB - Bình giữ nhiệt', 'Facebook', 1200000, 0.031], ['FB - Retarget giỏ hàng', 'Facebook', 600000, 0.06], ['GG - Search thương hiệu', 'Google', 400000, 0.09], ['GG - Shopping phụ kiện', 'Google', 1500000, 0.022], ['TT - Video ốp lưng', 'TikTok', 1000000, 0.018], ['TT - KOL bình nước', 'TikTok', 900000, 0.025], ['SP - Quảng cáo tìm kiếm', 'Shopee Ads', 700000, 0.035]];
+    dateRange(new Date(2026, 3, 1), 183).forEach((d, i) => {
+      const month = d.getMonth();
+      camps.forEach(([c, ch, spend, cr]) => {
+        let s = spend * (0.7 + r() * 0.6); let conv = cr;
+        if (c === 'TT - Video ốp lưng' && month >= 7) conv *= 0.55;
+        if (c === 'GG - Search thương hiệu') s *= 1 + i / 300;
+        const clicks = Math.round(s / (ch === 'Google' ? 4200 : ch === 'TikTok' ? 1800 : 2600));
+        const orders = Math.round(clicks * conv * (0.8 + r() * 0.4));
+        rows.push({ 'Ngày': `${d.getFullYear()}-${String(month + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`, 'Chiến dịch': c, 'Kênh': ch, 'Chi phí': Math.round(s), 'Lượt nhấp': clicks, 'Đơn hàng': orders, 'Doanh thu': orders * (150000 + Math.round(r() * 120000)) });
+      });
+    });
+    return rows;
+  } },
+};
+
+/* ============================================================
+   Use cases: sample + persona + everyday questions
+   ============================================================ */
+const USECASES = {
+  shopee: { tab: 'Bán trên Shopee, Lazada', persona: 'Anh chị bán hàng trên sàn, cuối tháng muốn biết hàng nào đang tụt và tiền thật về bao nhiêu.', title: 'Bán hàng trên sàn', blurb: 'File xuất đơn hàng từ Shopee, Lazada, TikTok Shop.',
+    questions: [{ text: 'Tháng này sản phẩm nào bán tụt so với tháng trước?', id: 'decline' }, { text: 'Trừ phí sàn xong còn lại bao nhiêu?', id: 'net' }, { text: 'Tỉnh nào mua nhiều nhất?', id: 'topcol', col: 'Tỉnh/Thành phố' }, { text: 'Đơn huỷ, đơn hoàn có nhiều không?', id: 'topcol', col: 'Trạng thái' }, { text: 'Doanh thu từng tháng thế nào?', id: 'trend' }] },
+  kiotviet: { tab: 'Chuỗi cửa hàng', persona: 'Anh chị quản lý vài chi nhánh, cần biết chỗ nào đang xuống để xử lý sớm.', title: 'Cửa hàng, chuỗi', blurb: 'Báo cáo bán hàng xuất từ KiotViet, Sapo, máy POS.',
+    questions: [{ text: 'Chi nhánh nào tháng này giảm?', id: 'decline' }, { text: 'Nhóm hàng nào bán chạy nhất?', id: 'topcol', col: 'Nhóm hàng' }, { text: 'Doanh thu cả chuỗi từng tháng?', id: 'trend' }, { text: 'Tháng nào bán tốt nhất?', id: 'peak' }] },
+  ads: { tab: 'Chạy quảng cáo', persona: 'Anh chị chạy ads nhiều kênh, cần biết tiền đang đổ vào đâu và chỗ nào không ra đơn.', title: 'Chạy quảng cáo', blurb: 'Báo cáo chi phí từ Facebook Ads, Google Ads, TikTok Ads.',
+    questions: [{ text: 'Chiến dịch nào tháng này tụt doanh thu?', id: 'decline' }, { text: 'Chi bao nhiêu, thu về bao nhiêu?', id: 'net' }, { text: 'Kênh nào ra doanh thu nhiều nhất?', id: 'topcol', col: 'Kênh' }, { text: 'Tháng nào thu nhiều nhất?', id: 'peak' }] },
+};
+const CAPTIONS = {
+  a: { 1: 'Thả nguyên file, máy tự nhận cột ngày, cột tiền', 2: 'Hỏi như nhắn tin', 3: 'Máy tính trên bảng thật, trả lời có biểu đồ', 4: 'Bấm "Xem dòng gốc" để biết số từ đâu ra', 5: 'Hỏi tiếp bao nhiêu câu cũng được' },
+  b: { 1: 'Thả nguyên file, máy tự nhận cột ngày, cột tiền', 2: 'Bấm một nút, máy lập dàn ý', 3: 'Máy viết từng mục trên số thật', 4: 'Bấm vào số để xem dòng gốc, rồi xuất PDF', 5: 'Tháng sau thả file mới là xong' },
+};
+
+/* ============================================================
+   Demo window
+   ============================================================ */
+const UI = { chat: $('#chat'), file: $('#fileName'), overlay: $('#overlay'), live: $('#liveState'), caption: $('#caption'), captionText: $('#captionText'), persona: $('#persona'), compA: $('#composerA'), compB: $('#composerB'), sugg: $('#sugg'), drop: $('#drop') };
+const D = { table: null, cols: null, pick: null, P: null, meta: null, charts: [], chipCount: 0, caseKey: null };
+const AUTO = { running: false, token: 0 };
+const sleep = ms => new Promise(r => setTimeout(r, reduced ? 0 : ms));
+function destroyCharts(){ D.charts.forEach(c => { try { c.destroy(); } catch {} }); D.charts = []; }
+function setStep(n){ $$('#steps .step').forEach(el => { const k = +el.dataset.step; el.classList.toggle('on', k === n); el.classList.toggle('done', k < n); }); }
+function caption(n){ const t = CAPTIONS[S.variant][n]; if (!t) { UI.caption.hidden = true; return; } UI.caption.hidden = false; UI.captionText.textContent = t; }
+function scrollChat(){ const last = UI.chat.lastElementChild; if (last && !isMobile()) last.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); }
+function sysBubble(html){ const el = document.createElement('div'); el.className = 'msg sys'; el.innerHTML = `<div class="bubble">${html}</div>`; UI.chat.appendChild(el); scrollChat(); return el; }
+function meBubble(text){ const el = document.createElement('div'); el.className = 'msg me'; el.innerHTML = `<div class="bubble">${esc(text)}</div>`; UI.chat.appendChild(el); scrollChat(); return el; }
+
+async function loadTable(table, meta, source, opts = {}){
+  destroyCharts();
+  D.table = table; D.meta = meta; D.chipCount = 0;
+  UI.file.textContent = meta.file;
+  UI.chat.innerHTML = '';
+  D.cols = profile(table); D.pick = choose(D.cols); D.P = D.pick.date ? periodKeyFn(table.rows, D.pick.date) : null;
+  const kinds = { date: 'ngày', number: 'số', category: 'nhóm', id: 'mã', text: 'chữ' };
+  const shown = D.cols.slice(0, isMobile() ? 6 : 10);
+  const fm = document.createElement('div'); fm.className = 'msg me';
+  fm.innerHTML = `<div class="filemsg"><span class="fic">${esc((meta.file.split('.').pop() || 'xlsx').toUpperCase().slice(0, 4))}</span><div style="min-width:0"><div class="nm">${esc(meta.file)}</div><div class="meta">Đã đọc <b>${nfVN.format(table.rows.length)} dòng</b>, ${D.cols.length} cột · sheet ${esc(meta.sheet)}</div><div class="cols">${shown.map(c => `<span class="col ${c.kind}">${esc(c.name)} · ${kinds[c.kind]}</span>`).join('')}${D.cols.length > shown.length ? `<span class="col">+${D.cols.length - shown.length}</span>` : ''}</div></div></div>`;
+  UI.chat.appendChild(fm);
+  setStep(1); if (!opts.instant) { caption(1); await sleep(1400); }
+  S.demo = { source, file: source === 'upload' ? (meta.file.split('.').pop() || '').toLowerCase() : meta.key, rows: table.rows.length, cols: D.cols.length, hasDate: !!D.pick.date, hasMetric: !!D.pick.metric, hasDim: !!D.pick.dim };
+  if (!opts.silent) track(source === 'upload' ? 'demo_upload' : 'demo_sample', { ...S.demo });
+  if (!D.pick.metric) { sysBubble('Em chưa thấy cột nào là số để tính (doanh thu, số lượng, chi phí...). Bản chính thức sẽ hỏi lại anh chị cột nào cần tính. Anh chị thử file khác giúp em nhé.'); UI.compA.hidden = UI.compB.hidden = true; return; }
+  const { date, metric, dim } = D.pick;
+  const greet = source === 'upload'
+    ? `Đọc xong rồi ạ. Em lấy cột <b>${esc(metric.name)}</b> để tính${date ? `, <b>${esc(date.name)}</b> làm ngày` : ''}${dim ? `, <b>${esc(dim.name)}</b> để nhóm` : ''}. ${S.variant === 'a' ? 'Anh chị hỏi gì ạ?' : 'Bấm "Làm báo cáo tháng" nhé.'}`
+    : `Đọc xong rồi ạ. ${S.variant === 'a' ? 'Anh chị hỏi gì ạ?' : 'Bấm "Làm báo cáo tháng" nhé.'}`;
+  sysBubble(greet);
+  if (S.variant === 'a') { renderSuggestions(); UI.compA.hidden = false; UI.compB.hidden = true; } else { UI.compA.hidden = true; UI.compB.hidden = false; }
+}
+
+/* ---------- rendering helpers ---------- */
+function tokens(){ const cs = getComputedStyle(document.documentElement); const g = k => cs.getPropertyValue(k).trim(); return { s1: g('--s1'), s2: g('--s2'), ink2: g('--ink-2'), ink3: g('--ink-3'), line: g('--line'), good: g('--good'), bad: g('--bad'), surface: g('--surface') }; }
+function makeChart(canvas, type, labels, datasets, opts = {}){
+  if (!window.Chart) { canvas.parentElement.replaceWith(Object.assign(document.createElement('div'), { className: 'table-wrap', innerHTML: tableHTML(labels.map((l, i) => [l, ...datasets.map(d => d.data[i])]), ['Mục', ...datasets.map(d => d.label || 'Giá trị')], opts.unit) })); return null; }
+  const T = tokens(); const horizontal = !!opts.horizontal;
+  const ds = datasets.map((d, i) => ({ label: d.label || '', data: d.data, borderColor: type === 'line' ? (i ? T.s2 : T.s1) : (d.colors || d.data.map(() => i ? T.s2 : T.s1)), backgroundColor: type === 'line' ? (i ? T.s2 : T.s1) : (d.colors || d.data.map(() => i ? T.s2 : T.s1)), borderWidth: type === 'line' ? 2.5 : 0, pointRadius: type === 'line' ? 3 : 0, pointHoverRadius: 6, tension: .3, borderRadius: 5, borderSkipped: 'start', maxBarThickness: 34, categoryPercentage: .72 }));
+  const chart = new Chart(canvas, { type, data: { labels, datasets: ds }, options: { indexAxis: horizontal ? 'y' : 'x', responsive: true, maintainAspectRatio: false, animation: reduced ? false : { duration: 700 },
+    plugins: { legend: { display: datasets.length > 1, labels: { color: T.ink2, boxWidth: 10, boxHeight: 10, usePointStyle: true } }, tooltip: { backgroundColor: T.surface, titleColor: T.ink2, bodyColor: T.ink2, borderColor: T.line, borderWidth: 1, callbacks: { label: c => ' ' + (c.dataset.label ? c.dataset.label + ': ' : '') + fmt(horizontal ? c.parsed.x : c.parsed.y, opts.unit) } } },
+    scales: { x: { grid: { display: horizontal, color: T.line }, border: { display: false }, ticks: { color: T.ink3, font: { size: 11 }, callback: horizontal ? v => compact(v) : undefined, maxRotation: 0, autoSkip: true } }, y: { grid: { display: !horizontal, color: T.line }, border: { display: false }, ticks: { color: T.ink3, font: { size: 11 }, callback: horizontal ? undefined : v => compact(v), crossAlign: 'far' }, beginAtZero: !opts.allowNegative } } } });
+  D.charts.push(chart); return chart;
+}
+function tableHTML(rows, headers, unit){ return `<table class="plain"><thead><tr>${headers.map((h, i) => `<th class="${i ? 'n' : ''}">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i ? 'n num' : ''}">${typeof c === 'number' ? fmt(c, unit) : esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`; }
+function sourceHTML(usedCols){ const rows = D.table.rows.slice(0, 5); return `<div class="source"><div>Số này tính từ <b>${esc(D.meta.file)}</b>, sheet ${esc(D.meta.sheet)}, trên ${nfVN.format(D.table.rows.length)} dòng, dùng cột ${usedCols.map(c => '<b>' + esc(c) + '</b>').join(', ')}. Đây là 5 dòng đầu:</div><div class="tbl"><table><thead><tr><th>Dòng</th>${usedCols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map((r, i) => `<tr><td>${i + 2}</td>${usedCols.map(c => `<td>${esc(r[c] instanceof Date ? r[c].toLocaleDateString('vi-VN') : (r[c] ?? ''))}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`; }
+const unitOf = col => moneyHint.test(col.name) && !/số lượng|qty|lượt|đơn hàng|hóa đơn/i.test(col.name) ? '₫' : '';
+const sqlName = () => '"' + D.meta.sheet.replace(/[^\p{L}\p{N}_ ]/gu, '').trim().replace(/\s+/g, '_') + '"';
+const hl = sql => esc(sql).replace(/\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|LIMIT|AS|SUM|COUNT|AVG|DESC|ASC|WITH|OVER|PARTITION BY|LAG|AND|OR|NOT|IS|NULL|QUALIFY|CAST|DATE|MAX|ROUND)\b/g, '<b>$1</b>');
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+
+/* ---------- questions ---------- */
+function questions(){
+  const uc = USECASES[D.caseKey]; if (uc && D.meta.key !== 'upload') return uc.questions.filter(q => canAnswer(q));
+  const { date, metric, dim, dim2, metric2 } = D.pick; const P = D.P; const qs = [];
+  if (date && P && dim) qs.push({ id: 'decline', text: `${cap(dim.name)} nào giảm ở ${P.name} gần nhất?` });
+  if (date && P) qs.push({ id: 'trend', text: `${cap(metric.name)} từng ${P.name} thế nào?` });
+  if (dim) qs.push({ id: 'topcol', col: dim.name, text: `${cap(dim.name)} nào ${lower(metric.name)} nhiều nhất?` });
+  if (metric2 && date && P) qs.push({ id: 'net', text: `${cap(metric.name)} và ${lower(metric2.name)} từng ${P.name}?` });
+  if (dim2 && dim2 !== dim) qs.push({ id: 'topcol', col: dim2.name, text: `Theo ${lower(dim2.name)} thì sao?` });
+  if (date && P) qs.push({ id: 'peak', text: `${cap(P.name)} nào ${lower(metric.name)} cao nhất?` });
+  qs.push({ id: 'quality', text: 'Có dòng nào thiếu hoặc trùng không?' });
+  return qs;
+}
+function canAnswer(q){ const { date, metric, dim, metric2 } = D.pick; if (!metric) return false; if (q.id === 'decline') return !!(date && D.P && dim); if (q.id === 'trend' || q.id === 'peak') return !!(date && D.P); if (q.id === 'net') return !!(metric2 && date && D.P); if (q.id === 'topcol') return D.cols.some(c => c.name === q.col); return true; }
+function answer(q){
+  const { date, metric, dim, dim2, metric2 } = D.pick; const P = D.P; const rows = D.table.rows; const unit = unitOf(metric); const tbl = sqlName(); const T = tokens(); const id = q.id;
+  if (id === 'trend' || id === 'peak') {
+    const per = byPeriod(rows, date, metric, P); const total = per.reduce((a, x) => a + x.sum, 0); const best = per.reduce((a, x) => x.sum > a.sum ? x : a, per[0]); const last = per[per.length - 1], prev = per[per.length - 2]; const ch = prev ? pct(last.sum, prev.sum) : null;
+    const lead = id === 'trend' ? `Tổng ${lower(metric.name)} ${per.length} ${P.name} là ${fmt(total, unit)}.` : `${cap(P.name)} bán tốt nhất là ${best.label}.`;
+    const text = id === 'trend'
+      ? [prev ? `${cap(P.name)} gần nhất (${esc(last.label)}) đạt <b class="num">${fmt(last.sum, unit)}</b>, <span class="${ch >= 0 ? 'up' : 'down'} num">${ch >= 0 ? 'tăng' : 'giảm'} ${fmtPct(ch).replace(/^[+-]/, '')}</span> so với ${esc(prev.label)}.` : '', `Trung bình mỗi ${P.name} <span class="num">${fmt(total / per.length, unit)}</span>. ${cap(P.name)} cao nhất là <b>${esc(best.label)}</b>.`]
+      : [`<b>${esc(best.label)}</b> đạt <b class="num">${fmt(best.sum, unit)}</b>, chiếm <span class="num">${nf1.format(best.sum / total * 100)}%</span> cả kỳ.`, prev ? `${cap(P.name)} gần nhất ${esc(last.label)} <span class="${ch >= 0 ? 'up' : 'down'} num">${ch >= 0 ? 'tăng' : 'giảm'} ${fmtPct(ch).replace(/^[+-]/, '')}</span> so với ${esc(prev.label)}.` : 'Mới có một kỳ nên chưa so được.'];
+    return { lead, sql: `SELECT ${P.sql} AS ky, SUM("${metric.name}") AS tong\nFROM ${tbl} GROUP BY 1 ORDER BY 1;`, chart: { type: id === 'trend' ? 'line' : 'bar', labels: per.map(x => x.label), datasets: [{ data: per.map(x => x.sum), colors: id === 'peak' ? per.map(x => x === best ? T.s2 : T.s1) : null }], unit }, text, used: [date.name, metric.name] };
+  }
+  if (id === 'topcol') {
+    const dcol = D.cols.find(c => c.name === q.col) || dim; const g = byDim(rows, dcol, metric); const total = g.reduce((a, x) => a + x.sum, 0); const top = g.slice(0, 5); const rest = g.length - 5;
+    return { lead: `${cap(dcol.name)} dẫn đầu: ${top[0].key}.`, sql: `SELECT "${dcol.name}", SUM("${metric.name}") AS tong\nFROM ${tbl} GROUP BY 1 ORDER BY 2 DESC LIMIT 5;`, chart: { type: 'bar', horizontal: true, labels: top.map(x => x.key), datasets: [{ data: top.map(x => x.sum) }], unit },
+      text: [`<b>${esc(top[0].key)}</b> mang về <b class="num">${fmt(top[0].sum, unit)}</b>, tức <span class="num">${nf1.format(top[0].sum / total * 100)}%</span> tổng ${lower(metric.name)}.`, g.length > 1 ? `Top 5 gom <span class="num">${nf1.format(top.reduce((a, x) => a + x.sum, 0) / total * 100)}%</span>${rest > 0 ? `, ${rest} ${lower(dcol.name)} còn lại chia phần nhỏ.` : '.'} Thấp nhất là <b>${esc(g[g.length - 1].key)}</b> với <span class="num">${fmt(g[g.length - 1].sum, unit)}</span>.` : ''], used: [dcol.name, metric.name] };
+  }
+  if (id === 'decline') {
+    const ch = dimChange(rows, dim, date, metric, P);
+    if (!ch) return { lead: 'Chưa đủ hai kỳ để so sánh.', sql: '-- cần ít nhất 2 kỳ', chart: null, text: ['Em không đoán khi thiếu dữ liệu. Anh chị thêm file tháng trước là em so được ngay.'], used: [dim.name, date.name, metric.name] };
+    const items = ch.items.slice(0, 8); const down = ch.items.filter(x => x.pct != null && x.pct < 0);
+    return { lead: down.length ? `Có ${down.length} ${lower(dim.name)} giảm trong ${ch.last}.` : `Không có ${lower(dim.name)} nào giảm trong ${ch.last}.`, sql: `WITH t AS (SELECT "${dim.name}", ${P.sql} AS ky, SUM("${metric.name}") AS tong FROM ${tbl} GROUP BY 1, 2)\nSELECT "${dim.name}", tong, tong - LAG(tong) OVER (PARTITION BY "${dim.name}" ORDER BY ky) AS chenh\nFROM t QUALIFY ky = (SELECT MAX(ky) FROM t) ORDER BY chenh;`,
+      chart: { type: 'bar', horizontal: true, labels: items.map(x => x.key), datasets: [{ data: items.map(x => x.pct == null ? 0 : Math.round(x.pct * 10) / 10), colors: items.map(x => (x.pct ?? 0) < 0 ? T.bad : T.good) }], unit: '%', allowNegative: true },
+      text: [down.length ? `Tụt mạnh nhất là <b>${esc(down[0].key)}</b>: <span class="down num">giảm ${fmtPct(down[0].pct).replace('-', '')}</span>, từ ${fmt(down[0].prev, unit)} còn ${fmt(down[0].last, unit)} so với ${esc(ch.prev)}.` : `So với ${esc(ch.prev)}, mọi ${lower(dim.name)} đều giữ hoặc tăng.`, `${esc(ch.last)} có thể chưa hết tháng, em so theo số hiện có trong file.`], used: [dim.name, date.name, metric.name] };
+  }
+  if (id === 'net') {
+    const a = byPeriod(rows, date, metric, P), b = byPeriod(rows, date, metric2, P); const bm = new Map(b.map(x => [x.key, x.sum]));
+    const ta = a.reduce((s, x) => s + x.sum, 0), tb = b.reduce((s, x) => s + x.sum, 0); const isCost = /phí|chi phí|cost|spend/i.test(metric2.name);
+    const text = isCost ? [`Tổng ${lower(metric.name)} <b class="num">${fmt(ta, unit)}</b>, ${lower(metric2.name)} <b class="num">${fmt(tb, unit)}</b> (${nf1.format(tb / ta * 100)}%). ${/doanh thu|revenue/i.test(metric.name) && /quảng cáo|ads|chi phí/i.test(metric2.name + D.meta.file) ? `Mỗi 1đ bỏ ra thu về <b class="num">${nf1.format(ta / tb)}đ</b>.` : `Còn lại <b class="num">${fmt(ta - tb, unit)}</b>.`}`] : [`Tổng ${lower(metric.name)} <b class="num">${fmt(ta, unit)}</b>, ${lower(metric2.name)} <b class="num">${fmt(tb, unit)}</b>.`];
+    return { lead: isCost ? `Trừ ${lower(metric2.name)} xong còn ${fmt(ta - tb, unit)}.` : `${cap(metric.name)} và ${lower(metric2.name)} theo ${P.name}.`, sql: `SELECT ${P.sql} AS ky, SUM("${metric.name}") AS a, SUM("${metric2.name}") AS b\nFROM ${tbl} GROUP BY 1 ORDER BY 1;`, chart: { type: 'bar', labels: a.map(x => x.label), datasets: [{ label: metric.name, data: a.map(x => x.sum) }, { label: metric2.name, data: a.map(x => bm.get(x.key) ?? 0) }], unit }, text, used: [date.name, metric.name, metric2.name] };
+  }
+  if (id === 'quality') {
+    const qd = missingReport(D.table, D.cols); const lines = [];
+    if (qd.miss.length) lines.push(`${qd.miss.length} cột có ô trống. Trống nhiều nhất là <b>${esc(qd.miss[0].name)}</b>: ${nfVN.format(qd.miss[0].missing)} dòng (${nf1.format(qd.miss[0].pct)}%).`); else lines.push('Không có ô trống ở cột nào.');
+    if (qd.idCol) lines.push(qd.dup ? `Cột <b>${esc(qd.idCol.name)}</b> có ${nfVN.format(qd.dup)} giá trị trùng, có thể là dòng lặp.` : `Cột <b>${esc(qd.idCol.name)}</b> không trùng, mỗi dòng là một bản ghi riêng.`); else lines.push('Không có cột mã nên em chưa kiểm được dòng trùng. Em nói rõ chứ không đoán.');
+    return { lead: qd.miss.length ? 'File còn vài chỗ trống, em liệt kê ra đây.' : 'File sạch, không thiếu.', sql: `SELECT ${D.cols.slice(0, 3).map(c => `COUNT(*) - COUNT("${c.name}") AS thieu_${c.name.replace(/\W+/g, '_').toLowerCase()}`).join(', ')}${D.cols.length > 3 ? ', ...' : ''} FROM ${tbl};`, table: qd.miss.length ? tableHTML(qd.miss.slice(0, 6).map(m => [m.name, m.missing]), ['Cột', 'Số ô trống']) : null, text: lines, used: D.cols.slice(0, 4).map(c => c.name) };
+  }
+}
+
+/* ---------- Variant A: chat ---------- */
+function renderSuggestions(){ const qs = questions(); UI.sugg.innerHTML = qs.map((q, i) => `<button class="chip" type="button" data-i="${i}">${esc(q.text)}</button>`).join(''); UI.sugg.onclick = e => { const b = e.target.closest('[data-i]'); if (!b) return; startInteractive('chip'); ask(qs[+b.dataset.i], b); }; }
+let askBusy = false;
+async function ask(q, chipEl, o = {}){
+  if (askBusy) return; askBusy = true;
+  $$('#sugg .chip').forEach(c => c.classList.toggle('active', c === chipEl));
+  if (!o.silent) { D.chipCount++; track('chip_click', { q: q.id, n: D.chipCount, text: q.text }); }
+  meBubble(q.text); setStep(2); if (o.auto) caption(2);
+  const th = document.createElement('div'); th.className = 'msg sys'; th.innerHTML = '<div class="thinking"><i></i><i></i><i></i></div>'; UI.chat.appendChild(th); scrollChat();
+  await sleep(o.instant ? 0 : 900);
+  const a = answer(q); th.remove();
+  const card = document.createElement('div'); card.className = 'msg sys'; card.innerHTML = `<div class="card"><div class="lead">${esc(a.lead)}</div>${a.chart ? `<div class="chart"><canvas role="img" aria-label="${esc(q.text)}"></canvas></div>` : ''}${a.table ? `<div class="table-wrap">${a.table}</div>` : ''}<div class="answer">${a.text.filter(Boolean).map(t => `<p>${t}</p>`).join('')}</div>
+    <div class="foot"><span>Tính trên ${nfVN.format(D.table.rows.length)} dòng</span><button class="btn-link" type="button" data-src><svg class="ic"><use href="#i-eye"/></svg>Xem dòng gốc</button><details class="sql" style="flex-basis:100%"><summary>Xem phép tính máy đã chạy</summary><pre>${hl(a.sql)}</pre></details></div><div data-source hidden>${sourceHTML(a.used)}</div></div>`;
+  UI.chat.appendChild(card); scrollChat();
+  if (a.chart) makeChart($('canvas', card), a.chart.type, a.chart.labels, a.chart.datasets, { unit: a.chart.unit, horizontal: a.chart.horizontal, allowNegative: a.chart.allowNegative });
+  setStep(3); if (o.auto) caption(3);
+  card.addEventListener('click', e => { if (!e.target.closest('[data-src]')) return; toggleSource(card); if (!$('[data-source]', card).hidden) { setStep(4); track('cite_open', { q: q.id }); } });
+  if (D.chipCount === 3 && !S.flags.waitlist) sysBubble('Thấy hợp không ạ? Bản chính thức hỏi câu gì cũng được. <a href="#waitlist" data-cta="nudge">Giữ chỗ dùng trước</a>, tặng 1 tháng Pro.');
+  askBusy = false; return card;
+}
+function toggleSource(card){ const src = $('[data-source]', card); src.hidden = !src.hidden; const b = $('[data-src]', card); if (b) b.innerHTML = `<svg class="ic"><use href="#i-eye"/></svg>${src.hidden ? 'Xem dòng gốc' : 'Ẩn dòng gốc'}`; scrollChat(); }
+
+/* ---------- Variant B: report ---------- */
+async function makeReport(o = {}){
+  if (askBusy || !D.table) return; askBusy = true;
+  const { date, metric, dim, dim2 } = D.pick; const P = D.P; const rows = D.table.rows; const unit = unitOf(metric);
+  meBubble('Làm báo cáo tháng giúp tôi'); setStep(2); if (o.auto) caption(2);
+  const th = document.createElement('div'); th.className = 'msg sys'; th.innerHTML = '<div class="thinking"><i></i><i></i><i></i></div>'; UI.chat.appendChild(th); scrollChat(); await sleep(900); th.remove();
+  const per = (date && P) ? byPeriod(rows, date, metric, P) : null; const total = rows.reduce((a, r) => a + (parseNum(r[metric.name]) ?? 0), 0);
+  const title = `Báo cáo ${lower(metric.name)}${per ? ` ${per.length > 1 ? per[0].label + ' đến ' + per[per.length - 1].label : per[0].label}` : ''}`;
+  const wrap = document.createElement('div'); wrap.className = 'msg sys'; wrap.innerHTML = `<div class="card report" id="report"><div class="report-head"><h3>${esc(title)}</h3><span class="small muted">Từ ${esc(D.meta.file)} · ${nfVN.format(rows.length)} dòng</span></div><div class="thinking" id="writing" style="padding:8px 12px"><i></i><i></i><i></i></div><div id="secs" style="display:grid;gap:14px"></div></div>`;
+  UI.chat.appendChild(wrap); scrollChat();
+  const secs = $('#secs', wrap); const writing = $('#writing', wrap); setStep(3); if (o.auto) caption(3);
+  const addSec = async (heading, inner) => { await sleep(o.instant ? 0 : 800); const el = document.createElement('div'); el.className = 'sec'; el.innerHTML = `<h4>${esc(heading)}</h4>${inner}`; secs.appendChild(el); scrollChat(); return el; };
+  const g = dim ? byDim(rows, dim, metric) : null;
+  await addSec('Tổng quan', `<div class="kpis"><div class="kpi"><span class="l">Tổng ${esc(lower(metric.name))}</span><span class="v num">${fmt(total, unit)}</span></div>${per && per.length > 1 ? `<div class="kpi"><span class="l">${esc(cap(P.name))} gần nhất</span><span class="v num">${fmt(per[per.length - 1].sum, unit)}</span><span class="d ${pct(per[per.length - 1].sum, per[per.length - 2].sum) >= 0 ? 'up' : 'down'} num">${fmtPct(pct(per[per.length - 1].sum, per[per.length - 2].sum))} so với ${esc(per[per.length - 2].label)}</span></div>` : ''}${g ? `<div class="kpi"><span class="l">${esc(cap(dim.name))} dẫn đầu</span><span class="v" style="font-size:1rem">${esc(g[0].key)}</span><span class="d muted">${fmt(g[0].sum, unit)}</span></div>` : ''}</div>`);
+  if (per) { const best = per.reduce((a, x) => x.sum > a.sum ? x : a, per[0]); const last = per[per.length - 1], prev = per[per.length - 2]; const el = await addSec(`${cap(metric.name)} theo ${P.name}`, `<div class="chart"><canvas role="img"></canvas></div><div class="answer"><p>${prev ? `${esc(last.label)} <span class="${pct(last.sum, prev.sum) >= 0 ? 'up' : 'down'}">${pct(last.sum, prev.sum) >= 0 ? 'tăng' : 'giảm'} ${fmtPct(pct(last.sum, prev.sum)).replace(/^[+-]/, '')}</span> so với ${esc(prev.label)}. ` : ''}${cap(P.name)} tốt nhất là <b>${esc(best.label)}</b> với <b class="num">${fmt(best.sum, unit)}</b> <button class="cite" type="button">1</button>.</p></div>`); makeChart($('canvas', el), 'line', per.map(x => x.label), [{ data: per.map(x => x.sum) }], { unit }); }
+  if (g) { const top = g.slice(0, 5); const el = await addSec(`${cap(dim.name)} bán tốt nhất`, `<div class="chart"><canvas role="img"></canvas></div><div class="answer"><p><b>${esc(top[0].key)}</b> dẫn đầu với <b class="num">${fmt(top[0].sum, unit)}</b> (${nf1.format(top[0].sum / total * 100)}%). Top 5 gom <span class="num">${nf1.format(top.reduce((a, x) => a + x.sum, 0) / total * 100)}%</span> tổng ${esc(lower(metric.name))} <button class="cite" type="button">2</button>.</p></div>`); makeChart($('canvas', el), 'bar', top.map(x => x.key), [{ data: top.map(x => x.sum) }], { unit, horizontal: true }); }
+  const notes = [];
+  if (per && dim) { const ch = dimChange(rows, dim, date, metric, P); if (ch) { const down = ch.items.filter(x => x.pct != null && x.pct < -5); notes.push(down.length ? `<b>${esc(down[0].key)}</b> <span class="down">giảm ${fmtPct(down[0].pct).replace('-', '')}</span> trong ${esc(ch.last)} so với ${esc(ch.prev)}${down.length > 1 ? `, cùng ${down.length - 1} ${lower(dim.name)} khác giảm trên 5%` : ''}. Nên xem lại sớm <button class="cite" type="button">3</button>.` : `Không ${lower(dim.name)} nào giảm quá 5% trong ${esc(ch.last)} <button class="cite" type="button">3</button>.`); } }
+  if (dim2 && dim2 !== dim) { const g2 = byDim(rows, dim2, metric); if (g2.length > 1) notes.push(`Theo ${lower(dim2.name)}: <b>${esc(g2[0].key)}</b> chiếm ${nf1.format(g2[0].sum / total * 100)}%, thấp nhất là ${esc(g2[g2.length - 1].key)} với ${nf1.format(g2[g2.length - 1].sum / total * 100)}% <button class="cite" type="button">3</button>.`); }
+  const qd = missingReport(D.table, D.cols); if (qd.miss.length) notes.push(`File còn ${nfVN.format(qd.miss[0].missing)} ô trống ở cột <b>${esc(qd.miss[0].name)}</b>, các số trên tính trên dòng có dữ liệu.`);
+  if (!per) notes.push('File không có cột ngày nên chưa vẽ được diễn biến theo tháng. Em nói rõ chứ không đoán.');
+  await addSec('Điểm cần để ý', `<div class="answer">${notes.map(t => `<p>${t}</p>`).join('')}</div><div class="foot"><button class="btn-link" type="button" data-src><svg class="ic"><use href="#i-eye"/></svg>Xem dòng gốc</button></div><div data-source hidden>${sourceHTML([date?.name, metric.name, dim?.name, dim2?.name].filter(Boolean))}</div>`);
+  writing.remove();
+  const act = document.createElement('div'); act.className = 'actions'; act.innerHTML = `<button class="btn btn-primary btn-sm" data-gate="export_pdf"><svg class="ic"><use href="#i-pdf"/></svg>Xuất PDF gửi sếp</button><button class="btn btn-ghost btn-sm" data-gate="export_docx">Xuất Word</button><button class="btn btn-ghost btn-sm" data-gate="schedule">Tháng sau tự làm</button>`;
+  $('#report', wrap).appendChild(act); scrollChat();
+  wrap.addEventListener('click', e => { if (e.target.closest('.cite') || e.target.closest('[data-src]')) { toggleSource(wrap); setStep(4); track('cite_open', { q: 'report' }); return; } const gb = e.target.closest('[data-gate]'); if (gb) { startInteractive('gate'); openModal(gb.dataset.gate); } });
+  setStep(4); if (o.auto) caption(4);
+  askBusy = false; return wrap;
+}
+
+/* ============================================================
+   Autoplay: a guided 4-step story on the real engine
+   ============================================================ */
+async function typeInto(input, text, token){ input.value = ''; input.classList.add('typing'); for (const ch of text) { if (AUTO.token !== token) break; input.value += ch; await sleep(22 + Math.random() * 25); } input.classList.remove('typing'); }
+async function autoplay(){
+  if (!CONFIG.AUTOPLAY || reduced || params.results) return;
+  AUTO.running = true; const token = ++AUTO.token; const alive = () => AUTO.running && AUTO.token === token;
+  UI.live.hidden = false; UI.caption.hidden = false; UI.drop.hidden = true;
+  await loadSample(D.caseKey, { silent: true, auto: true }); if (!alive()) return;
+  await sleep(600); if (!alive()) return;
+  if (S.variant === 'a') {
+    const qs = questions().slice(0, 2);
+    for (let i = 0; i < qs.length; i++) {
+      const q = qs[i]; const input = $('#askInput'); caption(2); await typeInto(input, q.text, token); if (!alive()) return; await sleep(300); input.value = '';
+      const card = await ask(q, $$('#sugg .chip')[i], { silent: true, auto: true }); if (!alive()) return;
+      await sleep(1600); if (!alive()) return;
+      if (i === 0 && card) { setStep(4); caption(4); toggleSource(card); await sleep(2600); if (!alive()) return; toggleSource(card); }
+      if (i === 0) { caption(5); await sleep(900); if (!alive()) return; }
+    }
+  } else {
+    const b = $('#makeReport'); for (let i = 0; i < 2; i++) { b.style.transform = 'scale(1.04)'; await sleep(220); b.style.transform = ''; await sleep(300); } if (!alive()) return;
+    await makeReport({ auto: true }); if (!alive()) return;
+    await sleep(1200); if (!alive()) return; const rep = $('#report'); if (rep) { toggleSource(rep.parentElement); await sleep(2400); if (!alive()) return; toggleSource(rep.parentElement); }
+    caption(5); await sleep(900); if (!alive()) return;
+  }
+  if (!alive()) return;
+  AUTO.running = false; UI.live.hidden = true; UI.caption.hidden = true; UI.drop.hidden = false;
+  track('autoplay_done'); UI.overlay.hidden = false; updateMbar();
+}
+function stopAuto(reason = 'interact'){ if (AUTO.running) { AUTO.running = false; AUTO.token++; track('autoplay_skip', { reason }); } UI.live.hidden = true; UI.caption.hidden = true; UI.overlay.hidden = true; UI.drop.hidden = false; const inp = $('#askInput'); if (inp) { inp.classList.remove('typing'); } askBusy = false; }
+function startInteractive(how){ const first = !S.flags.interactive; S.flags.interactive = true; stopAuto(how); if (first) track('interactive_start', { how }); }
+
+/* ============================================================
+   Cases, files
+   ============================================================ */
+async function setCase(key, opts = {}){
+  D.caseKey = key; $$('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.case === key));
+  if (key === 'upload') { UI.persona.textContent = 'Thả file của anh chị vào ô bên dưới. Máy đọc ngay trên trình duyệt, không tải đi đâu.'; if (!opts.keep) { UI.chat.innerHTML = ''; UI.compA.hidden = UI.compB.hidden = true; UI.file.textContent = 'Chưa có file'; setStep(1); } UI.drop.hidden = false; if (opts.open) fileInput.click(); return; }
+  UI.persona.textContent = USECASES[key].persona;
+  if (!opts.noload) await loadSample(key, opts);
+}
+async function loadSample(key, opts = {}){ const s = SAMPLES[key]; if (!s) return; const rows = s.build(); const headers = Object.keys(rows[0]); await loadTable({ headers, rows }, { file: s.file, sheet: s.sheet, key }, 'sample', opts); }
+async function handleFile(file){
+  if (!file) return;
+  if (file.size > CONFIG.MAX_FILE_MB * 1024 * 1024) { showToast(`File lớn hơn ${CONFIG.MAX_FILE_MB}MB. Bản thử chỉ nhận file nhỏ hơn.`); return; }
+  if (!window.XLSX) { showToast('Thư viện đọc Excel chưa tải xong, thử lại sau một giây.'); return; }
+  startInteractive('upload'); D.caseKey = 'upload'; $$('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.case === 'upload')); UI.persona.textContent = 'File của anh chị. Máy đọc ngay trên trình duyệt, không tải đi đâu.';
+  try {
+    const isCsv = /\.csv$/i.test(file.name); let wb;
+    if (isCsv) { const text = await file.text(); wb = XLSX.read(text, { type: 'string', raw: true }); } else { const buf = await file.arrayBuffer(); wb = XLSX.read(buf, { type: 'array', cellDates: true }); }
+    let best = null; for (const name of wb.SheetNames) { const ws = wb.Sheets[name]; if (!ws || !ws['!ref']) continue; const arrays = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true }); if (!best || arrays.length > best.arrays.length) best = { name, arrays }; }
+    if (!best || best.arrays.length < 2) { showToast('Không tìm thấy bảng dữ liệu nào trong file.'); return; }
+    const table = toTable(best.arrays, detectHeader(best.arrays)); if (!table.rows.length) { showToast('Không có dòng dữ liệu nào dưới tiêu đề.'); return; }
+    await loadTable(table, { file: file.name, sheet: isCsv ? file.name.replace(/\.csv$/i, '') : best.name, key: 'upload' }, 'upload');
+    $('#demo').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) { console.error(err); showToast('Không đọc được file này. Thử lưu lại dạng .xlsx hoặc .csv.'); track('demo_upload_error', { ext: (file.name.split('.').pop() || '').toLowerCase() }); }
+}
+function renderCaseCards(){
+  const ICONS = { shopee: 'i-bag', kiotviet: 'i-store', ads: 'i-mega' };
+  $('#caseCards').innerHTML = Object.entries(USECASES).map(([k, uc]) => `<div class="case"><div class="ch"><span class="ico"><svg class="ic"><use href="#${ICONS[k]}"/></svg></span><div><h3>${esc(uc.title)}</h3><p>${esc(uc.blurb)}</p></div></div><ul>${uc.questions.slice(0, 3).map((q, i) => `<li><button type="button" data-case="${k}" data-i="${i}"><svg class="ic"><use href="#i-chat"/></svg>${esc(q.text)}</button></li>`).join('')}</ul></div>`).join('');
+  $('#caseCards').addEventListener('click', async e => { const b = e.target.closest('[data-case]'); if (!b) return; startInteractive('case_card'); track('case_switch', { to: b.dataset.case, from: 'cards' }); $('#demo').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); await setCase(b.dataset.case); const q = USECASES[b.dataset.case].questions[+b.dataset.i]; if (S.variant === 'a') ask(q, $$('#sugg .chip')[+b.dataset.i]); else makeReport(); });
+}
+
+/* ============================================================
+   Waitlist modal
+   ============================================================ */
+const modal = $('#modal'); let gateTrigger = 'cta';
+const COPY = {
+  ask: ['Câu này để bản chính thức trả lời', 'Bản thử chỉ chạy các câu có sẵn. Bản chính thức hiểu câu hỏi tự do. Để lại email, mở cửa là em trả lời đúng câu này trên file của anh chị.'],
+  export_pdf: ['Xuất PDF là tính năng bản chính thức', 'Bản chính thức xuất PDF, Word, Excel giữ nguyên biểu đồ và nguồn. Giữ chỗ để dùng trước.'],
+  export_docx: ['Xuất Word là tính năng bản chính thức', 'Bản chính thức xuất PDF, Word, Excel giữ nguyên biểu đồ và nguồn. Giữ chỗ để dùng trước.'],
+  schedule: ['Tháng sau để máy tự làm', 'Bản chính thức nhận file mới mỗi tháng và lập lại đúng báo cáo này. Giữ chỗ để dùng trước.'],
+  cta: ['Giữ chỗ dùng trước', 'Mở cửa là mời anh chị đầu tiên, kèm 1 tháng Pro.'],
+};
+function openModal(trigger = 'cta', question = ''){
+  gateTrigger = trigger; const c = COPY[trigger] || COPY.cta; $('#modalTitle').textContent = c[0]; $('#modalLead').textContent = c[1];
+  if (question) $('#wlQuestion').value = question;
+  $('#wlQuestionLabel').textContent = S.variant === 'b' ? 'Báo cáo anh chị muốn máy làm mỗi tháng (không bắt buộc)' : 'Câu đầu tiên anh chị muốn hỏi (không bắt buộc)';
+  $('#wlErr').hidden = true; if (!S.flags.waitlist) { $('#wlForm').hidden = false; $('#wlThanks').hidden = true; }
+  modal.hidden = false; document.body.style.overflow = 'hidden';
+  if (trigger !== 'cta') track('gate', { trigger }); track('waitlist_open', { trigger });
+  if (!isMobile()) setTimeout(() => $('#wlEmail').focus(), 50);
+}
+function closeModal(){ modal.hidden = true; document.body.style.overflow = ''; }
+$('#modalClose').addEventListener('click', closeModal); modal.addEventListener('click', e => { if (e.target === modal) closeModal(); }); document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+function hashCode(s){ let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
+$('#wlForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('#wlEmail').value.trim().toLowerCase(); const segment = $('#wlSegment').value; const wtp = ($('input[name=wtp]:checked') || {}).value || ''; const question = $('#wlQuestion').value.trim(); const err = $('#wlErr');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { err.textContent = 'Email chưa đúng, anh chị xem lại giúp em.'; err.hidden = false; return; }
+  if (!segment) { err.textContent = 'Chọn giúp em anh chị đang làm gì, để mời đúng đợt.'; err.hidden = false; return; }
+  err.hidden = true; const btn = $('#wlSubmit'); btn.disabled = true; btn.textContent = 'Đang ghi...';
+  const entry = { email, segment, wtp, question: question.slice(0, 200), trigger: gateTrigger, variant: S.variant, sid: S.sid, vid: S.vid, utm: S.utm, referrer: S.referrer, demo: S.demo, caseKey: D.caseKey, createdAt: new Date().toISOString() };
+  const where = []; post({ type: 'waitlist', ...entry, ...S.utm }); if (CONFIG.ENDPOINT) where.push('máy chủ');
+  try { const list = store.get('lp_waitlist') || []; list.push(entry); store.set('lp_waitlist', list); where.push('trình duyệt này'); } catch {}
+  if (dbRef && dbWritable !== false) { try { await dbRef.collection('waitlist').doc(uid()).set(entry); where.push('artifact'); } catch (e2) { if (e2 && e2.code === 'invalid_argument') dbWritable = false; } }
+  track('waitlist_submit', { segment, wtp, trigger: gateTrigger, hasQuestion: !!question }); flush();
+  $('#wlPos').textContent = '#' + (128 + Math.abs(hashCode(email)) % 300);
+  $('#refLink').value = location.origin + location.pathname + '?ref=' + Math.abs(hashCode(email)).toString(36).slice(0, 6) + '#' + S.variant;
+  $('#wlStored').textContent = where.length ? 'Đã lưu vào: ' + where.join(', ') + '.' : 'Chưa cấu hình nơi lưu (CONFIG.ENDPOINT).';
+  $('#wlForm').hidden = true; $('#wlThanks').hidden = false; btn.disabled = false; btn.textContent = 'Giữ chỗ cho tôi'; updateMbar();
+});
+$('#copyRef').addEventListener('click', async () => { const inp = $('#refLink'); try { await navigator.clipboard.writeText(inp.value); showToast('Đã sao chép link'); } catch { inp.select(); showToast('Chọn và sao chép link ở ô trên'); } track('ref_copy'); });
+let toastT; function showToast(msg){ let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); } t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2800); }
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+function applyVariant(){ $$('[data-variant]').forEach(el => { el.hidden = el.dataset.variant !== S.variant; }); $$('.brandRef').forEach(el => el.textContent = CONFIG.BRAND); document.documentElement.dataset.v = S.variant; }
+const fileInput = $('#fileInput');
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href="#waitlist"]'); if (a) { e.preventDefault(); track('cta_click', { where: a.dataset.cta || 'link' }); openModal('cta'); return; }
+  const d = e.target.closest('a[href="#demo"]'); if (d) { e.preventDefault(); track('cta_click', { where: d.dataset.cta || 'demo' }); $('#demo').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); if (d.hasAttribute('data-watch')) { if (!AUTO.running) { stopAuto('restart'); setCase(D.caseKey === 'upload' ? (S.variant === 'a' ? 'shopee' : 'kiotviet') : D.caseKey, { noload: true }); autoplay(); } } else { startInteractive('cta'); setCase('upload', { keep: true, open: true }); } }
+});
+$('#skipBtn').addEventListener('click', () => startInteractive('skip'));
+$('#ovUpload').addEventListener('click', () => { startInteractive('overlay_upload'); setCase('upload', { keep: true, open: true }); });
+$('#ovSample').addEventListener('click', () => { startInteractive('overlay_sample'); if (S.variant === 'a') $('#askInput')?.focus(); });
+$('#tabs').addEventListener('click', e => { const t = e.target.closest('[data-case]'); if (!t) return; startInteractive('tab'); track('case_switch', { to: t.dataset.case, from: 'tabs' }); setCase(t.dataset.case, t.dataset.case === 'upload' ? { open: true } : {}); });
+$('#askForm').addEventListener('submit', e => { e.preventDefault(); const text = $('#askInput').value.trim(); if (!text) return; startInteractive('typed'); track('question_typed', { text: text.slice(0, 200), rows: D.table?.rows.length || 0 }); meBubble(text); sysBubble('Câu này để bản chính thức trả lời ạ. Anh chị để lại email, mở cửa là em trả lời đúng câu này.'); $('#askInput').value = ''; openModal('ask', text); });
+$('#makeReport').addEventListener('click', () => { startInteractive('make_report'); makeReport(); });
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+['dragenter', 'dragover'].forEach(ev => UI.drop.addEventListener(ev, e => { e.preventDefault(); UI.drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => UI.drop.addEventListener(ev, e => { e.preventDefault(); UI.drop.classList.remove('over'); }));
+UI.drop.addEventListener('drop', e => handleFile(e.dataTransfer.files[0]));
+$('.window').addEventListener('dragover', e => { e.preventDefault(); UI.drop.hidden = false; });
+$('.window').addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer?.files?.[0]) handleFile(e.dataTransfer.files[0]); });
+document.addEventListener('dragover', e => e.preventDefault()); document.addEventListener('drop', e => e.preventDefault());
+$$('.faq details').forEach(d => d.addEventListener('toggle', () => { if (d.open) track('faq_open', { q: d.querySelector('summary').textContent.slice(0, 60) }); }));
+const mbar = $('#mbar');
+function updateMbar(){ const past = $('#demo').getBoundingClientRect().bottom < 0; const b = $('#mbarBtn'); if (S.flags.demo_engaged || S.flags.autoplay_done || S.flags.interactive) { b.textContent = S.flags.waitlist ? 'Đã giữ chỗ' : 'Giữ chỗ dùng trước'; b.href = '#waitlist'; } else { b.textContent = 'Thử với file của tôi'; b.href = '#demo'; } mbar.classList.toggle('show', past && !S.flags.waitlist); document.body.classList.toggle('has-mbar', past && !S.flags.waitlist); }
+let maxScroll = 0;
+addEventListener('scroll', () => { const h = document.documentElement; const p = (h.scrollTop + innerHeight) / h.scrollHeight; if (p > maxScroll) { maxScroll = p; if (p >= .5 && !S.flags.scroll50) { S.flags.scroll50 = true; track('scroll_50'); } if (p >= .9 && !S.flags.scroll90) { S.flags.scroll90 = true; track('scroll_90'); } } updateMbar(); }, { passive: true });
+if ('IntersectionObserver' in window) { const seen = new Set(); const io = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting && !seen.has(x.target.id)) { seen.add(x.target.id); track('section_view', { id: x.target.id }); } }), { threshold: .4 }); ['cases', 'pricing', 'faq', 'waitlist-section'].forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); }); }
+addEventListener('pagehide', () => { track('leave', { seconds: Math.round((Date.now() - new Date(S.startedAt)) / 1000), maxScroll: Math.round(maxScroll * 100) }); flush(); });
+
+/* ============================================================
+   Results (#results)
+   ============================================================ */
+async function renderResults(){
+  $('#landing').hidden = true; $('#results').hidden = false; mbar.hidden = true;
+  let sessions = [], waitlist = [], src = 'bộ nhớ trình duyệt này (chỉ phiên của bạn)';
+  if (dbRef) { try { const s = await dbRef.collection('sessions').limit(1000).get(); sessions = s.docs.map(d => d.data()); const w = await dbRef.collection('waitlist').limit(1000).get(); waitlist = w.docs.map(d => d.data()); src = 'artifact db (mọi phiên của người có quyền ghi)'; } catch (e) { console.warn(e); } }
+  if (!sessions.length) { sessions = Object.values(store.get('lp_sessions') || {}); waitlist = store.get('lp_waitlist') || []; }
+  $('#resultsNote').textContent = `Nguồn: ${src}. Trên domain riêng, dữ liệu nằm trong Google Sheet (CONFIG.ENDPOINT).`;
+  const V = { a: { name: 'A · Hỏi Excel', s: [] }, b: { name: 'B · Báo cáo tự động', s: [] } }; sessions.forEach(s => { if (V[s.variant]) V[s.variant].s.push(s); });
+  const stage = (arr, f) => arr.filter(f).length; const rate = (n, d) => d ? nf1.format(n / d * 100) + '%' : '—';
+  const funnel = v => { const a = v.s, n = a.length; const st = [['Lượt xem', n], ['Xem hết demo', stage(a, s => s.flags?.autoplay_done)], ['Tự thử', stage(a, s => s.flags?.interactive)], ['Tải file của mình', stage(a, s => s.flags?.own_upload)], ['Đụng rào', stage(a, s => s.flags?.gate_hit)], ['Giữ chỗ', stage(a, s => s.flags?.waitlist)]]; return `<div class="card"><h3>${esc(v.name)}</h3>${st.map(([l, c]) => `<div style="display:grid;gap:4px"><div style="display:flex;justify-content:space-between;font-size:.86rem"><span>${l}</span><span class="num"><b>${c}</b> · ${rate(c, n)}</span></div><div class="bar ${v === V.b ? 'b' : ''}"><i style="width:${n ? c / n * 100 : 0}%"></i></div></div>`).join('')}</div>`; };
+  const count = (arr, f) => { const m = {}; arr.forEach(x => { const k = f(x) || '(trống)'; m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+  const typed = sessions.flatMap(s => (s.events || []).filter(e => e.name === 'question_typed').map(e => [s.variant.toUpperCase() + ' · ' + e.text, '']));
+  const SEG = { ecom: 'Bán hàng trên sàn', retail: 'Cửa hàng, chuỗi', finance: 'Kế toán, tài chính', marketing: 'Marketing, agency', ops: 'Vận hành, khác' }; const WTP = { '0': 'Chỉ miễn phí', lt100: '< 100k', '100-300': '100–300k', gt300: '> 300k' };
+  $('#resultsBody').innerHTML = `<div class="cards">${funnel(V.a)}${funnel(V.b)}</div><div class="cards" style="margin-top:14px"><div class="card"><h3>Giữ chỗ theo nhóm</h3>${tableHTML(count(waitlist, w => SEG[w.segment] || w.segment), ['Nhóm', 'Số người'])}</div><div class="card"><h3>Sẵn sàng trả mỗi tháng</h3>${tableHTML(count(waitlist, w => WTP[w.wtp] || w.wtp), ['Mức', 'Số người'])}</div><div class="card"><h3>Giữ chỗ qua rào nào</h3>${tableHTML(count(waitlist, w => w.trigger), ['Rào', 'Số người'])}</div><div class="card"><h3>Tình huống được chọn</h3>${tableHTML(count(sessions.flatMap(s => (s.events || []).filter(e => e.name === 'case_switch')), e => e.to), ['Tình huống', 'Lượt'])}</div><div class="card"><h3>Câu mẫu được bấm</h3>${tableHTML(count(sessions.flatMap(s => (s.events || []).filter(e => e.name === 'chip_click')), e => e.text || e.q), ['Câu', 'Lượt'])}</div></div>
+    <div class="card" style="margin-top:14px"><h3>Câu người dùng tự gõ (${typed.length})</h3>${typed.length ? `<div class="table-wrap">${tableHTML(typed, ['Câu hỏi', ''])}</div>` : '<p class="small muted">Chưa có.</p>'}</div>
+    <div class="card" style="margin-top:14px"><h3>Người giữ chỗ muốn hỏi / báo cáo muốn làm</h3>${waitlist.filter(w => w.question).length ? `<div class="table-wrap">${tableHTML(waitlist.filter(w => w.question).map(w => [w.variant.toUpperCase() + ' · ' + w.question, SEG[w.segment] || '']), ['Nội dung', 'Nhóm'])}</div>` : '<p class="small muted">Chưa có.</p>'}</div>
+    <div class="card" style="margin-top:14px"><h3>Nguồn truy cập</h3>${tableHTML(count(sessions, s => (s.utm?.utm_source || '') + (s.utm?.utm_campaign ? ' / ' + s.utm.utm_campaign : '') || (s.referrer ? 'referrer: ' + s.referrer.replace(/^https?:\/\//, '').split('/')[0] : 'trực tiếp')), ['Nguồn', 'Phiên'])}</div>`;
+}
+
+/* ============================================================
+   Boot
+   ============================================================ */
+applyVariant(); renderCaseCards();
+track('view', { forced: !!params.forced });
+if (params.results) renderResults();
+else {
+  const first = S.variant === 'a' ? 'shopee' : 'kiotviet';
+  D.caseKey = first; $$('#tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.case === first)); UI.persona.textContent = USECASES[first].persona;
+  if (!reduced && CONFIG.AUTOPLAY) autoplay();
+  else loadSample(first, { silent: true, instant: true }).then(() => { if (S.variant === 'a') ask(questions()[0], $$('#sugg .chip')[0], { silent: true, instant: true }); });
+}
+if (window.claude && typeof window.claude.use === 'function') window.claude.use('db').then(db => { if (!db) return; dbRef = db; flush(); if (params.results) renderResults(); }).catch(() => {});
+addEventListener('hashchange', () => { if (location.hash.includes('results')) renderResults(); });
+</script>

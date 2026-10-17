@@ -1,6 +1,46 @@
-# Landing page thử nghiệm thông điệp (A/B) + waitlist
+# Landing Hỏi Số: game ở trang chủ, bản thử Excel ở /chat
 
-Một file `index.html` chứa **hai biến thể** cùng cấu trúc, chỉ khác thông điệp và cách demo:
+| Đường dẫn | File nguồn | Là gì |
+|---|---|---|
+| `/` | `index.html` | **Game Hỏi Số**: trang chủ là một màn chơi, qua đó người chơi thấy toàn bộ tính năng |
+| `/chat` | `chat/index.html` | Bản thử với file Excel thật của người dùng, hai biến thể A/B (mô tả bên dưới) |
+| `/wow` | | Chuyển hướng về `/` cho các link cũ |
+
+## Game ở trang chủ
+
+Cả trang là một màn chơi toàn màn hình, không có đoạn giải thích. Hướng dẫn bằng tay chỉ, icon và nhãn hai ba chữ.
+
+| Màn | Người chơi làm gì | Game đáp lại | Tính năng sản phẩm được thấy |
+|---|---|---|---|
+| Tiêu đề | Bấm **Chơi ngay** | Thế giới bầu trời với 8 file mẫu bay quanh kho | |
+| **1 · Nạp kho** | Kéo file vào kho, bấm **Hút hết**, hoặc thả file của mình | Tay chỉ minh hoạ thao tác, file bay vào kho, điểm và combo, mỗi file rơi vào túi đồ kèm nhãn "đã đọc được gì" | Đọc mọi loại file: Excel, CSV, PDF, ảnh scan, Word, ghi âm, slide |
+| **2 · Hỏi kho** | Đánh 6 thẻ câu hỏi vào quả cầu, hoặc gõ câu hỏi tự do | Mỗi thẻ bay vào cầu rồi diễn một hiệu ứng riêng, xong là sao, xu và thông báo thành tựu | Hỏi đáp có nguồn, SQL ra biểu đồ, bản đồ tri thức, báo cáo xuất PDF/Word, mô hình dữ liệu Excel, từ chối đoán bừa |
+| Phá đảo | Đủ 6 sao | Pháo giấy, cúp, 6 huy hiệu | CTA giữ chỗ, link sang bản thử Excel thật, chơi lại |
+
+Câu gõ tự do được ghép với thẻ gần nghĩa nhất bằng từ khoá. Câu không khớp được trả lời "để bản thật trả lời" kèm nút giữ chỗ, và câu đó được ghi lại làm dữ liệu nhu cầu.
+
+Không dùng thư viện ngoài: thế giới 3D giả lập bằng Canvas 2D, âm thanh tổng hợp bằng WebAudio (chỉ bật sau khi bấm Chơi, có nút tắt). Font Baloo 2 và Nunito, đều có bộ chữ tiếng Việt. Tôn trọng `prefers-reduced-motion`.
+
+Sự kiện được đo (gửi `CONFIG.ENDPOINT`, đẩy `dataLayer` tên `game_*`, lưu bản sao trong `localStorage` khoá `hs_game_events`):
+
+| Sự kiện | Ý nghĩa |
+|---|---|
+| `view`, `play` | Lượt xem, bấm Chơi (hoặc vào thẳng bằng kéo file) |
+| `file_in`, `magnet`, `own_files` | Nạp từng file, dùng nút Hút hết, thả file của chính mình |
+| `level1_clear`, `skip`, `level2_start` | Qua màn 1 hay bỏ qua |
+| `card`, `star` | Đánh thẻ nào, bằng thẻ hay gõ chữ; nhận sao |
+| `typed` | Câu tự gõ và thẻ khớp (trống nếu không khớp) |
+| `all_clear` | Phá đảo |
+| `signup_open`, `signup_submit` | Mở form giữ chỗ từ đâu (`hud`, `final`, `typed_miss`, `drop`), nhóm khách, mức sẵn sàng trả |
+| `try_file`, `info_open`, `cite_open`, `ref_copy`, `replay` | Sang bản thử Excel, xem thông tin, bấm trích dẫn, chép link giới thiệu, chơi lại |
+
+Phễu chính: `view → play → level1_clear → star ≥ 3 → all_clear → signup_submit`.
+
+---
+
+# Bản thử Excel (`/chat`): A/B thông điệp + waitlist
+
+Một file `chat/index.html` chứa **hai biến thể** cùng cấu trúc, chỉ khác thông điệp và cách demo:
 
 | Biến thể | Thông điệp | Demo | Rào chuyển đổi (gate) |
 |---|---|---|---|
@@ -69,9 +109,10 @@ Mở `#results` (hoặc `?view=results` trên domain riêng) để xem bảng ph
 Trang là tĩnh, không cần server. File `index.html` viết theo chuẩn artifact (không có thẻ `<html>`/`<head>`), nên khi tự host hãy đóng gói trước:
 
 ```bash
-sh landing/build-standalone.sh   # tạo landing/dist/index.html đầy đủ doctype + meta
+sh landing/build-standalone.sh        # game  -> landing/dist/index.html
+sh landing/build-standalone.sh chat   # bản thử Excel -> landing/dist/chat/index.html
 # Cloudflare Pages / Netlify / Vercel: kéo thả thư mục landing/ hoặc trỏ repo vào thư mục này
-# Trước đó sửa CONFIG trong index.html:
+# Trước đó sửa CONFIG trong index.html (game) và chat/index.html:
 #   BRAND      tên thương hiệu đã chốt
 #   ENDPOINT   URL Apps Script
 #   SPLIT_A    0.5
@@ -96,22 +137,3 @@ Link giới thiệu sau khi đăng ký có dạng `?ref=<mã>`; `ref` được g
 - [ ] Favicon, ảnh OG (1200×630) cho khi chia sẻ lên Facebook/Zalo
 - [ ] Thử trên điện thoại: thả file từ Zalo/Drive vào được
 - [ ] Ngân sách thử: 2 tuần, 2 kênh, mỗi biến thể tối thiểu 1.000 lượt xem
-
-## Trang chơi 3D (`landing/wow/`)
-
-Biến thể thứ hai, hướng "chơi game" thay vì đọc: `landing/wow/index.html` (cùng chuẩn artifact, không thẻ `<html>`/`<head>`).
-
-| Màn | Người dùng làm gì | Trang đáp lại |
-|---|---|---|
-| **1 · Dọn kho** | Kéo (hoặc bấm) 8 thẻ file 3D lơ lửng vào cổng kho; thả file thật của mình vào sân khấu | Thẻ bay theo đường cong vào cổng, nổ hạt, cộng điểm, combo khi thả nhanh; dòng "đã tìm thấy gì trong file" chạy ở góc; đầy kho thì cổng bùng sáng, camera lao vào, mở màn 2 |
-| **2 · Khai phá** | Bấm 6 ô tính năng | Mỗi ô diễn một hiệu ứng riêng trên sân khấu (hỏi đáp có [n] với tia nối tới nguồn, SQL gõ rồi cột mọc, bản đồ tri thức bung ra, báo cáo tự viết rồi đóng dấu PDF/DOCX, khoá bảng tự dò, lá chắn tin cậy) + thẻ kết quả + huy hiệu; đủ 6 huy hiệu mở "trùm cuối" = CTA giữ chỗ |
-
-Không dùng thư viện ngoài: engine giả lập 3D (chiếu phối cảnh, xoay, sắp xếp theo chiều sâu, hit-test) viết bằng Canvas 2D ngay trong file,
-nên tải nhanh và chạy ổn trên điện thoại. File người dùng thả vào chỉ được đọc tên + dung lượng để vẽ thẻ, không đọc nội dung.
-Tôn trọng `prefers-reduced-motion` (bỏ bay lượn, hạt; vẫn chơi được). Waitlist ghi `localStorage` (`hs_wow_waitlist`) và POST tới `CONFIG.ENDPOINT` nếu có.
-
-```bash
-sh landing/build-standalone.sh wow   # -> landing/dist/wow/index.html
-```
-
-Trên Vercel, trang này là `/wow` (cùng project với trang A/B).
