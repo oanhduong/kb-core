@@ -1,27 +1,26 @@
 <title>Hỏi Số</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one column, white page, light sections. The demo is a chat window like Zalo with a 4-step guide above it. */
+/* Layout: airy white page with soft mint/yellow washes; the chat demo sits right under a short headline so the first screen already shows the product. */
 :root{
-  --bg:#ffffff; --bg-2:#f3f6fb; --surface:#ffffff; --line:#e2e7ef; --ink:#141a2b; --ink-2:#4f586b; --ink-3:#8a93a5;
-  --accent:#1f5eff; --accent-ink:#ffffff; --accent-soft:#e8efff; --accent-deep:#143fb3;
-  --good:#1a8f4e; --good-soft:#e3f5ea; --bad:#d6452f; --bad-soft:#fde8e4; --warm:#fff3cc;
-  --bubble:#1f5eff; --bubble-ink:#ffffff; --card:#f5f7fb;
-  --s1:#1f5eff; --s2:#f28c28;
-  --font:'Be Vietnam Pro',"Segoe UI",Roboto,Arial,sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --bg:#ffffff; --bg-2:#f3faf6; --wash-1:#dff5ea; --wash-2:#fff1c2; --surface:#ffffff; --line:#e3ebe6; --ink:#1f2d3a; --ink-2:#55657a; --ink-3:#8c9aab;
+  --accent:#12a37a; --accent-ink:#ffffff; --accent-soft:#e2f6ee; --accent-deep:#0b7d5c;
+  --sun:#ffc63d; --sun-soft:#fff5d6; --good:#12a37a; --good-soft:#e2f6ee; --bad:#e2533d; --bad-soft:#fdeae6;
+  --bubble:#12a37a; --bubble-ink:#ffffff; --card:#f4f8f6; --s1:#12a37a; --s2:#ff9f1c;
+  --font-h:'Plus Jakarta Sans',"Segoe UI",Roboto,Arial,sans-serif; --font:'Nunito Sans',"Segoe UI",Roboto,Arial,sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){ --bg:#0f131b; --bg-2:#151b26; --surface:#161c27; --line:#273040; --ink:#eef1f6; --ink-2:#aab3c2; --ink-3:#737d8f; --accent:#5b8cff; --accent-ink:#0a1430; --accent-soft:#1b2744; --accent-deep:#8fb0ff; --good:#4ade80; --good-soft:#15301f; --bad:#f87171; --bad-soft:#3a1d19; --warm:#3a3114; --bubble:#5b8cff; --bubble-ink:#0a1430; --card:#1c2330; --s1:#5b8cff; --s2:#f59e52; color-scheme:dark; }
+  :root:not([data-theme="light"]){ --bg:#0f1715; --bg-2:#141f1b; --wash-1:#15302a; --wash-2:#332b12; --surface:#162220; --line:#27352f; --ink:#eaf2ee; --ink-2:#a9b8b0; --ink-3:#73847b; --accent:#36c79a; --accent-ink:#06211a; --accent-soft:#17342a; --accent-deep:#8fe3c6; --sun:#f0bb3e; --sun-soft:#3a3114; --good:#36c79a; --good-soft:#17342a; --bad:#f07a66; --bad-soft:#3a1f1a; --bubble:#36c79a; --bubble-ink:#06211a; --card:#1d2a26; --s1:#36c79a; --s2:#f6a94a; color-scheme:dark; }
 }
-:root[data-theme="dark"]{ --bg:#0f131b; --bg-2:#151b26; --surface:#161c27; --line:#273040; --ink:#eef1f6; --ink-2:#aab3c2; --ink-3:#737d8f; --accent:#5b8cff; --accent-ink:#0a1430; --accent-soft:#1b2744; --accent-deep:#8fb0ff; --good:#4ade80; --good-soft:#15301f; --bad:#f87171; --bad-soft:#3a1d19; --warm:#3a3114; --bubble:#5b8cff; --bubble-ink:#0a1430; --card:#1c2330; --s1:#5b8cff; --s2:#f59e52; color-scheme:dark; }
+:root[data-theme="dark"]{ --bg:#0f1715; --bg-2:#141f1b; --wash-1:#15302a; --wash-2:#332b12; --surface:#162220; --line:#27352f; --ink:#eaf2ee; --ink-2:#a9b8b0; --ink-3:#73847b; --accent:#36c79a; --accent-ink:#06211a; --accent-soft:#17342a; --accent-deep:#8fe3c6; --sun:#f0bb3e; --sun-soft:#3a3114; --good:#36c79a; --good-soft:#17342a; --bad:#f07a66; --bad-soft:#3a1f1a; --bubble:#36c79a; --bubble-ink:#06211a; --card:#1d2a26; --s1:#36c79a; --s2:#f6a94a; color-scheme:dark; }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-img{max-width:100%}
+img,svg{max-width:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-.02em;text-wrap:balance;line-height:1.15}
-h1{font-size:clamp(2rem,5.6vw,3.4rem);font-weight:800}
-h2{font-size:clamp(1.45rem,2.8vw,2.1rem)}
-h3{font-size:1.1rem}
+h1,h2,h3,h4{margin:0;font-family:var(--font-h);font-weight:800;letter-spacing:-.02em;text-wrap:balance;line-height:1.12}
+h1{font-size:clamp(1.9rem,5.4vw,3.3rem)}
+h2{font-size:clamp(1.4rem,2.8vw,2.1rem)}
+h3{font-size:1.1rem;font-weight:700}
 p{margin:0}
 a{color:inherit}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -31,91 +30,97 @@ button{font:inherit;color:inherit;cursor:pointer}
 .muted{color:var(--ink-2)}
 .small{font-size:.875rem}
 .num{font-variant-numeric:tabular-nums}
-mark{background:var(--warm);color:inherit;padding:0 .15em;border-radius:3px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:12px;padding:13px 22px;font-weight:600;font-size:1rem;text-decoration:none;line-height:1.1;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s}
+mark{background:linear-gradient(transparent 50%,var(--sun-soft) 50%);color:inherit;padding:0 .1em}
+.ic{width:1.15em;height:1.15em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:1px solid transparent;border-radius:14px;padding:13px 22px;font-weight:700;font-size:1rem;text-decoration:none;line-height:1.1;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s,box-shadow .15s}
 .btn:active{transform:translateY(1px)}
-.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 8px 20px -10px rgba(18,163,122,.7)}
 .btn-primary:hover{background:var(--accent-deep);color:#fff}
 .btn-ghost{background:var(--surface);border-color:var(--line);color:var(--ink)}
 .btn-ghost:hover{border-color:var(--ink-3)}
-.btn-sm{padding:9px 14px;font-size:.9rem;border-radius:9px}
-.btn-link{background:none;border:0;padding:0;color:var(--accent);font-weight:600}
+.btn-sun{background:var(--sun);color:#3a2a00}
+.btn-sm{padding:9px 14px;font-size:.9rem;border-radius:10px}
+.btn-link{background:none;border:0;padding:0;color:var(--accent-deep);font-weight:700;display:inline-flex;align-items:center;gap:6px}
 .btn[disabled]{opacity:.55;cursor:not-allowed}
 
 /* header */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px)}
 .top .wrap{display:flex;align-items:center;gap:24px;min-height:58px}
-.brand{font-weight:800;letter-spacing:-.02em;text-decoration:none;font-size:1.1rem;display:flex;align-items:center;gap:8px}
-.brand i{width:26px;height:26px;border-radius:8px;background:var(--accent);color:#fff;display:inline-grid;place-items:center;font-style:normal;font-weight:800;font-size:.8rem}
+.brand{font-family:var(--font-h);font-weight:800;letter-spacing:-.02em;text-decoration:none;font-size:1.1rem;display:flex;align-items:center;gap:8px}
+.brand i{width:28px;height:28px;border-radius:9px;background:var(--accent);color:#fff;display:inline-grid;place-items:center;font-style:normal;font-weight:800;font-size:.85rem}
 .top nav{margin-left:auto;display:flex;align-items:center;gap:22px;font-size:.92rem}
-.top nav a:not(.btn){text-decoration:none;color:var(--ink-2);font-weight:500}
+.top nav a:not(.btn){text-decoration:none;color:var(--ink-2);font-weight:600}
 .top nav a:not(.btn):hover{color:var(--ink)}
 @media (max-width:720px){.top nav a:not(.btn){display:none}}
 
-/* hero */
-.hero{padding-block:clamp(36px,7vw,80px) clamp(20px,3vw,32px);text-align:center}
-.hero .narrow{display:grid;gap:18px;justify-items:center}
-.hero .sub{font-size:clamp(1.02rem,1.7vw,1.22rem);color:var(--ink-2);max-width:36em}
-.hero .cta{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:4px}
-.hero .fine{font-size:.86rem;color:var(--ink-3)}
-@media (max-width:480px){.hero .cta{flex-direction:column;width:100%}.hero .cta .btn{width:100%}}
+/* hero: short, demo visible on first screen */
+.hero{position:relative;padding-block:clamp(22px,5vw,56px) 18px;text-align:center}
+.hero::before{content:"";position:absolute;inset:-80px 0 0;z-index:-1;background:radial-gradient(60% 55% at 20% 20%,var(--wash-1),transparent 70%),radial-gradient(45% 45% at 85% 25%,var(--wash-2),transparent 70%)}
+.hero .narrow{display:grid;gap:14px;justify-items:center}
+.hero .sub{font-size:clamp(1rem,1.6vw,1.18rem);color:var(--ink-2);max-width:32em}
+.hero .cta{display:flex;flex-wrap:wrap;gap:10px 18px;justify-content:center;align-items:center;margin-top:4px}
+.hero .fine{font-size:.84rem;color:var(--ink-3);display:inline-flex;gap:6px;align-items:center}
+@media (max-width:480px){.hero{padding-top:18px}.hero .sub{font-size:.98rem}.hero .cta .btn-primary{width:100%}}
 
-/* use-case tabs + steps */
-.tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+/* use-case tabs with icons */
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
 @media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:none;margin-inline:-20px;padding-inline:20px}.tabs::-webkit-scrollbar{display:none}}
-.tab{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 16px;font-size:.92rem;font-weight:500;white-space:nowrap;color:var(--ink-2)}
-.tab:hover{border-color:var(--ink-3);color:var(--ink)}
+.tab{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 14px 9px 10px;font-size:.9rem;font-weight:700;white-space:nowrap;color:var(--ink-2)}
+.tab .ic{width:1.3em;height:1.3em}
+.tab:hover{border-color:var(--accent);color:var(--accent-deep)}
 .tab.active{background:var(--ink);border-color:var(--ink);color:var(--bg)}
-.persona{text-align:center;color:var(--ink-2);font-size:.95rem;margin-bottom:16px;min-height:1.5em}
-.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}
-.step{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--bg-2);color:var(--ink-3);font-size:.84rem;font-weight:500;min-width:0;transition:background .2s,color .2s}
-.step b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--ink-2);display:inline-grid;place-items:center;font-size:.74rem;font-weight:700}
+.persona{display:none}
+
+/* 4 hint tiles */
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.step{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;background:var(--bg-2);color:var(--ink-3);font-size:.86rem;font-weight:700;min-width:0;transition:background .2s,color .2s;position:relative}
+.step .ic{width:1.3em;height:1.3em;flex:none}
+.step b{flex:none;position:absolute;left:-4px;top:-6px;width:18px;height:18px;border-radius:50%;background:var(--surface);border:1px solid var(--line);color:var(--ink-3);display:grid;place-items:center;font-size:.66rem;font-weight:800}
 .step span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.step.on{background:var(--accent-soft);color:var(--accent-deep)}.step.on b{background:var(--accent);color:#fff}
-.step.done{color:var(--ink-2)}.step.done b{background:var(--good);color:#fff}
-@media (max-width:600px){.steps{display:flex;gap:4px}.step{flex:0 0 auto;padding:6px 10px;justify-content:center}.step span{display:none}.step.on{flex:1 1 auto}.step.on span{display:inline}}
+.step.on{background:var(--sun-soft);color:#3a2a00}.step.on b{background:var(--sun);border-color:var(--sun);color:#3a2a00}
+.step.done{color:var(--accent-deep);background:var(--accent-soft)}.step.done b{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (max-width:600px){.steps{display:flex;gap:6px}.step{flex:0 0 auto;padding:8px 10px;justify-content:center}.step span{display:none}.step.on{flex:1 1 auto}.step.on span{display:inline}}
 
 /* chat window */
-.window{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 60px -30px rgba(20,26,43,.35);overflow:hidden;position:relative}
+.window{background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:0 30px 70px -36px rgba(31,45,58,.45);overflow:hidden;position:relative}
 .wbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg-2)}
-.wbar .ava{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:.85rem;flex:none}
+.wbar .ava{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:var(--font-h);font-weight:800;font-size:.9rem;flex:none}
 .wbar .who{display:grid;line-height:1.2;min-width:0}
 .wbar .who b{font-size:.95rem}
 .wbar .who span{font-size:.76rem;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wbar .state{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:.8rem;color:var(--ink-3);white-space:nowrap}
 .wbar .live i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-right:6px;animation:pulse 1.2s infinite}
-.chat{padding:16px;display:grid;gap:14px;min-height:300px;align-content:start}
-@media (max-width:600px){.chat{padding:12px}}
+.chat{padding:16px;display:grid;gap:14px;min-height:280px;align-content:start;background:var(--surface)}
+@media (max-width:600px){.chat{padding:12px;min-height:220px}}
 .msg{display:flex;gap:10px;max-width:100%}
 .msg.me{justify-content:flex-end}
-.bubble{background:var(--bubble);color:var(--bubble-ink);border-radius:18px 18px 4px 18px;padding:11px 16px;max-width:85%;font-size:.98rem;animation:pop .25s ease-out}
-.msg.sys .bubble{background:var(--card);color:var(--ink);border-radius:18px 18px 18px 4px}
+.bubble{background:var(--bubble);color:var(--bubble-ink);border-radius:18px 18px 4px 18px;padding:11px 16px;max-width:85%;font-size:.98rem;animation:pop .25s ease-out;font-weight:600}
+.msg.sys .bubble{background:var(--card);color:var(--ink);border-radius:18px 18px 18px 4px;font-weight:400}
 @keyframes pop{from{transform:translateY(6px);opacity:0}to{transform:none;opacity:1}}
-.filemsg{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;max-width:92%;animation:pop .35s ease-out;min-width:0}
-.filemsg .ic{flex:none;width:40px;height:40px;border-radius:10px;background:var(--good-soft);color:var(--good);display:grid;place-items:center;font-weight:800;font-size:.72rem}
-.filemsg .nm{font-weight:600;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.filemsg{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;max-width:92%;animation:pop .35s ease-out;min-width:0}
+.filemsg .fic{flex:none;width:42px;height:42px;border-radius:12px;background:var(--good-soft);color:var(--good);display:grid;place-items:center;font-weight:800;font-size:.7rem;font-family:var(--font-h)}
+.filemsg .nm{font-weight:700;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .filemsg .meta{font-size:.82rem;color:var(--ink-2)}
-.filemsg .meta b{color:var(--good);font-weight:600}
+.filemsg .meta b{color:var(--good);font-weight:700}
 .cols{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
 .col{font-size:.72rem;padding:3px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
-.col.date{border-color:#bcd3ff}.col.number{border-color:#b8e3c9}.col.category{border-color:#ffd9b3}
-.card{background:var(--card);border-radius:18px 18px 18px 4px;padding:14px 16px;display:grid;gap:12px;max-width:94%;min-width:0;animation:pop .3s ease-out}
-.card .lead{font-weight:600;font-size:1rem}
+.col.date{border-color:#bcd3ff}.col.number{border-color:#9fdcc4}.col.category{border-color:#ffd9a8}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px 18px 18px 4px;padding:14px 16px;display:grid;gap:12px;max-width:94%;min-width:0;animation:pop .3s ease-out;box-shadow:0 10px 30px -22px rgba(31,45,58,.35)}
+.card .lead{font-family:var(--font-h);font-weight:700;font-size:1.02rem}
 .thinking{display:inline-flex;gap:4px;padding:12px 16px;background:var(--card);border-radius:18px 18px 18px 4px}
 .thinking i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);animation:bounce 1s infinite}
 .thinking i:nth-child(2){animation-delay:.15s}.thinking i:nth-child(3){animation-delay:.3s}
 @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
-.chart{position:relative;height:210px;min-width:0;background:var(--surface);border-radius:12px;padding:8px}
+.chart{position:relative;height:210px;min-width:0;background:var(--bg-2);border-radius:12px;padding:8px}
 @media (max-width:600px){.chart{height:190px}}
 .chart canvas{max-width:100%}
 .answer{display:grid;gap:6px;font-size:.95rem}
 .answer b{font-weight:700}
-.up{color:var(--good);font-weight:600}.down{color:var(--bad);font-weight:600}
+.up{color:var(--good);font-weight:700}.down{color:var(--bad);font-weight:700}
 .foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:.8rem;color:var(--ink-3);border-top:1px solid var(--line);padding-top:10px}
-.foot .btn-link{font-size:.82rem}
-.cite{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:5px;background:var(--surface);color:var(--accent);font-family:var(--mono);font-size:.68rem;border:1px solid var(--line);vertical-align:middle;margin-left:2px;cursor:pointer}
-.cite.hot{background:var(--accent);color:#fff}
-.source{border:1px solid var(--line);border-left:3px solid var(--accent);padding:10px 12px;background:var(--surface);border-radius:10px;font-size:.82rem;color:var(--ink-2);display:grid;gap:8px}
+.foot .btn-link{font-size:.84rem}
+.cite{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:5px;background:var(--accent-soft);color:var(--accent-deep);font-family:var(--mono);font-size:.68rem;border:0;vertical-align:middle;margin-left:2px;cursor:pointer}
+.source{border:1px solid var(--line);border-left:3px solid var(--sun);padding:10px 12px;background:var(--bg-2);border-radius:10px;font-size:.82rem;color:var(--ink-2);display:grid;gap:8px}
 .source .tbl{overflow-x:auto}
 .source table{border-collapse:collapse;font-family:var(--mono);font-size:.7rem;width:100%}
 .source th,.source td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -123,15 +128,15 @@ details.sql{border:1px solid var(--line);border-radius:8px;background:var(--surf
 details.sql summary{list-style:none;cursor:pointer;padding:7px 12px;font-size:.78rem;color:var(--ink-3)}
 details.sql summary::-webkit-details-marker{display:none}
 details.sql pre{margin:0;padding:0 12px 10px;font-family:var(--mono);font-size:.72rem;line-height:1.5;overflow-x:auto;color:var(--ink-2)}
-details.sql b{color:var(--accent);font-weight:500}
+details.sql b{color:var(--accent-deep);font-weight:500}
 .table-wrap{overflow-x:auto}
 table.plain{border-collapse:collapse;width:100%;font-size:.84rem}
 table.plain th,table.plain td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
-table.plain th{font-weight:600;color:var(--ink-2);font-size:.76rem}
+table.plain th{font-weight:700;color:var(--ink-2);font-size:.76rem}
 table.plain td.n,table.plain th.n{text-align:right}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:2px}
-.kpi .l{font-size:.72rem;color:var(--ink-3)}.kpi .v{font-weight:800;font-size:1.15rem;letter-spacing:-.01em}.kpi .d{font-size:.76rem}
+.kpi{background:var(--bg-2);border-radius:12px;padding:10px 12px;display:grid;gap:2px}
+.kpi .l{font-size:.72rem;color:var(--ink-3)}.kpi .v{font-family:var(--font-h);font-weight:800;font-size:1.15rem;letter-spacing:-.01em}.kpi .d{font-size:.76rem}
 .report{display:grid;gap:12px}
 .report-head h3{font-size:1.15rem}
 .sec{display:grid;gap:10px;padding-top:6px;border-top:1px solid var(--line)}
@@ -143,75 +148,82 @@ table.plain td.n,table.plain th.n{text-align:right}
 .composer .btn{border-radius:999px}
 .sugg{display:flex;gap:6px;padding:10px 16px 0;flex-wrap:wrap}
 @media (max-width:600px){.sugg{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-inline:12px}.sugg::-webkit-scrollbar{display:none}}
-.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:7px 12px;font-size:.84rem;line-height:1.2;white-space:nowrap}
-.chip:hover{border-color:var(--accent);color:var(--accent)}
-.chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
-.drop{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 16px 12px;border:1.5px dashed var(--line);border-radius:12px;padding:12px;color:var(--ink-2);font-size:.9rem;cursor:pointer;text-align:center}
-.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-deep)}
-.drop b{font-weight:600;color:var(--ink)}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:7px 12px;font-size:.84rem;font-weight:600;line-height:1.2;white-space:nowrap}
+.chip:hover{border-color:var(--accent);color:var(--accent-deep)}
+.chip.active{border-color:var(--accent);color:var(--accent-deep);background:var(--accent-soft)}
+.drop{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 16px 14px;border:1.5px dashed var(--accent);border-radius:14px;padding:13px;color:var(--accent-deep);font-size:.92rem;font-weight:700;cursor:pointer;text-align:center;background:var(--accent-soft)}
+.drop:hover,.drop.over{background:var(--wash-1)}
+.drop .ic{width:1.4em;height:1.4em}
+.drop small{font-weight:400;color:var(--ink-2)}
 .drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-@media (max-width:600px){.drop{margin:0 12px 10px}}
-.caption{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--accent-soft);color:var(--accent-deep);font-size:.92rem;font-weight:500;border-top:1px solid var(--line)}
-.caption .btn-link{margin-left:auto;font-size:.84rem;white-space:nowrap}
-.overlay{position:absolute;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:blur(4px);padding:20px;z-index:3}
-.overlay .box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:grid;gap:12px;justify-items:center;text-align:center;max-width:400px;width:100%;box-shadow:0 20px 50px -20px rgba(20,26,43,.35)}
+@media (max-width:600px){.drop{margin:0 12px 12px;flex-direction:column;gap:4px}}
+.caption{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--sun-soft);color:#3a2a00;font-size:.9rem;font-weight:700;border-top:1px solid var(--line)}
+.caption .ic{width:1.3em;height:1.3em}
+.caption .btn-link{margin-left:auto;font-size:.84rem;white-space:nowrap;color:#3a2a00}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--surface) 78%,transparent);backdrop-filter:blur(4px);padding:20px;z-index:3}
+.overlay .box{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:grid;gap:12px;justify-items:center;text-align:center;max-width:380px;width:100%;box-shadow:0 20px 50px -20px rgba(31,45,58,.35)}
 .overlay h3{font-size:1.25rem}
-.overlay p{color:var(--ink-2);font-size:.95rem}
-.overlay .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.overlay .row{display:grid;gap:8px;width:100%}
 .typing::after{content:"";display:inline-block;width:2px;height:1em;background:var(--ink);margin-left:2px;vertical-align:-2px;animation:pulse .8s infinite}
 @keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
-.alert{padding:10px 14px;border-radius:12px;background:var(--warm);font-size:.9rem}
+.alert{padding:10px 14px;border-radius:12px;background:var(--sun-soft);font-size:.9rem}
 @media (prefers-reduced-motion:reduce){.bubble,.filemsg,.card{animation:none}.thinking i,.wbar .live i,.typing::after{animation:none}}
 
 /* sections */
-section.block{padding-block:clamp(44px,7vw,84px)}
+section.block{padding-block:clamp(40px,7vw,80px)}
 section.tint{background:var(--bg-2)}
-.sec-head{text-align:center;display:grid;gap:10px;max-width:40em;margin:0 auto 32px}
-.sec-head p{color:var(--ink-2);font-size:1.02rem}
+.sec-head{text-align:center;display:grid;gap:8px;max-width:40em;margin:0 auto 28px}
+.sec-head p{color:var(--ink-2);font-size:1rem}
 .cases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 @media (max-width:820px){.cases{grid-template-columns:1fr}}
-.case{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
-.case h3{font-size:1.05rem}
-.case p{color:var(--ink-2);font-size:.92rem}
+.case{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:12px;align-content:start}
+.case .ch{display:flex;align-items:center;gap:10px}
+.case .ch .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--sun-soft);color:#7a5a00;flex:none}
+.case .ch .ico .ic{width:1.3em;height:1.3em}
+.case h3{font-size:1.02rem}
+.case p{color:var(--ink-3);font-size:.84rem}
 .case ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
-.case li button{width:100%;text-align:left;border:1px solid var(--line);background:var(--bg-2);border-radius:10px;padding:10px 12px;font-size:.92rem;display:flex;gap:8px;align-items:center}
-.case li button::after{content:"→";margin-left:auto;color:var(--ink-3)}
-.case li button:hover{border-color:var(--accent);color:var(--accent-deep)}
+.case li button{width:100%;text-align:left;border:1px solid var(--line);background:var(--bg-2);border-radius:12px;padding:10px 12px;font-size:.92rem;font-weight:600;display:flex;gap:10px;align-items:center;color:var(--ink)}
+.case li button .ic{color:var(--accent);width:1.2em;height:1.2em}
+.case li button::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--ink-3);border-top:2px solid var(--ink-3);transform:rotate(45deg);flex:none}
+.case li button:hover{border-color:var(--accent);background:var(--accent-soft)}
 .ba{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:860px;margin-inline:auto}
 @media (max-width:640px){.ba{grid-template-columns:1fr}}
-.ba > div{border-radius:16px;padding:22px;display:grid;gap:10px;align-content:start}
+.ba > div{border-radius:18px;padding:22px;display:grid;gap:10px;align-content:start}
 .ba .before{background:var(--surface);border:1px solid var(--line)}
-.ba .after{background:var(--accent-soft);border:1px solid transparent}
-.ba h3{display:flex;align-items:center;gap:8px}
+.ba .after{background:var(--accent-soft)}
 .ba ul{margin:0;padding-left:0;list-style:none;display:grid;gap:8px;color:var(--ink-2);font-size:.95rem}
-.ba .before li::before{content:"✕";color:var(--bad);margin-right:8px;font-size:.8rem}
-.ba .after li::before{content:"✓";color:var(--good);margin-right:8px;font-size:.85rem}
-.ba .t{font-size:1.6rem;font-weight:800;letter-spacing:-.02em}
-.why{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
-@media (max-width:720px){.why{grid-template-columns:1fr;gap:22px}}
-.why h3{margin-bottom:6px}
-.why p{color:var(--ink-2);font-size:.95rem}
+.ba li{display:flex;gap:10px;align-items:flex-start}
+.ba li .ic{margin-top:3px}
+.ba .before li .ic{color:var(--bad)}.ba .after li .ic{color:var(--good)}
+.ba .t{font-family:var(--font-h);font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+.why{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+@media (max-width:720px){.why{grid-template-columns:1fr;gap:16px}}
+.why > div{display:grid;gap:8px;padding:20px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.why .ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-deep)}
+.why .ico .ic{width:1.4em;height:1.4em}
+.why p{color:var(--ink-2);font-size:.93rem}
 .pricing{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:760px;margin-inline:auto}
 @media (max-width:600px){.pricing{grid-template-columns:1fr}}
-.plan{border:1px solid var(--line);border-radius:16px;padding:24px;display:grid;gap:10px;background:var(--surface)}
-.plan.pro{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.plan .name{font-size:.8rem;color:var(--ink-3);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.plan .price{font-size:1.8rem;font-weight:800;letter-spacing:-.02em}
-.plan .price small{font-size:.9rem;font-weight:500;color:var(--ink-3)}
+.plan{border:1px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:10px;background:var(--surface)}
+.plan.pro{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.plan .name{font-size:.78rem;color:var(--ink-3);font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.plan .price{font-family:var(--font-h);font-size:1.9rem;font-weight:800;letter-spacing:-.02em}
+.plan .price small{font-family:var(--font);font-size:.9rem;font-weight:600;color:var(--ink-3)}
 .plan ul{margin:0;padding-left:0;list-style:none;display:grid;gap:7px;color:var(--ink-2);font-size:.95rem}
-.plan li::before{content:"✓";color:var(--good);margin-right:8px}
+.plan li{display:flex;gap:8px;align-items:center}.plan li .ic{color:var(--good)}
 .faq{max-width:760px;margin-inline:auto}
-.faq details{border-top:1px solid var(--line);padding:16px 0}
+.faq details{border-top:1px solid var(--line);padding:15px 0}
 .faq details:last-child{border-bottom:1px solid var(--line)}
-.faq summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:12px;font-size:1rem}
+.faq summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px;font-size:1rem}
 .faq summary::-webkit-details-marker{display:none}
 .faq summary::after{content:"+";color:var(--ink-3);flex:none}
 .faq details[open] summary::after{content:"–"}
 .faq details p{margin-top:8px;color:var(--ink-2);font-size:.95rem}
-.final{text-align:center;display:grid;gap:14px;justify-items:center}
-.final p{color:var(--ink-2);max-width:34em;font-size:1.02rem}
-footer{padding-block:28px 40px;color:var(--ink-3);font-size:.84rem;border-top:1px solid var(--line)}
+.final{text-align:center;display:grid;gap:14px;justify-items:center;background:linear-gradient(135deg,var(--wash-1),var(--wash-2));border-radius:24px;padding:clamp(28px,5vw,48px)}
+.final p{color:var(--ink-2);max-width:32em;font-size:1rem}
+footer{padding-block:28px 40px;color:var(--ink-3);font-size:.84rem}
 footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
 
 /* mobile bar */
@@ -220,14 +232,14 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
 @media (max-width:720px){.mbar.show{display:block}body.has-mbar{padding-bottom:72px}}
 
 /* modal */
-.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(10,14,25,.55)}
-.modal .box{position:relative;background:var(--surface);color:var(--ink);border-radius:18px;max-width:480px;width:100%;padding:24px;display:grid;gap:14px;max-height:calc(100vh - 32px);overflow:auto}
-@media (max-width:600px){.modal{place-items:end;padding:0}.modal .box{border-radius:18px 18px 0 0;max-height:92vh;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}}
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(20,30,26,.5)}
+.modal .box{position:relative;background:var(--surface);color:var(--ink);border-radius:20px;max-width:480px;width:100%;padding:24px;display:grid;gap:14px;max-height:calc(100vh - 32px);overflow:auto}
+@media (max-width:600px){.modal{place-items:end;padding:0}.modal .box{border-radius:20px 20px 0 0;max-height:92vh;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}}
 .modal h3{font-size:1.3rem}
 .modal .x{position:absolute;right:14px;top:10px;border:0;background:transparent;font-size:1.6rem;color:var(--ink-3);line-height:1}
 .field{display:grid;gap:6px}
-.field label{font-size:.88rem;font-weight:600}
-.field input:not([type=radio]):not([type=checkbox]),.field select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px;font:inherit;font-size:16px;color:var(--ink);width:100%}
+.field label{font-size:.88rem;font-weight:700}
+.field input:not([type=radio]):not([type=checkbox]),.field select{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;font:inherit;font-size:16px;color:var(--ink);width:100%}
 .radios{display:flex;flex-wrap:wrap;gap:8px}
 .radios label{border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:.86rem;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
 .radios input[type=radio]{margin:0;width:16px;height:16px;flex:none;accent-color:var(--accent)}
@@ -241,12 +253,33 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
 /* results */
 .results{padding-block:32px;display:grid;gap:18px}
 .results .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
-.results .card{border-radius:12px;max-width:none;animation:none;background:var(--surface);border:1px solid var(--line)}
+.results .card{border-radius:12px;max-width:none;animation:none;background:var(--surface);border:1px solid var(--line);box-shadow:none}
 .results .card h3{font-size:.92rem;color:var(--ink-2)}
 .bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--accent)}
 .bar.b i{background:var(--s2)}
 </style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0 4 4m-4-4-4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/><path d="M12 11v7m0 0-3-3m3 3 3-3"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 10 5 4h14l1 6"/><path d="M4 10c0 2 1.5 3 3 3s3-1 3-3c0 2 1.5 3 3 3s3-1 3-3c0 2 1.5 3 3 3s3-1 3-3"/><path d="M5 13v7h14v-7M10 20v-5h4v5"/></symbol>
+  <symbol id="i-mega" viewBox="0 0 24 24"><path d="M4 10v4h3l7 4V6l-7 4z"/><path d="M17 9a4 4 0 0 1 0 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6-5.5 6-11a6 6 0 0 0-12 0c0 5.5 6 11 6 11z"/><circle cx="12" cy="10" r="2"/></symbol>
+  <symbol id="i-vn" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6 4.4 2.3 7L12 16l-6.3 4.4 2.3-7L2 9h7.6z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14"/><path d="M21 3 14 21l-4-7-7-4z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+</svg>
 
 <header class="top">
   <div class="wrap">
@@ -255,7 +288,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
       <a href="#demo">Xem thử</a>
       <a href="#cases">Hỏi được gì</a>
       <a href="#pricing">Giá</a>
-      <a href="#waitlist" class="btn btn-ghost btn-sm" data-cta="top">Giữ chỗ dùng trước</a>
+      <a href="#waitlist" class="btn btn-ghost btn-sm" data-cta="top"><svg class="ic"><use href="#i-spark"/></svg>Giữ chỗ</a>
     </nav>
   </div>
 </header>
@@ -263,31 +296,31 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
 <main id="landing">
 <section class="hero" id="top">
   <div class="wrap narrow">
-    <h1 data-variant="a">Có file Excel bán hàng? Hỏi gì cũng ra số.</h1>
-    <h1 data-variant="b">Báo cáo tháng xong trước giờ cơm trưa.</h1>
-    <p class="sub" data-variant="a">Thả file bán hàng, tồn kho, chi phí vào. Hỏi bằng tiếng Việt như nhắn tin. Máy trả lời bằng <mark>con số đúng</mark> và biểu đồ, kèm luôn chỗ lấy số để anh chị kiểm tra.</p>
-    <p class="sub" data-variant="b">Thả file xuất từ Shopee, KiotViet, Misa vào. Hai phút sau có bản báo cáo đủ biểu đồ, nhận xét, <mark>số nào cũng chỉ rõ nguồn</mark>. Xuất PDF gửi sếp.</p>
+    <h1 data-variant="a">Có file Excel bán hàng? <mark>Hỏi gì cũng ra số.</mark></h1>
+    <h1 data-variant="b">Báo cáo tháng từ Excel, <mark>xong trong 2 phút.</mark></h1>
+    <p class="sub" data-variant="a">Thả file vào, hỏi như nhắn tin. Có số đúng, có biểu đồ, có luôn chỗ lấy số.</p>
+    <p class="sub" data-variant="b">Thả file xuất từ Shopee, KiotViet, Misa vào. Có biểu đồ, nhận xét, số nào cũng chỉ rõ nguồn.</p>
     <div class="cta">
-      <a href="#demo" class="btn btn-primary" data-cta="hero">Thử ngay với file của tôi</a>
-      <a href="#demo" class="btn btn-ghost" data-cta="hero2" data-watch>Xem demo 30 giây</a>
+      <a href="#demo" class="btn btn-primary" data-cta="hero"><svg class="ic"><use href="#i-upload"/></svg>Thử với file của tôi</a>
+      <a href="#demo" class="btn-link" data-cta="hero2" data-watch><svg class="ic"><use href="#i-play"/></svg>Xem demo 30 giây</a>
     </div>
-    <p class="fine">Không cần đăng ký. File nằm nguyên trên máy anh chị, không tải đi đâu.</p>
+    <p class="fine"><svg class="ic"><use href="#i-lock"/></svg>Không cần đăng ký. File nằm nguyên trên máy anh chị.</p>
   </div>
 </section>
 
 <section class="wrap" id="demo">
   <div class="tabs" id="tabs">
-    <button class="tab" data-case="shopee">Bán trên Shopee, Lazada</button>
-    <button class="tab" data-case="kiotviet">Chuỗi cửa hàng</button>
-    <button class="tab" data-case="ads">Chạy quảng cáo</button>
-    <button class="tab" data-case="upload">File của tôi</button>
+    <button class="tab" data-case="shopee"><svg class="ic"><use href="#i-bag"/></svg>Bán trên sàn</button>
+    <button class="tab" data-case="kiotviet"><svg class="ic"><use href="#i-store"/></svg>Chuỗi cửa hàng</button>
+    <button class="tab" data-case="ads"><svg class="ic"><use href="#i-mega"/></svg>Chạy quảng cáo</button>
+    <button class="tab" data-case="upload"><svg class="ic"><use href="#i-file"/></svg>File của tôi</button>
   </div>
-  <p class="persona" id="persona"></p>
+  <p class="persona" id="persona" hidden></p>
   <div class="steps" id="steps">
-    <div class="step" data-step="1"><b>1</b><span>Thả file vào</span></div>
-    <div class="step" data-step="2"><b>2</b><span data-variant="a">Hỏi như nhắn tin</span><span data-variant="b">Bấm làm báo cáo</span></div>
-    <div class="step" data-step="3"><b>3</b><span data-variant="a">Nhận số và biểu đồ</span><span data-variant="b">Máy viết từng mục</span></div>
-    <div class="step" data-step="4"><b>4</b><span data-variant="a">Bấm xem số lấy từ đâu</span><span data-variant="b">Xuất PDF gửi sếp</span></div>
+    <div class="step" data-step="1"><b>1</b><svg class="ic"><use href="#i-upload"/></svg><span>Thả file</span></div>
+    <div class="step" data-step="2"><b>2</b><svg class="ic"><use href="#i-chat"/></svg><span data-variant="a">Hỏi</span><span data-variant="b">Bấm làm</span></div>
+    <div class="step" data-step="3"><b>3</b><svg class="ic"><use href="#i-chart"/></svg><span data-variant="a">Có số</span><span data-variant="b">Máy viết</span></div>
+    <div class="step" data-step="4"><b>4</b><svg class="ic"><use href="#i-eye"/></svg><span data-variant="a">Xem nguồn</span><span data-variant="b">Xuất PDF</span></div>
   </div>
   <div class="window">
     <div class="wbar">
@@ -298,26 +331,24 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
     <div class="chat" id="chat"></div>
     <div id="composerA" hidden>
       <div class="sugg" id="sugg"></div>
-      <form class="composer" id="askForm"><input id="askInput" type="text" placeholder="Hỏi gì về file này cũng được..." maxlength="200" autocomplete="off"><button class="btn btn-primary btn-sm" type="submit">Gửi</button></form>
+      <form class="composer" id="askForm"><input id="askInput" type="text" placeholder="Hỏi gì về file này cũng được..." maxlength="200" autocomplete="off"><button class="btn btn-primary btn-sm" type="submit" aria-label="Gửi"><svg class="ic"><use href="#i-send"/></svg></button></form>
     </div>
-    <div id="composerB" hidden><div class="composer"><button class="btn btn-primary" id="makeReport" style="flex:1">Làm báo cáo tháng</button></div></div>
-    <label class="drop" id="drop"><b>Thả file .xlsx hoặc .csv của anh chị vào đây</b><span class="small">hoặc bấm để chọn · tối đa 20MB</span><input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.xlsm"></label>
-    <div class="caption" id="caption" hidden><span id="captionText"></span><button class="btn-link" id="skipBtn">Bỏ qua, tôi tự thử</button></div>
+    <div id="composerB" hidden><div class="composer"><button class="btn btn-primary" id="makeReport" style="flex:1"><svg class="ic"><use href="#i-spark"/></svg>Làm báo cáo tháng</button></div></div>
+    <label class="drop" id="drop"><svg class="ic"><use href="#i-upload"/></svg><span>Thả file .xlsx / .csv của anh chị vào đây <small>· hoặc bấm để chọn</small></span><input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.xlsm"></label>
+    <div class="caption" id="caption" hidden><svg class="ic"><use href="#i-spark"/></svg><span id="captionText"></span><button class="btn-link" id="skipBtn">Tự thử</button></div>
     <div class="overlay" id="overlay" hidden>
       <div class="box">
         <h3>Đến lượt anh chị</h3>
-        <p data-variant="a">Thả file của mình vào, hoặc hỏi tiếp trên dữ liệu mẫu. Không cần đăng ký.</p>
-        <p data-variant="b">Thả file của mình vào, xem báo cáo từ số liệu thật. Không cần đăng ký.</p>
-        <div class="row"><button class="btn btn-primary" id="ovUpload">Thả file của tôi</button><button class="btn btn-ghost" id="ovSample">Hỏi tiếp trên file mẫu</button></div>
+        <div class="row"><button class="btn btn-primary" id="ovUpload"><svg class="ic"><use href="#i-upload"/></svg>Thả file của tôi</button><button class="btn btn-ghost" id="ovSample"><svg class="ic"><use href="#i-chat"/></svg>Hỏi tiếp trên file mẫu</button></div>
+        <p class="small muted">Không cần đăng ký. File không tải đi đâu.</p>
       </div>
     </div>
   </div>
-  <p class="small muted" style="text-align:center;margin-top:12px">Bản thử này chạy ngay trên trình duyệt với các câu hỏi có sẵn. Bản chính thức hiểu câu hỏi tự do và làm việc trên nhiều file cùng lúc.</p>
 </section>
 
 <section class="block" id="cases">
   <div class="wrap">
-    <div class="sec-head"><h2>Anh chị hay cần hỏi gì?</h2><p>Bấm vào một câu, máy chạy thử ngay trên dữ liệu mẫu phía trên.</p></div>
+    <div class="sec-head"><h2>Anh chị hay cần hỏi gì?</h2><p>Bấm một câu, máy chạy thử ngay.</p></div>
     <div class="cases" id="caseCards"></div>
   </div>
 </section>
@@ -326,8 +357,8 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
   <div class="wrap">
     <div class="sec-head"><h2>Trước đây và bây giờ</h2></div>
     <div class="ba">
-      <div class="before"><h3>Cuối tháng trước đây</h3><ul><li>Mở file vài nghìn dòng, kéo pivot, lọc đi lọc lại</li><li>Vẽ biểu đồ xong còn phải kiểm tra lại số</li><li>Sếp hỏi "số này ở đâu ra?" lại mở file tìm</li><li>Nhờ kế toán hay nhờ bạn biết Excel giúp</li></ul><div class="t">Mất cả buổi</div></div>
-      <div class="after"><h3>Với Hỏi Số</h3><ul><li>Thả file, hỏi bằng lời thường</li><li>Có số, có biểu đồ, có nhận xét ngay</li><li>Số nào cũng bấm được để thấy dòng gốc</li><li>Ghim vào báo cáo, xuất PDF gửi đi</li></ul><div class="t">Khoảng 2 phút</div></div>
+      <div class="before"><h3>Cuối tháng trước đây</h3><ul><li><svg class="ic"><use href="#i-x"/></svg>Kéo pivot, lọc đi lọc lại</li><li><svg class="ic"><use href="#i-x"/></svg>Vẽ biểu đồ xong còn kiểm lại số</li><li><svg class="ic"><use href="#i-x"/></svg>Sếp hỏi "số này ở đâu ra?" lại mở file dò</li></ul><div class="t">Mất cả buổi</div></div>
+      <div class="after"><h3>Với Hỏi Số</h3><ul><li><svg class="ic"><use href="#i-check"/></svg>Thả file, hỏi bằng lời thường</li><li><svg class="ic"><use href="#i-check"/></svg>Có số, có biểu đồ ngay</li><li><svg class="ic"><use href="#i-check"/></svg>Bấm là thấy dòng gốc, xuất PDF gửi đi</li></ul><div class="t">Khoảng 2 phút</div></div>
     </div>
   </div>
 </section>
@@ -336,40 +367,40 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
   <div class="wrap">
     <div class="sec-head"><h2>Vì sao tin được con số?</h2></div>
     <div class="why">
-      <div><h3>Không bịa số</h3><p>Nhiều app AI đọc bảng rồi "đoán". Ở đây máy tính thật trên bảng của anh chị, AI chỉ lo phần hiểu câu hỏi. Không đủ dữ liệu thì nói thẳng là không biết.</p></div>
-      <div><h3>Số nào cũng chỉ được nguồn</h3><p>Sếp hỏi "số này ở đâu ra?", bấm một cái là thấy sheet nào, cột nào, dòng nào trong file. Không phải mở lại file dò.</p></div>
-      <div><h3>Ăn được file kiểu Việt Nam</h3><p>Dấu chấm hàng nghìn, ngày 31/12, tiêu đề nằm ở dòng 5, gộp nhiều sheet. Thả nguyên file xuất ra, không phải dọn trước.</p></div>
+      <div><span class="ico"><svg class="ic"><use href="#i-calc"/></svg></span><h3>Không bịa số</h3><p>Máy tính thật trên bảng của anh chị. AI chỉ lo hiểu câu hỏi. Thiếu dữ liệu thì nói thiếu.</p></div>
+      <div><span class="ico"><svg class="ic"><use href="#i-pin"/></svg></span><h3>Số nào cũng chỉ được nguồn</h3><p>Sếp hỏi "số này ở đâu ra?", bấm một cái là thấy sheet, cột, dòng.</p></div>
+      <div><span class="ico"><svg class="ic"><use href="#i-vn"/></svg></span><h3>Ăn được file kiểu Việt Nam</h3><p>Dấu chấm hàng nghìn, ngày 31/12, tiêu đề nằm dòng 5. Thả nguyên file, không cần dọn.</p></div>
     </div>
   </div>
 </section>
 
 <section class="block tint" id="pricing">
   <div class="wrap">
-    <div class="sec-head"><h2>Giá khi ra mắt</h2><p>Dùng thử miễn phí, không cần thẻ. Thấy hợp mới trả tiền.</p></div>
+    <div class="sec-head"><h2>Giá khi ra mắt</h2><p>Dùng thử miễn phí, không cần thẻ.</p></div>
     <div class="pricing">
-      <div class="plan"><span class="name">Miễn phí</span><span class="price">0đ</span><ul><li>3 file, 30 câu hỏi mỗi tháng</li><li>Biểu đồ và nguồn đầy đủ</li><li>Không cần thẻ</li></ul></div>
-      <div class="plan pro"><span class="name">Pro</span><span class="price">199.000đ <small>/ tháng</small></span><ul><li>50 file, 300 câu hỏi mỗi tháng</li><li>Xuất PDF, Word, Excel</li><li>Báo cáo tự động hàng tháng</li><li>Mời đồng nghiệp cùng xem</li></ul></div>
+      <div class="plan"><span class="name">Miễn phí</span><span class="price">0đ</span><ul><li><svg class="ic"><use href="#i-check"/></svg>3 file, 30 câu hỏi mỗi tháng</li><li><svg class="ic"><use href="#i-check"/></svg>Biểu đồ và nguồn đầy đủ</li></ul></div>
+      <div class="plan pro"><span class="name">Pro</span><span class="price">199.000đ <small>/ tháng</small></span><ul><li><svg class="ic"><use href="#i-check"/></svg>50 file, 300 câu hỏi mỗi tháng</li><li><svg class="ic"><use href="#i-check"/></svg>Xuất PDF, Word, Excel</li><li><svg class="ic"><use href="#i-check"/></svg>Báo cáo tự động hàng tháng</li><li><svg class="ic"><use href="#i-check"/></svg>Mời đồng nghiệp cùng xem</li></ul></div>
     </div>
-    <p class="small muted" style="text-align:center;margin-top:16px">Giữ chỗ bây giờ: được mời dùng trước và tặng 1 tháng Pro.</p>
+    <p class="small muted" style="text-align:center;margin-top:16px">Giữ chỗ bây giờ: dùng trước, tặng 1 tháng Pro.</p>
   </div>
 </section>
 
 <section class="block faq" id="faq">
   <div class="wrap">
     <div class="sec-head"><h2>Hỏi nhanh đáp gọn</h2></div>
-    <details><summary>File của tôi có bị đưa đi đâu không?</summary><p>Bản thử trên trang này chạy hoàn toàn trong trình duyệt, không có gì rời khỏi máy anh chị. Bản chính thức lưu file trong không gian riêng của anh chị, không dùng để dạy AI, xoá là mất hẳn.</p></details>
-    <details><summary>Nó có đoán bừa số không?</summary><p>Không. AI chỉ dịch câu hỏi của anh chị thành phép tính, còn phép tính chạy trên bảng thật. Câu nào cũng kèm nguồn để kiểm tra. Thiếu dữ liệu thì máy nói thiếu, không bịa.</p></details>
-    <details><summary>Tôi dùng file xuất từ đâu cũng được?</summary><p>Shopee, Lazada, TikTok Shop, KiotViet, Sapo, Misa, Google Ads, Facebook Ads hay bảng tự làm trong Excel, Google Sheets đều được. Bản chính thức nhận thêm Word, PDF.</p></details>
-    <details><summary>Khi nào dùng được?</summary><p>Đầu 2027. Ai giữ chỗ trước được mời dùng trước, theo thứ tự đăng ký.</p></details>
+    <details><summary>File của tôi có bị đưa đi đâu không?</summary><p>Bản thử chạy hoàn toàn trong trình duyệt, không có gì rời khỏi máy anh chị. Bản chính thức lưu trong không gian riêng, không dùng để dạy AI, xoá là mất hẳn.</p></details>
+    <details><summary>Nó có đoán bừa số không?</summary><p>Không. AI chỉ dịch câu hỏi thành phép tính, phép tính chạy trên bảng thật. Câu nào cũng kèm nguồn. Thiếu dữ liệu thì máy nói thiếu.</p></details>
+    <details><summary>File xuất từ đâu cũng dùng được?</summary><p>Shopee, Lazada, TikTok Shop, KiotViet, Sapo, Misa, Google Ads, Facebook Ads hay bảng tự làm trong Excel, Google Sheets. Bản chính thức nhận thêm Word, PDF.</p></details>
+    <details><summary>Khi nào dùng được?</summary><p>Đầu 2027. Ai giữ chỗ trước được mời trước.</p></details>
   </div>
 </section>
 
 <section class="block" id="waitlist-section">
-  <div class="wrap final">
+  <div class="wrap"><div class="final">
     <h2>Giữ chỗ dùng trước</h2>
-    <p>Để lại email. Khi mở cửa, anh chị là người được mời đầu tiên, kèm 1 tháng Pro. Không gửi gì khác.</p>
-    <a href="#waitlist" class="btn btn-primary" data-cta="final">Giữ chỗ cho tôi</a>
-  </div>
+    <p>Mở cửa là mời anh chị đầu tiên, kèm 1 tháng Pro. Không gửi gì khác.</p>
+    <a href="#waitlist" class="btn btn-primary" data-cta="final"><svg class="ic"><use href="#i-spark"/></svg>Giữ chỗ cho tôi</a>
+  </div></div>
 </section>
 </main>
 
@@ -734,8 +765,8 @@ const USECASES = {
     questions: [{ text: 'Chiến dịch nào tháng này tụt doanh thu?', id: 'decline' }, { text: 'Chi bao nhiêu, thu về bao nhiêu?', id: 'net' }, { text: 'Kênh nào ra doanh thu nhiều nhất?', id: 'topcol', col: 'Kênh' }, { text: 'Tháng nào thu nhiều nhất?', id: 'peak' }] },
 };
 const CAPTIONS = {
-  a: { 1: 'Bước 1: Thả nguyên file xuất ra, không cần dọn. Máy tự nhận ra cột ngày, cột tiền, cột sản phẩm.', 2: 'Bước 2: Hỏi như nhắn tin cho đồng nghiệp.', 3: 'Bước 3: Máy tính trên bảng thật rồi trả lời bằng số và biểu đồ.', 4: 'Bước 4: Bấm "Xem dòng gốc" để biết số này lấy từ đâu. Sếp hỏi là có ngay.', 5: 'Hỏi tiếp câu nữa, bao nhiêu câu cũng được.' },
-  b: { 1: 'Bước 1: Thả nguyên file xuất ra, không cần dọn. Máy tự nhận ra cột ngày, cột tiền, cột chi nhánh.', 2: 'Bước 2: Bấm một nút, máy lập dàn ý báo cáo.', 3: 'Bước 3: Máy viết từng mục, số nào cũng tính trên bảng thật.', 4: 'Bước 4: Bấm vào số để xem dòng gốc, rồi xuất PDF gửi sếp.', 5: 'Tháng sau thả file mới, báo cáo giữ nguyên bố cục.' },
+  a: { 1: 'Thả nguyên file, máy tự nhận cột ngày, cột tiền', 2: 'Hỏi như nhắn tin', 3: 'Máy tính trên bảng thật, trả lời có biểu đồ', 4: 'Bấm "Xem dòng gốc" để biết số từ đâu ra', 5: 'Hỏi tiếp bao nhiêu câu cũng được' },
+  b: { 1: 'Thả nguyên file, máy tự nhận cột ngày, cột tiền', 2: 'Bấm một nút, máy lập dàn ý', 3: 'Máy viết từng mục trên số thật', 4: 'Bấm vào số để xem dòng gốc, rồi xuất PDF', 5: 'Tháng sau thả file mới là xong' },
 };
 
 /* ============================================================
@@ -761,7 +792,7 @@ async function loadTable(table, meta, source, opts = {}){
   const kinds = { date: 'ngày', number: 'số', category: 'nhóm', id: 'mã', text: 'chữ' };
   const shown = D.cols.slice(0, isMobile() ? 6 : 10);
   const fm = document.createElement('div'); fm.className = 'msg me';
-  fm.innerHTML = `<div class="filemsg"><span class="ic">${esc((meta.file.split('.').pop() || 'xlsx').toUpperCase().slice(0, 4))}</span><div style="min-width:0"><div class="nm">${esc(meta.file)}</div><div class="meta">Đã đọc <b>${nfVN.format(table.rows.length)} dòng</b>, ${D.cols.length} cột · sheet ${esc(meta.sheet)}</div><div class="cols">${shown.map(c => `<span class="col ${c.kind}">${esc(c.name)} · ${kinds[c.kind]}</span>`).join('')}${D.cols.length > shown.length ? `<span class="col">+${D.cols.length - shown.length}</span>` : ''}</div></div></div>`;
+  fm.innerHTML = `<div class="filemsg"><span class="fic">${esc((meta.file.split('.').pop() || 'xlsx').toUpperCase().slice(0, 4))}</span><div style="min-width:0"><div class="nm">${esc(meta.file)}</div><div class="meta">Đã đọc <b>${nfVN.format(table.rows.length)} dòng</b>, ${D.cols.length} cột · sheet ${esc(meta.sheet)}</div><div class="cols">${shown.map(c => `<span class="col ${c.kind}">${esc(c.name)} · ${kinds[c.kind]}</span>`).join('')}${D.cols.length > shown.length ? `<span class="col">+${D.cols.length - shown.length}</span>` : ''}</div></div></div>`;
   UI.chat.appendChild(fm);
   setStep(1); if (!opts.instant) { caption(1); await sleep(1400); }
   S.demo = { source, file: source === 'upload' ? (meta.file.split('.').pop() || '').toLowerCase() : meta.key, rows: table.rows.length, cols: D.cols.length, hasDate: !!D.pick.date, hasMetric: !!D.pick.metric, hasDim: !!D.pick.dim };
@@ -769,8 +800,8 @@ async function loadTable(table, meta, source, opts = {}){
   if (!D.pick.metric) { sysBubble('Em chưa thấy cột nào là số để tính (doanh thu, số lượng, chi phí...). Bản chính thức sẽ hỏi lại anh chị cột nào cần tính. Anh chị thử file khác giúp em nhé.'); UI.compA.hidden = UI.compB.hidden = true; return; }
   const { date, metric, dim } = D.pick;
   const greet = source === 'upload'
-    ? `Em đọc xong rồi. Em thấy cột <b>${esc(metric.name)}</b> là số để tính${date ? `, cột <b>${esc(date.name)}</b> là ngày` : ''}${dim ? ` và cột <b>${esc(dim.name)}</b> để nhóm` : ''}. ${S.variant === 'a' ? 'Anh chị muốn hỏi gì?' : 'Bấm "Làm báo cáo tháng" là em làm ngay.'}`
-    : `Em đọc xong rồi. ${S.variant === 'a' ? 'Anh chị muốn hỏi gì?' : 'Bấm "Làm báo cáo tháng" là em làm ngay.'}`;
+    ? `Đọc xong rồi ạ. Em lấy cột <b>${esc(metric.name)}</b> để tính${date ? `, <b>${esc(date.name)}</b> làm ngày` : ''}${dim ? `, <b>${esc(dim.name)}</b> để nhóm` : ''}. ${S.variant === 'a' ? 'Anh chị hỏi gì ạ?' : 'Bấm "Làm báo cáo tháng" nhé.'}`
+    : `Đọc xong rồi ạ. ${S.variant === 'a' ? 'Anh chị hỏi gì ạ?' : 'Bấm "Làm báo cáo tháng" nhé.'}`;
   sysBubble(greet);
   if (S.variant === 'a') { renderSuggestions(); UI.compA.hidden = false; UI.compB.hidden = true; } else { UI.compA.hidden = true; UI.compB.hidden = false; }
 }
@@ -856,15 +887,15 @@ async function ask(q, chipEl, o = {}){
   await sleep(o.instant ? 0 : 900);
   const a = answer(q); th.remove();
   const card = document.createElement('div'); card.className = 'msg sys'; card.innerHTML = `<div class="card"><div class="lead">${esc(a.lead)}</div>${a.chart ? `<div class="chart"><canvas role="img" aria-label="${esc(q.text)}"></canvas></div>` : ''}${a.table ? `<div class="table-wrap">${a.table}</div>` : ''}<div class="answer">${a.text.filter(Boolean).map(t => `<p>${t}</p>`).join('')}</div>
-    <div class="foot"><span>Tính trên ${nfVN.format(D.table.rows.length)} dòng trong file</span><button class="btn-link" type="button" data-src>Xem dòng gốc</button><details class="sql" style="flex-basis:100%"><summary>Xem phép tính máy đã chạy</summary><pre>${hl(a.sql)}</pre></details></div><div data-source hidden>${sourceHTML(a.used)}</div></div>`;
+    <div class="foot"><span>Tính trên ${nfVN.format(D.table.rows.length)} dòng</span><button class="btn-link" type="button" data-src><svg class="ic"><use href="#i-eye"/></svg>Xem dòng gốc</button><details class="sql" style="flex-basis:100%"><summary>Xem phép tính máy đã chạy</summary><pre>${hl(a.sql)}</pre></details></div><div data-source hidden>${sourceHTML(a.used)}</div></div>`;
   UI.chat.appendChild(card); scrollChat();
   if (a.chart) makeChart($('canvas', card), a.chart.type, a.chart.labels, a.chart.datasets, { unit: a.chart.unit, horizontal: a.chart.horizontal, allowNegative: a.chart.allowNegative });
   setStep(3); if (o.auto) caption(3);
   card.addEventListener('click', e => { if (!e.target.closest('[data-src]')) return; toggleSource(card); if (!$('[data-source]', card).hidden) { setStep(4); track('cite_open', { q: q.id }); } });
-  if (D.chipCount === 3 && !S.flags.waitlist) sysBubble('Anh chị thấy hợp không? Bản chính thức hỏi câu gì cũng được, trên nhiều file. <a href="#waitlist" data-cta="nudge">Giữ chỗ dùng trước</a>, được tặng 1 tháng Pro.');
+  if (D.chipCount === 3 && !S.flags.waitlist) sysBubble('Thấy hợp không ạ? Bản chính thức hỏi câu gì cũng được. <a href="#waitlist" data-cta="nudge">Giữ chỗ dùng trước</a>, tặng 1 tháng Pro.');
   askBusy = false; return card;
 }
-function toggleSource(card){ const src = $('[data-source]', card); src.hidden = !src.hidden; const b = $('[data-src]', card); if (b) b.textContent = src.hidden ? 'Xem dòng gốc' : 'Ẩn dòng gốc'; scrollChat(); }
+function toggleSource(card){ const src = $('[data-source]', card); src.hidden = !src.hidden; const b = $('[data-src]', card); if (b) b.innerHTML = `<svg class="ic"><use href="#i-eye"/></svg>${src.hidden ? 'Xem dòng gốc' : 'Ẩn dòng gốc'}`; scrollChat(); }
 
 /* ---------- Variant B: report ---------- */
 async function makeReport(o = {}){
@@ -887,9 +918,9 @@ async function makeReport(o = {}){
   if (dim2 && dim2 !== dim) { const g2 = byDim(rows, dim2, metric); if (g2.length > 1) notes.push(`Theo ${lower(dim2.name)}: <b>${esc(g2[0].key)}</b> chiếm ${nf1.format(g2[0].sum / total * 100)}%, thấp nhất là ${esc(g2[g2.length - 1].key)} với ${nf1.format(g2[g2.length - 1].sum / total * 100)}% <button class="cite" type="button">3</button>.`); }
   const qd = missingReport(D.table, D.cols); if (qd.miss.length) notes.push(`File còn ${nfVN.format(qd.miss[0].missing)} ô trống ở cột <b>${esc(qd.miss[0].name)}</b>, các số trên tính trên dòng có dữ liệu.`);
   if (!per) notes.push('File không có cột ngày nên chưa vẽ được diễn biến theo tháng. Em nói rõ chứ không đoán.');
-  await addSec('Điểm cần để ý', `<div class="answer">${notes.map(t => `<p>${t}</p>`).join('')}</div><div class="foot"><button class="btn-link" type="button" data-src>Xem dòng gốc</button></div><div data-source hidden>${sourceHTML([date?.name, metric.name, dim?.name, dim2?.name].filter(Boolean))}</div>`);
+  await addSec('Điểm cần để ý', `<div class="answer">${notes.map(t => `<p>${t}</p>`).join('')}</div><div class="foot"><button class="btn-link" type="button" data-src><svg class="ic"><use href="#i-eye"/></svg>Xem dòng gốc</button></div><div data-source hidden>${sourceHTML([date?.name, metric.name, dim?.name, dim2?.name].filter(Boolean))}</div>`);
   writing.remove();
-  const act = document.createElement('div'); act.className = 'actions'; act.innerHTML = `<button class="btn btn-primary btn-sm" data-gate="export_pdf">Xuất PDF gửi sếp</button><button class="btn btn-ghost btn-sm" data-gate="export_docx">Xuất Word</button><button class="btn btn-ghost btn-sm" data-gate="schedule">Tháng sau tự làm</button>`;
+  const act = document.createElement('div'); act.className = 'actions'; act.innerHTML = `<button class="btn btn-primary btn-sm" data-gate="export_pdf"><svg class="ic"><use href="#i-pdf"/></svg>Xuất PDF gửi sếp</button><button class="btn btn-ghost btn-sm" data-gate="export_docx">Xuất Word</button><button class="btn btn-ghost btn-sm" data-gate="schedule">Tháng sau tự làm</button>`;
   $('#report', wrap).appendChild(act); scrollChat();
   wrap.addEventListener('click', e => { if (e.target.closest('.cite') || e.target.closest('[data-src]')) { toggleSource(wrap); setStep(4); track('cite_open', { q: 'report' }); return; } const gb = e.target.closest('[data-gate]'); if (gb) { startInteractive('gate'); openModal(gb.dataset.gate); } });
   setStep(4); if (o.auto) caption(4);
@@ -954,7 +985,8 @@ async function handleFile(file){
   } catch (err) { console.error(err); showToast('Không đọc được file này. Thử lưu lại dạng .xlsx hoặc .csv.'); track('demo_upload_error', { ext: (file.name.split('.').pop() || '').toLowerCase() }); }
 }
 function renderCaseCards(){
-  $('#caseCards').innerHTML = Object.entries(USECASES).map(([k, uc]) => `<div class="case"><h3>${esc(uc.title)}</h3><p>${esc(uc.blurb)}</p><ul>${uc.questions.slice(0, 3).map((q, i) => `<li><button type="button" data-case="${k}" data-i="${i}">${esc(q.text)}</button></li>`).join('')}</ul></div>`).join('');
+  const ICONS = { shopee: 'i-bag', kiotviet: 'i-store', ads: 'i-mega' };
+  $('#caseCards').innerHTML = Object.entries(USECASES).map(([k, uc]) => `<div class="case"><div class="ch"><span class="ico"><svg class="ic"><use href="#${ICONS[k]}"/></svg></span><div><h3>${esc(uc.title)}</h3><p>${esc(uc.blurb)}</p></div></div><ul>${uc.questions.slice(0, 3).map((q, i) => `<li><button type="button" data-case="${k}" data-i="${i}"><svg class="ic"><use href="#i-chat"/></svg>${esc(q.text)}</button></li>`).join('')}</ul></div>`).join('');
   $('#caseCards').addEventListener('click', async e => { const b = e.target.closest('[data-case]'); if (!b) return; startInteractive('case_card'); track('case_switch', { to: b.dataset.case, from: 'cards' }); $('#demo').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); await setCase(b.dataset.case); const q = USECASES[b.dataset.case].questions[+b.dataset.i]; if (S.variant === 'a') ask(q, $$('#sugg .chip')[+b.dataset.i]); else makeReport(); });
 }
 
@@ -1013,7 +1045,7 @@ $('#skipBtn').addEventListener('click', () => startInteractive('skip'));
 $('#ovUpload').addEventListener('click', () => { startInteractive('overlay_upload'); setCase('upload', { keep: true, open: true }); });
 $('#ovSample').addEventListener('click', () => { startInteractive('overlay_sample'); if (S.variant === 'a') $('#askInput')?.focus(); });
 $('#tabs').addEventListener('click', e => { const t = e.target.closest('[data-case]'); if (!t) return; startInteractive('tab'); track('case_switch', { to: t.dataset.case, from: 'tabs' }); setCase(t.dataset.case, t.dataset.case === 'upload' ? { open: true } : {}); });
-$('#askForm').addEventListener('submit', e => { e.preventDefault(); const text = $('#askInput').value.trim(); if (!text) return; startInteractive('typed'); track('question_typed', { text: text.slice(0, 200), rows: D.table?.rows.length || 0 }); meBubble(text); sysBubble('Câu này bản thử chưa trả lời được, nhưng bản chính thức thì được. Anh chị để lại email, mở cửa là em trả lời đúng câu này trên file của anh chị.'); $('#askInput').value = ''; openModal('ask', text); });
+$('#askForm').addEventListener('submit', e => { e.preventDefault(); const text = $('#askInput').value.trim(); if (!text) return; startInteractive('typed'); track('question_typed', { text: text.slice(0, 200), rows: D.table?.rows.length || 0 }); meBubble(text); sysBubble('Câu này để bản chính thức trả lời ạ. Anh chị để lại email, mở cửa là em trả lời đúng câu này.'); $('#askInput').value = ''; openModal('ask', text); });
 $('#makeReport').addEventListener('click', () => { startInteractive('make_report'); makeReport(); });
 fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
 ['dragenter', 'dragover'].forEach(ev => UI.drop.addEventListener(ev, e => { e.preventDefault(); UI.drop.classList.add('over'); }));
