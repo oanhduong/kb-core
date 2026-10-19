@@ -1,4 +1,4 @@
-# Vận hành KB Explorer (RetailKB Copilot)
+# Vận hành Kho Dữ Liệu
 
 Tài liệu cho người vận hành (owner/editor workspace, superadmin). Lệnh `make` chạy từ thư mục repo trên máy chủ chạy
 docker-compose. Mọi thao tác trên web app (http://localhost:3000 — *Tài liệu*, *Giám sát & duyệt*, *Cài đặt*, *Quản trị hệ thống*)
@@ -200,6 +200,8 @@ Có hai lớp graph:
 - **Scale:** nhiều worker song song an toàn: `docker compose up -d --scale worker=3`.
 - **Production:** `APP_ENV=prod`, đổi mật khẩu superadmin sau lần đăng nhập đầu, đổi `BOOTSTRAP_ADMIN_API_KEY`,
   đặt reverse proxy TLS trước web/api; không publish cổng Postgres ra ngoài.
+  Với `APP_ENV=prod`, chỉ email trùng `BOOTSTRAP_ADMIN_EMAIL` mới thành superadmin khi đăng ký — người đăng ký
+  đầu tiên **không** tự có quyền (SaaS public). Ở dev chưa đặt `BOOTSTRAP_ADMIN_EMAIL` thì tài khoản đầu tiên là superadmin.
 
 ## 13. Workspace, tài khoản, phân quyền
 

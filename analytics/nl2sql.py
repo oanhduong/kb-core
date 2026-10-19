@@ -80,7 +80,7 @@ def answer_with_sql(cfg: AppConfig, llm: LLMClient, tables: list[TableInfo], que
                 out = _NL2SQLOut.model_validate(extract_json_object(res.text))
             except (LLMUnavailable, LLMOutputInvalid) as e:
                 sp.update(level="ERROR", error=str(e)[:200])
-                return AnalyticsAnswer(None, None, None, L("Không sinh được truy vấn.", "Could not generate a query."), attempts=attempts, error=str(e)[:300])
+                return AnalyticsAnswer(None, None, None, L("Không sinh được truy vấn.", "Could not generate a query."), attempts=attempts, error=e.message[:300])
             except Exception as e:  # JSON lỗi -> cho model sửa
                 last_err = f"Output không phải JSON hợp lệ: {e}"
                 messages += [{"role": "assistant", "content": res.text}, {"role": "user", "content": last_err + ". Trả lại đúng 1 JSON."}]

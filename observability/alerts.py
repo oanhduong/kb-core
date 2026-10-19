@@ -109,7 +109,7 @@ def collect_metrics(session: Any, now: datetime | None = None, baseline_days: in
 
 def send_webhook(alert: Alert, cfg: AppConfig, settings: Settings, client: httpx.Client | None = None) -> None:
     channel = cfg.alerts.channel
-    text_msg = f"[RetailKB {settings.app_env}] {alert.message}"
+    text_msg = f"[Kho Dữ Liệu {settings.app_env}] {alert.message}"
     own = client is None
     client = client or httpx.Client(timeout=10.0)
     try:

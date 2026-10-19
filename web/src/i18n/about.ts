@@ -3,7 +3,7 @@
 // Trích đoạn nội dung tài liệu (tên file, dòng dữ liệu, câu SQL) là dữ liệu gốc nên giữ nguyên trong component.
 const en: Record<string, string> = {
   "nav.about": "About",
-  "about.title": "Inside KB Explorer",
+  "about.title": "Inside Kho Dữ Liệu",
   "about.lead": "From raw files to answers you can check. The video walks through the three main flows with real data and results from the system: ingesting 25 files from the GreenMart retail chain, answering with citations, computing numbers with SQL, and turning a clinical-trial Excel workbook into a data model.",
 
   "about.player.label": "Explainer video. Space plays or pauses, left and right arrows step back or forward one scene.",
@@ -22,10 +22,10 @@ const en: Record<string, string> = {
   "about.ch.report": "Reports",
   "about.ch.compare": "Comparison",
 
-  "about.cap.intro.0": "KB Explorer answers questions over a company's own documents and data. Every answer and every number traces back to its source.",
+  "about.cap.intro.0": "Kho Dữ Liệu answers questions over a company's own documents and data. Every answer and every number traces back to its source.",
   "about.cap.intro.1": "We start with a real question from a GreenMart store employee: which promotion is running for speaker ĐT-018?",
   "about.cap.intro.2": "The usual approach searches once for the passages most similar to the question and lets the AI answer. With a single search the system only sees the price list and wrongly concludes there is no promotion data.",
-  "about.cap.intro.3": "KB Explorer knows promotions apply by category: it finds that ĐT-018 is Electronics, looks up that category's promotion calendar, compares it with today and cites 4 sources.",
+  "about.cap.intro.3": "Kho Dữ Liệu knows promotions apply by category: it finds that ĐT-018 is Electronics, looks up that category's promotion calendar, compares it with today and cites 4 sources.",
   "about.cap.intro.4": "Behind it are three flows: ingesting data, asking, and modelling numbers. Let's go through each one.",
   "about.cap.ingest.0": "25 files from the GreenMart chain: Word policies, Excel price lists, PDF catalogues, poster images, training recordings and process videos. Users just drag and drop them.",
   "about.cap.ingest.1": "Each file gets a sha256 fingerprint, so uploading it twice does nothing. The file type is read from its first bytes, not trusted from the extension.",
@@ -358,7 +358,7 @@ const en: Record<string, string> = {
   "about.cmp.task": "Task",
   "about.cmp.rag": "Plain RAG",
   "about.cmp.graph": "Graph RAG",
-  "about.cmp.us": "KB Explorer",
+  "about.cmp.us": "Kho Dữ Liệu",
   "about.cmp.yes": "Yes",
   "about.cmp.part": "Partly",
   "about.cmp.no": "No",
@@ -431,7 +431,7 @@ const en: Record<string, string> = {
 
 const vi: Record<string, string> = {
   "nav.about": "Giới thiệu",
-  "about.title": "Bên trong KB Explorer",
+  "about.title": "Bên trong Kho Dữ Liệu",
   "about.lead": "Từ file thô đến câu trả lời có kiểm chứng. Video đi qua ba luồng chính bằng dữ liệu và kết quả thật của hệ thống: nạp 25 file của chuỗi bán lẻ GreenMart, trả lời có trích dẫn, tính số liệu bằng SQL và biến một workbook Excel thử nghiệm lâm sàng thành mô hình dữ liệu.",
 
   "about.player.label": "Video minh họa. Phím cách để phát hoặc tạm dừng, mũi tên trái phải để lùi hoặc tiến một cảnh.",
@@ -450,10 +450,10 @@ const vi: Record<string, string> = {
   "about.ch.report": "Báo cáo",
   "about.ch.compare": "So sánh",
 
-  "about.cap.intro.0": "KB Explorer là nền tảng hỏi đáp trên tài liệu và số liệu của chính doanh nghiệp. Mọi câu trả lời và mọi con số đều truy được về nguồn.",
+  "about.cap.intro.0": "Kho Dữ Liệu là nền tảng hỏi đáp trên tài liệu và số liệu của chính doanh nghiệp. Mọi câu trả lời và mọi con số đều truy được về nguồn.",
   "about.cap.intro.1": "Bắt đầu bằng một câu hỏi thật của nhân viên cửa hàng GreenMart: Loa ĐT-018 đang có khuyến mãi nào?",
   "about.cap.intro.2": "Cách làm phổ biến là tìm một lần những đoạn văn giống câu hỏi nhất rồi để AI trả lời. Khi chỉ tìm một lượt, hệ thống thấy bảng giá và kết luận sai rằng chưa có dữ liệu khuyến mãi.",
-  "about.cap.intro.3": "KB Explorer biết khuyến mãi áp dụng theo ngành hàng: tra ra ĐT-018 thuộc ngành Điện tử, tìm lịch khuyến mãi của ngành, so với ngày hôm nay, và trích 4 nguồn.",
+  "about.cap.intro.3": "Kho Dữ Liệu biết khuyến mãi áp dụng theo ngành hàng: tra ra ĐT-018 thuộc ngành Điện tử, tìm lịch khuyến mãi của ngành, so với ngày hôm nay, và trích 4 nguồn.",
   "about.cap.intro.4": "Phía sau là ba luồng: nạp dữ liệu, hỏi đáp, và mô hình hóa số liệu. Chúng ta đi qua từng luồng.",
   "about.cap.ingest.0": "25 file của chuỗi GreenMart: chính sách Word, bảng giá Excel, catalogue PDF, ảnh poster, ghi âm đào tạo và video quy trình. Người dùng chỉ việc kéo thả.",
   "about.cap.ingest.1": "Mỗi file được lấy dấu vân tay sha256 nên tải trùng sẽ không nạp lại. Loại file được nhận theo các byte đầu tiên, không tin vào đuôi file.",
@@ -786,7 +786,7 @@ const vi: Record<string, string> = {
   "about.cmp.task": "Việc cần làm",
   "about.cmp.rag": "RAG thông thường",
   "about.cmp.graph": "Graph RAG",
-  "about.cmp.us": "KB Explorer",
+  "about.cmp.us": "Kho Dữ Liệu",
   "about.cmp.yes": "Có",
   "about.cmp.part": "Một phần",
   "about.cmp.no": "Không",

@@ -360,7 +360,8 @@ function ResultPanel({ out, view, setView, labels, canSave, onSave }: {
       </header>
       <div className="space-y-5 px-5 py-5 sm:px-6">
         {out.reason && <p className="max-w-3xl text-[15px] leading-7 text-ink-800">{out.reason}</p>}
-        {out.error && <ErrorBox error={t("explore.result.error", { error: out.error })} />}
+        {/* not_answerable: mã nội bộ, lý do dễ đọc đã nằm ở out.reason */}
+        {out.error && out.error !== "not_answerable" && <ErrorBox error={t("explore.result.error", { error: out.error })} />}
         {r && (showChart
           ? <ChartView chart={out.chart} height={320} />
           : hasRows && <DataGrid columns={r.columns} rows={r.rows} maxHeight={520} labels={labels} total={r.row_count} />)}

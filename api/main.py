@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
 
 def create_app(services=None) -> FastAPI:
     cfg = get_config()
-    app = FastAPI(title="RetailKB API", version=cfg.config_version, lifespan=lifespan,
+    app = FastAPI(title="Kho Dữ Liệu API", version=cfg.config_version, lifespan=lifespan,
                   description="Khai phá tài liệu: upload file bất kỳ -> knowledge base, hỏi đáp có trích dẫn, phân tích bảng số liệu, "
                               "đồ thị quan hệ, báo cáo. Xác thực: Bearer JWT (đăng nhập) hoặc X-API-Key (tích hợp).")
     app.state.services = services

@@ -3,6 +3,10 @@
 Mỗi lần đổi `config.yaml`: bump `config_version`, thêm 1 mục ở ĐẦU file này, chạy `make config-snapshot`.
 Rollback: `RETAILKB_CONFIG_VERSION=<version>` trong `.env` rồi `make restart`.
 
+## 2026.10.19-1
+- Đổi tên sản phẩm thành **Kho Dữ Liệu**: prompt `answer_system.v2` và `chat_compaction.v2` (chỉ thay tên trợ lý,
+  nội dung giữ nguyên v1). Rollback về `2026.10.05-2` để dùng lại prompt v1.
+
 ## 2026.10.05-2
 - Mô hình dữ liệu nghiệp vụ (`modeling.*`): file Excel/CSV -> mỗi sheet 1 bảng trong schema `dm_<id>` của warehouse ->
   quan hệ + logic từng cột (công thức Excel, pivot, mẫu dữ liệu, AI đề xuất — đều kiểm chứng trên dữ liệu) -> người dùng

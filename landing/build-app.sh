@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Build web app KB Explorer (thư mục web/) và đặt dưới landing/dist/app để Vercel phục vụ tại /app.
+# Build web app Kho Dữ Liệu (thư mục web/) và đặt dưới landing/dist/app để Vercel phục vụ tại /app.
 # API_URL: địa chỉ backend FastAPI (vd https://api.ten-mien.vn). Bỏ trống = gọi /api cùng origin.
 # Backend phải cho phép origin của trang này trong CORS_ORIGINS.
 set -e

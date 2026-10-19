@@ -30,7 +30,7 @@ export function Logo({ className, light }: { className?: string; light?: boolean
         <path d="M7 18.5h14" stroke="#FDE68A" strokeWidth="5" strokeLinecap="round" />
         <path d="M8 9.5h12M8 13.5h8" stroke={light ? "#FFFFFF" : "#B9B6D9"} strokeWidth="2" strokeLinecap="round" />
       </svg>
-      <span className={clsx("font-display text-[17px] font-semibold tracking-tight", light ? "text-white" : "text-ink-900")}>KB Explorer</span>
+      <span className={clsx("font-display text-[17px] font-semibold tracking-tight", light ? "text-white" : "text-ink-900")}>Kho Dữ Liệu</span>
     </span>
   );
 }

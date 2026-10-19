@@ -1,4 +1,4 @@
-# KB Explorer (RetailKB Copilot)
+# Kho Dữ Liệu
 
 Nền tảng **khai phá dữ liệu từ file tải lên**: người dùng tải mọi loại tài liệu (Excel/CSV, Word, PDF kể cả
 scan, PowerPoint, ảnh, audio/video, text) vào **workspace** của mình; hệ thống tự trích nội dung, **bảng số

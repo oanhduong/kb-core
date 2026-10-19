@@ -79,7 +79,7 @@ function IntroScene() {
           <div style={{ marginTop: "auto" }}><span className="tag a">{t("about.intro.naiveVerdict")}</span></div>
         </At>
         <At s={3} className="card">
-          <h4>KB Explorer</h4>
+          <h4>Kho Dữ Liệu</h4>
           <span className="k">{rich(t("about.intro.usHow"))}</span>
           <table className="mini">
             <thead><tr><th>{t("about.intro.colProgram")}</th><th>{t("about.intro.colApplies")}</th><th>{t("about.intro.colDates")}</th><th /></tr></thead>

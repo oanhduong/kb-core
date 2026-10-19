@@ -214,7 +214,8 @@ export function UploadModal({ open, onClose, replaceOf }: { open: boolean; onClo
     },
     onError: toast.err,
   });
-  const add = (list: FileList | null) => { if (list) setFiles((xs) => [...xs, ...Array.from(list)]); };
+  // chụp mảng ngay: FileList là "live", bị xoá trắng khi reset input.value trước khi updater của setFiles chạy
+  const add = (list: FileList | null) => { const picked = Array.from(list || []); if (picked.length) setFiles((xs) => [...xs, ...picked]); };
   const pick = () => inputRef.current?.click();
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } };
   const set = (k: keyof UploadOpts) => (e: { target: { value: string } }) => setOpts((o) => ({ ...o, [k]: e.target.value }));

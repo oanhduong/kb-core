@@ -52,8 +52,10 @@ def test_ingest_sample_files_end_to_end():
     _drain()
     with session_scope() as s:
         jobs = s.execute(select(Job.type, Job.status, Job.error)).all()
-        # dò quan hệ giữa các bảng: 1 job cho cả loạt file (hẹn giờ ~20s để gom các file tải cùng lúc) -> còn chờ
-        assert [st for t, st, _ in jobs if t == "relations_discover"] == ["queued"], jobs
+        # dò quan hệ giữa các bảng: 1 job cho cả loạt file (hẹn giờ ~20s để gom các file tải cùng lúc);
+        # máy chậm thì drain có thể quá 20s và worker đã chạy luôn -> chấp nhận queued hoặc done
+        rel = [st for t, st, _ in jobs if t == "relations_discover"]
+        assert len(rel) == 1 and rel[0] in ("queued", "done"), jobs
         jobs = [j for j in jobs if j[0] != "relations_discover"]
         assert all(st == "done" for _, st, _ in jobs), jobs
         assert {t for t, _, _ in jobs} == {"ingest_file", "graph_sync", "knowledge_extract"}

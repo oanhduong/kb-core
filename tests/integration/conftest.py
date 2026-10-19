@@ -46,11 +46,15 @@ def env(tmp_path_factory):
     from alembic.config import Config
 
     with psycopg.connect(TEST_DSN, autocommit=True) as conn:
+        # AGE nạp sẵn qua shared_preload_libraries chặn DROP SCHEMA khi DB (mới tạo) chưa có extension -> tạo trước
+        if conn.execute("SELECT 1 FROM pg_available_extensions WHERE name = 'age'").fetchone():
+            conn.execute("CREATE EXTENSION IF NOT EXISTS age")
         conn.execute("DROP SCHEMA IF EXISTS public CASCADE")
         conn.execute("CREATE SCHEMA public")
-        conn.execute("LOAD 'age'")
-        for (name,) in conn.execute("SELECT name FROM ag_catalog.ag_graph").fetchall():
-            conn.execute(f"SELECT ag_catalog.drop_graph('{name}', true)")
+        if conn.execute("SELECT 1 FROM pg_extension WHERE extname = 'age'").fetchone():
+            conn.execute("LOAD 'age'")
+            for (name,) in conn.execute("SELECT name FROM ag_catalog.ag_graph").fetchall():
+                conn.execute(f"SELECT ag_catalog.drop_graph('{name}', true)")
     cfg = Config(os.path.join(os.path.dirname(__file__), "..", "..", "alembic.ini"))
     cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "..", "..", "migrations"))
     command.upgrade(cfg, "head")

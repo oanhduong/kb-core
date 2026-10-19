@@ -1,4 +1,4 @@
-# RetailKB Copilot — config tập trung (F1). MỌI tham số ảnh hưởng kết quả nằm ở đây.
+# Kho Dữ Liệu — config tập trung (F1). MỌI tham số ảnh hưởng kết quả nằm ở đây.
 # Secret (API key, DSN, JWT secret, webhook) KHÔNG đặt ở đây — xem .env.example.
 #
 # Quy trình đổi config:
@@ -9,7 +9,7 @@
 #   4. `make config-snapshot` (chép sang config/versions/<version>.yaml) rồi restart api + worker.
 # Rollback: đặt RETAILKB_CONFIG_VERSION=<bản cũ> trong .env rồi `make restart` (xem docs/OPERATIONS.md).
 
-config_version: "2026.10.05-2"
+config_version: "2026.10.19-1"
 description: "Nền tảng khai phá tài liệu tổng quát: workspace, analytics DuckDB, knowledge graph mở, assistant, báo cáo."
 
 models:
@@ -152,8 +152,8 @@ chat:
 
 prompts:
   answer_system:
-    path: prompts/answer_system.v1.md
-    sha256: 41556d80a665e40a76f19c86aab758b66f363b2d140e70f8148c49beb8e76f25
+    path: prompts/answer_system.v2.md
+    sha256: 86e62e0ab1e5903ed187822beec2c721e94509cf70434617fa027c1ee17aafe4
   router_classify:
     path: prompts/router_classify.v1.md
     sha256: 754a2600dcd00ce28fdda44edba4368c2bb0c96dddf98860c922f9bb6dd96f65
@@ -164,8 +164,8 @@ prompts:
     path: prompts/graph_extract.v1.md
     sha256: 2f78e495a734ed6fcd0121906a0dd1123b6633608ecc5853c23ca9a0972d35b3
   chat_compaction:
-    path: prompts/chat_compaction.v1.md
-    sha256: d29c2e16623bd185ba1c38ae846c55eceaded793a94326cb97e2fcd5a1589b90
+    path: prompts/chat_compaction.v2.md
+    sha256: 813438e81814f20b5aaa74b6f3a7aa6ce3e47a823b77addac4d3227dc5d5d0c1
   doc_classify:
     path: prompts/doc_classify.v1.md
     sha256: cfd8a0b58c243d41243dc51b7bed01cff07d20773f1c7faaa1bba6d1fb396f05

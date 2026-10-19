@@ -11,7 +11,7 @@ import { useI18n } from "@/i18n";
 import { Page } from "@/layout/AppShell";
 
 type Mark = "y" | "p" | "n";
-// [khóa dòng, RAG, Graph RAG, KB Explorer] — chú thích từng ô: about.cmp.rN.rag / .graph / .us, ví dụ: .ex
+// [khóa dòng, RAG, Graph RAG, Kho Dữ Liệu] — chú thích từng ô: about.cmp.rN.rag / .graph / .us, ví dụ: .ex
 const MATRIX: [number, Mark, Mark, Mark][] = [
   [1, "y", "y", "y"], [2, "n", "y", "y"], [3, "n", "n", "y"], [4, "n", "p", "y"], [5, "n", "n", "y"], [6, "n", "n", "y"], [7, "n", "n", "y"],
   [8, "n", "n", "p"], [9, "n", "n", "y"], [10, "p", "p", "y"], [11, "n", "n", "y"], [12, "n", "n", "y"], [13, "n", "p", "y"],

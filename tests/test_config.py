@@ -28,7 +28,8 @@ def test_repo_config_loads_with_version_hash_and_prompt_hashes():
 
 def test_editing_prompt_without_updating_sha_fails_fast(tmp_path):
     p = _copy_repo_config(tmp_path)
-    (tmp_path / "prompts" / "answer_system.v1.md").write_text("prompt bị sửa lén", encoding="utf-8")
+    current = load_config(p).prompts.answer_system.path  # file prompt config đang trỏ tới (v1, v2, ...)
+    (tmp_path / current).write_text("prompt bị sửa lén", encoding="utf-8")
     with pytest.raises(ConfigError, match="answer_system"):
         load_config(p)
     assert load_config(p, strict_prompts=False).prompt_hashes["answer_system"]  # CLI hash-prompts vẫn đọc được

@@ -100,10 +100,11 @@ def generate_report(cfg: AppConfig, sm: sessionmaker, llm: Any, report_id: str, 
     try:
         plan = plan_report(cfg, llm, prompt, brief)
     except Exception as e:
+        msg = getattr(e, "message", None) or str(e)  # KBError: chỉ phần cho người dùng, không kèm context kỹ thuật
         with session_scope() as s:
             rep = s.get(Report, report_id)
             rep.status = "error"
-            rep.blocks = [{"id": new_id(), "type": "markdown", "text": L(f"Không lập được dàn ý: {e}", f"Couldn't draft the outline: {e}")[:500]}]
+            rep.blocks = [{"id": new_id(), "type": "markdown", "text": L(f"Không lập được dàn ý: {msg}", f"Couldn't draft the outline: {msg}")[:500]}]
         return {"error": str(e)[:300]}
 
     from assistant.agent import AssistantRequest, AssistantService

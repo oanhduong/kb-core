@@ -1,6 +1,6 @@
 // Chuỗi dùng chung: điều hướng, nút, trạng thái, vai trò, thời gian tương đối, loại nguồn.
 const en: Record<string, string> = {
-  "app.name": "KB Explorer",
+  "app.name": "Kho Dữ Liệu",
   "nav.home": "Home",
   "nav.ask": "Ask",
   "nav.sources": "Sources",
@@ -119,7 +119,7 @@ const en: Record<string, string> = {
 };
 
 const vi: Record<string, string> = {
-  "app.name": "KB Explorer",
+  "app.name": "Kho Dữ Liệu",
   "nav.home": "Trang chủ",
   "nav.ask": "Hỏi đáp",
   "nav.sources": "Nguồn dữ liệu",

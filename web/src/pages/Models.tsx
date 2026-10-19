@@ -153,7 +153,7 @@ export function CreateModelModal({ open, onClose, preselect }: { open: boolean; 
             <span className="mt-3 font-medium text-ink-900">{t("models.create.drop")}</span>
             <span className="mt-1 text-xs text-ink-600">{t("models.create.dropHint")}</span>
           </button>
-          <input ref={input} type="file" multiple accept=".xlsx,.xlsm,.csv" className="hidden" onChange={(e) => { setFiles((x) => [...x, ...Array.from(e.target.files || [])]); e.target.value = ""; }} />
+          <input ref={input} type="file" multiple accept=".xlsx,.xlsm,.csv" className="hidden" onChange={(e) => { const picked = Array.from(e.target.files || []); setFiles((x) => [...x, ...picked]); e.target.value = ""; }} />
           {files.length > 0 && (
             <ul className="mt-3 divide-y divide-ink-100 rounded-xl border border-ink-100">
               {files.map((f, i) => (

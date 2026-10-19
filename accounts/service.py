@@ -1,7 +1,7 @@
 """Nghiệp vụ tài khoản & workspace. Mọi hàm nhận Session của caller (API commit).
 
-- Mật khẩu: bcrypt. Email chuẩn hoá lowercase. Tài khoản đầu tiên của hệ thống là superadmin
-  (hoặc email trùng BOOTSTRAP_ADMIN_EMAIL).
+- Mật khẩu: bcrypt. Email chuẩn hoá lowercase. Superadmin = email trùng BOOTSTRAP_ADMIN_EMAIL;
+  chỉ ở dev và khi chưa đặt BOOTSTRAP_ADMIN_EMAIL thì tài khoản đầu tiên của hệ thống mới tự thành superadmin.
 - Workspace: người tạo là owner; slug duy nhất sinh từ tên. Mỗi user có nhiều workspace.
 - Thành viên: owner | editor | viewer; owner cuối cùng không được rời/hạ quyền. Lời mời theo email:
   user đã tồn tại -> thêm thẳng; chưa -> lưu invite, tự gia nhập khi đăng ký/đăng nhập.
@@ -62,8 +62,10 @@ def create_user(session: Session, *, email: str, password: str, name: str, local
     email = normalize_email(email)
     if session.execute(select(User).where(User.email == email)).scalar_one_or_none():
         raise ConflictError(L("Email đã được đăng ký", "This email is already registered"))
-    first_user = session.execute(select(func.count()).select_from(User)).scalar_one() == 0
     bootstrap_email = (os.environ.get("BOOTSTRAP_ADMIN_EMAIL") or "").lower()
+    # SaaS public: production chỉ cấp superadmin cho BOOTSTRAP_ADMIN_EMAIL — người lạ đăng ký trước không chiếm được quyền
+    first_user = (os.environ.get("APP_ENV", "dev") not in ("prod", "production") and not bootstrap_email
+                  and session.execute(select(func.count()).select_from(User)).scalar_one() == 0)
     user = User(email=email, password_hash=hash_password(password), name=(name or email.split("@")[0]).strip()[:120],
                 is_superadmin=first_user or email == bootstrap_email, locale=locale[:8] or "vi")
     session.add(user)
