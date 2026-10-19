@@ -1,4 +1,4 @@
-<title>DataKho</title>
+<title>Kho Dữ Liệu</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -101,7 +101,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .mark i{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(19,194,150,.55);animation:orbring 2.4s infinite}
 .mark i:nth-child(2){animation-delay:.8s}.mark i:nth-child(3){animation-delay:1.6s}
 @keyframes orbring{from{transform:scale(.85);opacity:.9}to{transform:scale(1.9);opacity:0}}
-.title h1{font-size:clamp(3.4rem,13vw,6rem);color:var(--ink);text-shadow:0 5px 0 #fff,0 14px 34px rgba(58,141,255,.35)}
+.title h1{font-size:clamp(2.3rem,12.5vw,6rem);white-space:nowrap;color:var(--ink);text-shadow:0 5px 0 #fff,0 14px 34px rgba(58,141,255,.35)}
 .title p{font-size:clamp(1.1rem,3.8vw,1.4rem);font-weight:800;color:var(--ink-2)}
 .btn-play{font-size:1.6rem;padding:20px 44px;border-radius:24px;animation:breathe 1.8s ease-in-out infinite}
 @keyframes breathe{50%{transform:scale(1.05)}}
@@ -398,7 +398,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
   <canvas id="scene" aria-label="Sân chơi: kéo các file vào kho"></canvas>
 
   <header class="hud">
-    <a class="logo" href="#" id="logo"><i>Σ</i><b class="brandRef">DataKho</b></a>
+    <a class="logo" href="#" id="logo"><i>Σ</i><b class="brandRef">Kho Dữ Liệu</b></a>
     <span class="pill lvl" id="lvl">
       <span class="badge" id="lvlNo">1</span>
       <span class="hide-sm" id="lvlName">Nạp kho</span>
@@ -436,7 +436,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 
   <div class="title" id="title">
     <div class="box">
-      <h1 class="brandRef">DataKho</h1>
+      <h1 class="brandRef">Kho Dữ Liệu</h1>
       <p>Thả file vào. Hỏi gì cũng ra số.</p>
       <button class="btn btn-go btn-play" id="btnPlay" type="button"><svg class="ic"><use href="#i-play"/></svg>Chơi ngay</button>
     </div>
@@ -469,7 +469,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 // build-standalone.sh điền biến môi trường APP_URL nếu app chạy ở địa chỉ khác.
 const APP_URL_BUILD = '%%APP_URL%%';
 const PREVIEW = location.protocol === 'file:' || /claude\.ai$|claudeusercontent|anthropic/.test(location.hostname);
-const CONFIG = { BRAND: 'DataKho', ENDPOINT: '', APP_URL: (/^%%/.test(APP_URL_BUILD) || !APP_URL_BUILD ? (PREVIEW ? 'https://kb-core-landing.vercel.app/app' : '/app') : APP_URL_BUILD).replace(/\/+$/, '') };
+const CONFIG = { BRAND: 'Kho Dữ Liệu', ENDPOINT: '', APP_URL: (/^%%/.test(APP_URL_BUILD) || !APP_URL_BUILD ? (PREVIEW ? 'https://kb-core-landing.vercel.app/app' : '/app') : APP_URL_BUILD).replace(/\/+$/, '') };
 // Gốc app: chưa đăng nhập thì app tự mở màn đăng nhập (có link sang đăng ký), đã đăng nhập thì vào workspace.
 const appLink = from => `${CONFIG.APP_URL}/?utm_source=game&utm_content=${encodeURIComponent(from || 'app')}`;
 
