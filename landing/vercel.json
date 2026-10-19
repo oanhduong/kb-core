@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "sh build-standalone.sh && sh build-standalone.sh chat",
+  "buildCommand": "sh build-standalone.sh",
   "outputDirectory": "dist",
   "framework": null,
   "cleanUrls": true,
@@ -27,6 +27,16 @@
     },
     {
       "source": "/wow/",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/chat",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/chat/",
       "destination": "/",
       "permanent": false
     }

@@ -76,13 +76,14 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 @keyframes bump{50%{transform:scale(1.35)}}
 .hbtn{width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.92);display:grid;place-items:center;color:var(--ink-2);box-shadow:0 3px 0 rgba(29,43,69,.08),0 10px 20px -12px rgba(29,43,69,.35)}
 .hbtn .ic{width:20px;height:20px}
-.hbtn.gift{width:auto;padding:0 16px 0 12px;display:inline-flex;gap:7px;background:var(--yellow);color:#4a3200;font-family:var(--display);font-weight:800;font-size:1rem;box-shadow:0 4px 0 var(--yellow-deep)}
+.hbtn.gift{width:auto;padding:0 16px 0 12px;display:inline-flex;gap:7px;text-decoration:none;background:var(--yellow);color:#4a3200;font-family:var(--display);font-weight:800;font-size:1rem;box-shadow:0 4px 0 var(--yellow-deep)}
 .hbtn.gift:active{transform:translateY(2px);box-shadow:0 2px 0 var(--yellow-deep)}
 .game[data-level="0"] .hud .pill{display:none}
 @media (max-width:640px){
-  .logo b,.hide-sm,.hbtn.gift span{display:none!important}
+  .logo b,.hide-sm{display:none!important}
+  .game:not([data-level="0"]) .hbtn.gift span{display:none}
+  .game:not([data-level="0"]) .hbtn.gift{width:40px;padding:0;justify-content:center}
   .game:not([data-level="0"]) .logo{display:none}
-  .hbtn.gift{width:40px;padding:0;justify-content:center}
   .hud{gap:6px}
   .pill{padding-right:10px;gap:6px}
 }
@@ -106,8 +107,8 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 
 /* Màn 1 overlay */
 .l1{position:absolute;inset:0;z-index:5;pointer-events:none}
-.l1 .dock,.l1 .skip{pointer-events:auto}
-.game[data-level="0"] .l1 .dock,.game[data-level="0"] .l1 .skip{visibility:hidden}
+.l1 .dock{pointer-events:auto}
+.game[data-level="0"] .l1 .dock{visibility:hidden}
 .hand{position:absolute;left:0;top:0;z-index:8;pointer-events:none;display:flex;align-items:flex-start;gap:4px;opacity:0;will-change:transform,opacity}
 .hand svg{width:52px;height:52px;filter:drop-shadow(0 6px 6px rgba(29,43,69,.3))}
 .hand span{margin-top:40px;background:var(--ink);color:#fff;border-radius:999px;padding:5px 11px;font-weight:900;font-size:.85rem;white-space:nowrap}
@@ -120,7 +121,12 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .rbtn.alt .c{width:56px;height:56px;background:#fff;color:var(--ink);box-shadow:0 5px 0 var(--line),0 12px 20px -12px rgba(29,60,110,.45)}
 .rbtn.alt .c .ic{width:26px;height:26px}
 .rbtn.alt:active .c{box-shadow:0 2px 0 var(--line)}
-.rbtn small{font-size:.84rem;background:rgba(255,255,255,.92);padding:3px 10px;border-radius:999px}
+.rbtn small{font-size:.84rem;background:rgba(255,255,255,.92);padding:3px 10px;border-radius:999px;white-space:nowrap}
+.rbtn.next .c{width:56px;height:56px;background:var(--blue);box-shadow:0 5px 0 var(--blue-deep),0 12px 20px -10px rgba(35,105,214,.7)}
+.rbtn.next .c .ic{width:28px;height:28px}
+.rbtn.next:active .c{box-shadow:0 2px 0 var(--blue-deep)}
+.rbtn[disabled]{cursor:not-allowed;opacity:.5;filter:grayscale(1)}
+.rbtn[disabled] .c{animation:none;transform:none}
 .rbtn.glow .c{animation:glow 1.3s ease-in-out infinite}
 @keyframes glow{50%{transform:scale(1.08);box-shadow:0 6px 0 var(--mint-deep),0 0 0 10px rgba(19,194,150,.18),0 14px 24px -10px rgba(10,151,116,.75)}}
 .inv{display:flex;gap:6px;padding:6px;border-radius:18px;background:rgba(255,255,255,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 0 rgba(29,43,69,.06),0 12px 24px -16px rgba(29,43,69,.45);max-width:100%;overflow-x:auto;scrollbar-width:none}
@@ -133,8 +139,6 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .lootlbl{position:absolute;z-index:9;pointer-events:none;transform:translate(-50%,-100%);background:var(--ink);color:#fff;font-weight:800;font-size:.8rem;padding:5px 10px;border-radius:10px;white-space:nowrap;animation:lbl 1.7s ease-out forwards}
 .lootlbl::after{content:"";position:absolute;left:50%;bottom:-5px;margin-left:-5px;border:5px solid transparent;border-bottom:0;border-top-color:var(--ink)}
 @keyframes lbl{0%{opacity:0;margin-top:6px}12%{opacity:1;margin-top:-4px}80%{opacity:1}100%{opacity:0;margin-top:-14px}}
-.skip{position:absolute;right:var(--gr);top:calc(62px + var(--st));display:inline-flex;align-items:center;gap:6px;border:0;background:rgba(255,255,255,.8);border-radius:999px;padding:6px 12px;font-weight:800;font-size:.82rem;color:var(--ink-2)}
-.skip .ic{width:15px;height:15px}
 .vhint{position:absolute;z-index:7;pointer-events:none;transform:translate(-50%,-50%);font-family:var(--display);font-weight:800;font-size:1.1rem;color:#fff;background:var(--mint);border-radius:999px;padding:4px 14px;box-shadow:0 4px 0 var(--mint-deep);opacity:0;transition:opacity .15s}
 .vhint.on{opacity:1}
 .pop{position:absolute;z-index:12;pointer-events:none;font-family:var(--display);font-weight:800;font-size:1.6rem;color:var(--yellow);-webkit-text-stroke:5px var(--ink);paint-order:stroke fill;animation:popup 1s ease-out forwards;transform:translate(-50%,-50%);white-space:nowrap}
@@ -282,6 +286,20 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .metric b{font-family:var(--display);font-size:1.45rem;font-weight:800;line-height:1.1}
 .metric span{font-size:.72rem;color:var(--ink-2);font-weight:800}
 .metric.good b{color:var(--mint-deep)}.metric.warn b{color:#d98a00}
+.audit{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:34px;align-items:start}
+@media (max-width:600px){.audit{gap:22px}}
+.doc{background:#fff;border:2px solid var(--line);border-radius:14px;overflow:hidden;animation:slidein .5s cubic-bezier(.2,1.3,.3,1) both;min-width:0}
+.doc:first-child{--dx:-50px}.doc:last-child{--dx:50px;animation-delay:.12s}
+.doc b{display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--panel);font-size:.76rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:2px solid var(--line)}
+.doc b i{width:9px;height:9px;border-radius:3px;flex:none}
+.doc ul{list-style:none;margin:0;padding:4px 0}
+.doc li{display:flex;justify-content:space-between;gap:6px;padding:6px 10px;font-size:.8rem;font-weight:800;transition:background .25s,color .25s}
+.doc li span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;color:var(--ink-2)}
+.doc li em{font-style:normal;font-family:var(--mono);font-size:.74rem;white-space:nowrap}
+.doc li.scan{background:var(--blue-soft)}
+.doc li.ok{background:var(--mint-soft)}.doc li.ok em{color:var(--mint-deep)}
+.doc li.bad{background:var(--coral-soft);animation:shake .45s}.doc li.bad em{color:var(--coral-deep)}
+@media (max-width:600px){.doc li{padding:5px 7px;font-size:.72rem}.doc li em{font-size:.66rem}.doc b{font-size:.68rem;padding:6px 8px}}
 .ghost{align-self:center;margin:6px 0;font-family:var(--display);font-weight:800;font-size:clamp(2.2rem,8vw,3.4rem);line-height:1.1;color:var(--coral);border:4px dashed var(--coral);border-radius:20px;padding:6px 24px;background:var(--coral-soft);animation:glitch .22s steps(2) infinite}
 .ghost.broken{animation:shatter .45s forwards}
 @keyframes glitch{0%{transform:translate(0)}50%{transform:translate(3px,-2px) skewX(-6deg)}100%{transform:translate(-3px,2px)}}
@@ -289,7 +307,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .crit{position:absolute;z-index:7;pointer-events:none;font-family:var(--display);font-weight:800;font-size:clamp(2.2rem,7vw,3rem);color:var(--c,#ff6a57);-webkit-text-stroke:7px #fff;paint-order:stroke fill;filter:drop-shadow(0 6px 10px rgba(29,43,69,.25));transform:translate(-50%,-50%);animation:crit 1.4s cubic-bezier(.2,1.4,.3,1) forwards;white-space:nowrap}
 @keyframes crit{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-10deg)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.3) rotate(3deg)}30%{transform:translate(-50%,-50%) scale(1) rotate(0)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-110%) scale(1)}}
 
-/* overlays: final, signup, info */
+/* overlay: final screen */
 .overlay{position:absolute;inset:0;z-index:40;display:grid;place-items:center;padding:16px;background:rgba(29,43,69,.42);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);animation:fadein .25s both}
 .overlay.top{z-index:45}
 @keyframes fadein{from{opacity:0}}
@@ -365,6 +383,9 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
   <symbol id="i-q" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></symbol>
+  <symbol id="i-enter" viewBox="0 0 24 24"><path d="M14 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M9 17l5-5-5-5"/><path d="M14 12H3"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-2.5-1.8L14 21l-2-1.8L10 21l-2.5-1.8L5 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v15M6 13l6 6 6-6"/></symbol>
 </svg>
 
@@ -382,18 +403,17 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
     <span class="sp"></span>
     <span class="pill coins" aria-label="Điểm"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffc42e" stroke="#e5a200" stroke-width="2"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#fff3c4" stroke-width="2"/></svg><b class="num" id="score">0</b></span>
     <button class="hbtn hide-sm" id="btnSound" type="button" aria-label="Tắt tiếng"><svg class="ic"><use href="#i-sound"/></svg></button>
-    <button class="hbtn" id="btnInfo" type="button" aria-label="Thông tin"><svg class="ic"><use href="#i-info"/></svg></button>
-    <button class="hbtn gift" id="btnGift" type="button" aria-label="Giữ chỗ"><svg class="ic"><use href="#i-gift"/></svg><span>Giữ chỗ</span></button>
+    <a class="hbtn gift appbtn" id="btnApp" href="#" data-from="hud" aria-label="Vào phần mềm"><svg class="ic"><use href="#i-enter"/></svg><span>Vào phần mềm</span></a>
   </header>
 
   <section class="l1" id="l1">
     <div class="hand" id="hand"><svg viewBox="0 0 24 24"><use href="#i-hand"/></svg><span>Kéo vào kho</span></div>
     <div class="vhint" id="vhint">Thả!</div>
-    <button class="skip" id="skip" type="button"><svg class="ic"><use href="#i-skip"/></svg>Bỏ qua</button>
     <div class="dock">
       <div class="acts">
         <button class="rbtn alt" id="btnOwn" type="button"><span class="c"><svg class="ic"><use href="#i-plus"/></svg></span><small>File của bạn</small></button>
         <button class="rbtn" id="btnAll" type="button"><span class="c"><svg class="ic"><use href="#i-magnet"/></svg></span><small>Hút hết</small></button>
+        <button class="rbtn next" id="btnNext" type="button" disabled><span class="c"><svg class="ic"><use href="#i-next"/></svg></span><small>Qua màn sau</small></button>
       </div>
       <div class="inv" id="inv" aria-label="Túi đồ"></div>
       <input type="file" id="ownFiles" multiple hidden>
@@ -414,11 +434,6 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
       <h1 class="brandRef">Hỏi Số</h1>
       <p>Thả file vào. Hỏi gì cũng ra số.</p>
       <button class="btn btn-go btn-play" id="btnPlay" type="button"><svg class="ic"><use href="#i-play"/></svg>Chơi ngay</button>
-      <div class="chips">
-        <span class="chip"><svg class="ic"><use href="#i-cal"/></svg>1 phút</span>
-        <span class="chip"><svg class="ic"><use href="#i-lock"/></svg>Không cần đăng ký</span>
-        <span class="chip"><svg class="ic"><use href="#i-file"/></svg>File ở yên trên máy</span>
-      </div>
     </div>
   </div>
 
@@ -434,70 +449,21 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
       <h3>Phá đảo!</h3>
       <span class="score"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffc42e" stroke="#e5a200" stroke-width="2"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#fff3c4" stroke-width="2"/></svg><span class="num" id="finalScore">0</span></span>
       <div class="badges" id="finalBadges"></div>
-      <p style="font-weight:800;color:var(--ink-2)">Bản thật chơi với file của bạn.</p>
-      <button class="btn btn-sun" id="finalGift" type="button"><svg class="ic"><use href="#i-gift"/></svg>Giữ chỗ · tặng 1 tháng Pro</button>
-      <div class="row">
-        <a class="btn btn-white btn-sm" id="finalTry" href="/chat" target="_blank" rel="noopener"><svg class="ic"><use href="#i-file"/></svg>Thử với Excel của bạn</a>
-        <button class="btn btn-white btn-sm" id="finalReplay" type="button"><svg class="ic"><use href="#i-replay"/></svg>Chơi lại</button>
-      </div>
+      <p style="font-weight:800;color:var(--ink-2)">Giờ tới lượt file của bạn.</p>
+      <a class="btn btn-go appbtn" id="finalApp" href="#" data-from="final"><svg class="ic"><use href="#i-enter"/></svg>Vào phần mềm</a>
+      <button class="btn btn-white btn-sm" id="finalReplay" type="button"><svg class="ic"><use href="#i-replay"/></svg>Chơi lại</button>
     </div>
   </div>
 
-  <div class="overlay top" id="signup" hidden>
-    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="suTitle">
-      <button class="x" type="button" data-close aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button>
-      <form id="suForm" novalidate style="display:grid;gap:14px">
-        <h3 id="suTitle">Giữ chỗ dùng trước</h3>
-        <span class="gift"><svg class="ic"><use href="#i-gift"/></svg>Tặng 1 tháng Pro khi mở cửa</span>
-        <label class="fld"><span>Email</span><input id="suEmail" type="email" autocomplete="email" placeholder="ban@congty.vn" required></label>
-        <div class="fld"><span>Bạn làm gì?</span><div class="opts" data-group="segment">
-          <button type="button" class="opt" data-v="ecom" aria-pressed="false"><svg class="ic"><use href="#i-bag"/></svg>Bán trên sàn</button>
-          <button type="button" class="opt" data-v="retail" aria-pressed="false"><svg class="ic"><use href="#i-store"/></svg>Cửa hàng</button>
-          <button type="button" class="opt" data-v="finance" aria-pressed="false"><svg class="ic"><use href="#i-calc"/></svg>Kế toán</button>
-          <button type="button" class="opt" data-v="marketing" aria-pressed="false"><svg class="ic"><use href="#i-mega"/></svg>Marketing</button>
-          <button type="button" class="opt" data-v="ops" aria-pressed="false"><svg class="ic"><use href="#i-dots"/></svg>Khác</button>
-        </div></div>
-        <div class="fld"><span>Sẵn sàng trả mỗi tháng</span><div class="opts" data-group="wtp">
-          <button type="button" class="opt" data-v="0" aria-pressed="false">Miễn phí thôi</button>
-          <button type="button" class="opt" data-v="lt100" aria-pressed="false">&lt; 100k</button>
-          <button type="button" class="opt" data-v="100-300" aria-pressed="false">100–300k</button>
-          <button type="button" class="opt" data-v="gt300" aria-pressed="false">&gt; 300k</button>
-        </div></div>
-        <label class="fld"><span>Câu đầu tiên muốn hỏi kho của bạn</span><input id="suQ" type="text" maxlength="200" placeholder="Hàng nào lãi thật sau phí sàn?"></label>
-        <p class="err" id="suErr" hidden></p>
-        <button class="btn btn-go" type="submit" id="suBtn"><svg class="ic"><use href="#i-check"/></svg>Giữ chỗ</button>
-      </form>
-      <div class="done-box" id="suDone" hidden>
-        <span class="big"><svg class="ic"><use href="#i-check"/></svg></span>
-        <h3>Đã giữ chỗ <span class="num" id="suPos"></span></h3>
-        <span class="gift"><svg class="ic"><use href="#i-gift"/></svg>Rủ bạn: mỗi người +1 tháng Pro</span>
-        <div class="copy"><input id="suRef" readonly aria-label="Link giới thiệu"><button class="btn btn-white btn-sm" id="suCopy" type="button">Chép</button></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="overlay top" id="info" hidden>
-    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="inTitle">
-      <button class="x" type="button" data-close aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button>
-      <h3 id="inTitle" class="brandRef">Hỏi Số</h3>
-      <div class="rows">
-        <div><span class="ib"><svg class="ic"><use href="#i-lock"/></svg></span>File ở yên trên máy bạn</div>
-        <div><span class="ib"><svg class="ic"><use href="#i-calc"/></svg></span>Số tính trên bảng thật, không đoán</div>
-        <div><span class="ib"><svg class="ic"><use href="#i-flask"/></svg></span>Màn chơi dùng file mẫu</div>
-        <div><span class="ib"><svg class="ic"><use href="#i-cal"/></svg></span>Mở cửa đầu 2027</div>
-        <div><span class="ib"><svg class="ic"><use href="#i-tag"/></svg></span>Miễn phí 3 file · Pro 199.000đ/tháng</div>
-      </div>
-      <a class="btn btn-white" id="infoTry" href="/chat" target="_blank" rel="noopener"><svg class="ic"><use href="#i-file"/></svg>Thử với Excel của bạn</a>
-      <button class="btn btn-white" id="infoSound" type="button"><svg class="ic"><use href="#i-sound"/></svg><span>Âm thanh: bật</span></button>
-    </div>
-  </div>
 </div>
 <script>
 /* ============================================================
    CONFIG
    ============================================================ */
-const CONFIG = { BRAND: 'Hỏi Số', ENDPOINT: '', TRY_URL: '/chat' };
-if (location.protocol === 'file:' || /claude\.ai$|claudeusercontent|anthropic/.test(location.hostname)) CONFIG.TRY_URL = 'https://kb-core-landing.vercel.app/chat';
+// Địa chỉ web app (KB Explorer). build-standalone.sh điền từ biến môi trường APP_URL; chưa có thì dùng app chạy local.
+const APP_URL_BUILD = '%%APP_URL%%';
+const CONFIG = { BRAND: 'Hỏi Số', ENDPOINT: '', APP_URL: (/^%%/.test(APP_URL_BUILD) || !APP_URL_BUILD ? 'http://localhost:3000' : APP_URL_BUILD).replace(/\/+$/, '') };
+const appLink = from => `${CONFIG.APP_URL}/signup?utm_source=game&utm_content=${encodeURIComponent(from || 'app')}`;
 
 /* ============================================================
    Utilities
@@ -728,7 +694,7 @@ const act1 = (() => {
   function updateHud(){
     $('#count').textContent = `${st.count}/${st.total}`;
     $('#ring').style.strokeDashoffset = 100.5 * (1 - (st.total ? st.count / st.total : 0));
-    $('#btnAll').classList.toggle('glow', st.count >= 2 && st.count < st.total);
+    const nx = $('#btnNext'); nx.disabled = st.count < 1 || st.done; nx.classList.toggle('glow', st.count >= 1 && !st.done);
   }
   function lootLabel(slot, text){
     const r = slot.getBoundingClientRect(); const l = document.createElement('div'); l.className = 'lootlbl'; l.textContent = text;
@@ -806,7 +772,7 @@ const act1 = (() => {
   function spawnOwn(list){
     const arr = [...list].slice(0, 8); if (!arr.length) return;
     if (game.level === 0) startPlay('own');
-    if (game.level >= 2){ toast('Bản thật nhận file của bạn'); openSignup('drop'); return; }
+    if (game.level >= 2){ toast('Thả file của bạn trong phần mềm nhé'); return; }
     arr.forEach((file, i) => {
       const ext = extOf(file.name), meta = EXT[ext] || EXT_DEFAULT;
       const f = makeFile({ name: file.name, found: `${fmtSize(file.size)} · ${meta.s}` }, i, arr.length, true);
@@ -1040,14 +1006,14 @@ const act1 = (() => {
    Màn 2: the arena. Six question cards, one stage, one effect each.
    ============================================================ */
 const CARDS = [
-  { id: 'ask', icon: 'chat', c: '#3a8dff', s: '#dcecff', q: 'Tháng 9 chi nhánh nào tụt? Vì sao?', tag: 'Hỏi đáp có nguồn', win: 'Gò Vấp −18%, có 3 nguồn', kw: /giảm|tụt|vì sao|tại sao|lý do|nguyên nhân/ },
-  { id: 'sql', icon: 'bars', c: '#0a9774', s: '#d8f6ec', q: 'So doanh thu 6 chi nhánh', tag: 'Tính bằng SQL', win: 'Tính trên 1.240 dòng', kw: /so sánh|doanh thu|doanh số|bán được|chi nhánh|cửa hàng|biểu đồ|lãi|lời|lợi nhuận/ },
-  { id: 'graph', icon: 'graph', c: '#7a6bff', s: '#e9e6ff', q: 'Vinamilk dính tới ai?', tag: 'Bản đồ tri thức', win: '9 đối tượng, 11 mối nối', kw: /liên quan|dính|ai |nhà cung cấp|ncc|vinamilk|quan hệ|mối|đối tác/ },
-  { id: 'report', icon: 'doc', c: '#e07b00', s: '#fff0d9', q: 'Làm báo cáo tháng 9', tag: 'Báo cáo 2 phút', win: '3 mục, xuất PDF và Word', kw: /báo cáo|report|tổng hợp|tóm tắt|gửi sếp|slide/ },
+  { id: 'ask', icon: 'chat', c: '#3a8dff', s: '#dcecff', q: 'Tháng 9 chi nhánh nào tụt? Vì sao?', tag: 'Hỏi đáp', win: 'Gò Vấp −18%, có 3 nguồn', kw: /giảm|tụt|vì sao|tại sao|lý do|nguyên nhân/ },
+  { id: 'sql', icon: 'bars', c: '#0a9774', s: '#d8f6ec', q: 'Vẽ chart doanh thu 6 chi nhánh', tag: 'Tạo chart', win: 'Chart từ 1.240 dòng', kw: /chart|biểu đồ|vẽ|so sánh|doanh thu|doanh số|bán được|chi nhánh|cửa hàng|lãi|lời|lợi nhuận/ },
+  { id: 'report', icon: 'doc', c: '#e07b00', s: '#fff0d9', q: 'Làm báo cáo tháng 9', tag: 'Báo cáo', win: '3 mục, xuất PDF và Word', kw: /báo cáo|report|tổng hợp|tóm tắt|gửi sếp|slide/ },
+  { id: 'graph', icon: 'graph', c: '#7a6bff', s: '#e9e6ff', q: 'Vinamilk liên quan tới ai, ở đâu?', tag: 'Bản đồ tri thức', win: '9 đối tượng, 11 mối nối', kw: /liên quan|dính|ai |ở đâu|nhà cung cấp|ncc|vinamilk|quan hệ|mối|đối tác/ },
   { id: 'model', icon: 'link', c: '#0e9aa7', s: '#d6f5f7', q: 'Mấy sheet Excel nối nhau sao?', tag: 'Mô hình dữ liệu', win: '2 khoá khớp 1.240/1.240', kw: /sheet|bảng|nối|khoá|khóa|excel|cột|mô hình|công thức/ },
-  { id: 'trust', icon: 'shield', c: '#e04a37', s: '#ffe2dd', q: 'Tháng 12 lãi bao nhiêu?', tag: 'Không bịa số', win: 'Chặn 1 câu đoán bừa', kw: /tháng 12|dự báo|dự đoán|năm sau|tương lai|sắp tới|2027|tháng sau|sẽ/ }
+  { id: 'contract', icon: 'receipt', c: '#e04a37', s: '#ffe2dd', q: 'Hoá đơn có đúng giá hợp đồng không?', tag: 'Đối soát hợp đồng', win: 'Bắt 1 dòng sai giá, dư 120.000đ', kw: /hợp đồng|hoá đơn|hóa đơn|đối soát|sai giá|đúng giá|điều khoản|thanh toán|công nợ/ }
 ];
-const ROUTE = ['trust', 'report', 'graph', 'model', 'ask', 'sql'];
+const ROUTE = ['contract', 'report', 'graph', 'model', 'ask', 'sql'];
 
 const arena = (() => {
   const sec = $('#l2'), stage = $('#stage'), cv = $('#fx'), ctx = cv.getContext('2d'), dom = $('#sdom'), winEl = $('#win'), orb = $('#orb');
@@ -1134,9 +1100,9 @@ const arena = (() => {
     dom.innerHTML = `<div class="chat"><div class="msg me">${esc(text)}</div><div class="msg ai" id="a"></div></div>`;
     later(400, () => {
       const a = $('#a', dom);
-      stream(a, ['Câu này để bản thật trả lời, trên chính file của anh chị.'], () => {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-sun btn-sm'; b.innerHTML = `${icon('gift')}Giữ chỗ để hỏi`;
-        b.addEventListener('click', () => openSignup('typed_miss', text)); a.appendChild(document.createElement('br')); a.appendChild(b);
+      stream(a, ['Câu này anh chị hỏi thẳng trong phần mềm, trên chính file của mình.'], () => {
+        const b = document.createElement('a'); b.className = 'btn btn-go btn-sm appbtn'; b.dataset.from = 'typed_miss'; b.href = appLink('typed_miss'); b.innerHTML = `${icon('enter')}Vào phần mềm để hỏi`;
+        a.appendChild(document.createElement('br')); a.appendChild(b);
       });
     });
   }
@@ -1328,38 +1294,40 @@ function EFFECTS(){
         k.later(4000, k.finish);
       });
     },
-    trust(k){
-      k.dom.innerHTML = `<div class="chat"><div class="msg me" id="q"></div>${near(k)}<div class="ghost" id="ghost" hidden>8,7 tỷ?</div><div class="msg ai" id="a" hidden></div><div class="metrics" id="m" hidden>${[['98%', 'có nguồn', 'good', 98, '%'], ['23', 'lần từ chối đoán', '', 23, ''], ['4', 'nguồn mâu thuẫn', 'warn', 4, ''], ['2', 'câu chờ duyệt', 'warn', 2, '']].map((m, i) => `<div class="metric ${m[2]}" style="animation-delay:${i * 120}ms"><b class="num" data-to="${m[3]}" data-suf="${m[4]}">0${m[4]}</b><span>${m[1]}</span></div>`).join('')}</div></div>`;
-      const anim = { p: 0, line: 0, check: 0, fade: 1 }; let pts = [], shards = [], S = 0, cx = 0, cy = 0;
-      const path = [[0, -1], [.85, -.62], [.85, .1], [0, 1], [-.85, .1], [-.85, -.62]];
+    contract(k){
+      const C = [['Sữa tươi 1L', '28.600đ', '28.600đ'], ['Sữa chua', '6.200đ', '6.200đ'], ['Phô mai que', '39.000đ', '41.000đ'], ['Hạn trả', '30 ngày', '30 ngày']];
+      k.dom.innerHTML = `<div class="qline">${icon('chat')}<span id="q"></span></div>${near(k)}<div class="audit" id="au" hidden>
+        <div class="doc"><b><i style="background:#ef4444"></i>HD_Vinamilk.pdf</b><ul>${C.map((r, i) => `<li data-l="${i}"><span>${r[0]}</span><em>${r[1]}</em></li>`).join('')}</ul></div>
+        <div class="doc"><b><i style="background:#f59e0b"></i>Hoa_don_scan.jpg</b><ul>${C.map((r, i) => `<li data-r="${i}"><span>${r[0]}</span><em>${r[2]}</em></li>`).join('')}</ul></div>
+      </div><div class="msg ai" id="a" hidden></div>`;
+      const row = C.map(() => ({ p: 0, s: 0 })); let scan = -1;
+      const li = (side, i) => $(`[data-${side}="${i}"]`, k.dom);
       k.typeInto($('#q', k.dom), ask(k), 40, () => {
-        const g = $('#ghost', k.dom); g.hidden = false; sfx.block();
-        k.later(700, () => {
-          const R = k.rectOf(g); cx = R.cx; cy = R.cy; S = Math.max(R.h * 1.1, 56);
-          pts = []; for (let i = 0; i < 84; i++){ const seg = Math.floor(i / 14), f = (i % 14) / 14, a = path[seg], b = path[(seg + 1) % 6]; pts.push({ tx: cx + lerp(a[0], b[0], f) * S, ty: cy + lerp(a[1], b[1], f) * S, x: rand(0, k.W()), y: rand(0, k.H()) }); }
-          tween(anim, { p: 1 }, 900, { ease: ease.inOutCubic }); k.later(900, () => tween(anim, { line: 1 }, 400)); k.later(1250, () => tween(anim, { check: 1 }, 350));
-          k.setDraw((c, w, h, t, dt) => {
-            c.save(); c.globalAlpha = anim.fade;
-            for (const o of pts){ const x = lerp(o.x, o.tx, anim.p), y = lerp(o.y, o.ty, anim.p); c.fillStyle = `rgba(19,194,150,${.4 + .6 * anim.p})`; c.beginPath(); c.arc(x, y, 2.5 + anim.p, 0, 6.283); c.fill(); }
-            c.restore();
-            if (anim.line > 0 && anim.fade > 0){ c.save(); c.globalAlpha = anim.fade; c.strokeStyle = '#13c296'; c.lineWidth = 4; c.lineJoin = 'round'; c.setLineDash([1000]); c.lineDashOffset = 1000 * (1 - anim.line); c.beginPath(); path.forEach((p, i) => { const x = cx + p[0] * S, y = cy + p[1] * S; i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.closePath(); c.stroke(); c.fillStyle = `rgba(19,194,150,${.12 + .05 * Math.sin(t * 4)})`; c.fill();
-              if (anim.check > 0){ c.strokeStyle = '#0a9774'; c.lineWidth = 6; c.lineCap = 'round'; c.setLineDash([300]); c.lineDashOffset = 300 * (1 - anim.check); c.beginPath(); c.moveTo(cx - S * .32, cy); c.lineTo(cx - S * .08, cy + S * .24); c.lineTo(cx + S * .36, cy - S * .3); c.stroke(); } c.restore(); }
-            for (let i = shards.length - 1; i >= 0; i--){ const s = shards[i]; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 900 * dt; s.a += s.va * dt; s.life -= dt; if (s.life <= 0){ shards.splice(i, 1); continue; } c.save(); c.translate(s.x, s.y); c.rotate(s.a); c.fillStyle = hexA('#ff6a57', Math.min(1, s.life * 2)); c.fillRect(-s.r, -s.r / 2, s.r * 2, s.r); c.restore(); }
+        $('#au', k.dom).hidden = false; sfx.whoosh();
+        k.setDraw(c => {
+          if (scan >= 0){ const A = k.rectOf($('#au', k.dom)), y = k.rectOf(li('l', scan)).cy; const g = c.createLinearGradient(0, y - 16, 0, y + 16); g.addColorStop(0, 'rgba(58,141,255,0)'); g.addColorStop(.5, 'rgba(58,141,255,.3)'); g.addColorStop(1, 'rgba(58,141,255,0)'); c.fillStyle = g; c.fillRect(A.x - 8, y - 16, A.w + 16, 32); }
+          row.forEach((r, i) => {
+            if (r.p <= 0) return;
+            const L = k.rectOf(li('l', i)), R = k.rectOf(li('r', i)), a = { x: L.x + L.w, y: L.cy }, b = { x: R.x, y: R.cy };
+            const col = r.s === 2 ? '#ff6a57' : r.s === 1 ? '#13c296' : '#ffc42e';
+            c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 3; c.lineCap = 'round';
+            c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(lerp(a.x, b.x, r.p), lerp(a.y, b.y, r.p)); c.stroke();
+            c.beginPath(); c.arc(a.x, a.y, 4, 0, 6.283); c.fill(); if (r.p >= 1){ c.beginPath(); c.arc(b.x, b.y, 4, 0, 6.283); c.fill(); }
+            if (r.s){ const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2; c.fillStyle = '#fff'; c.beginPath(); c.arc(mx, my, 10, 0, 6.283); c.fill(); c.lineWidth = 2.5; c.stroke(); c.beginPath();
+              if (r.s === 1){ c.moveTo(mx - 4, my); c.lineTo(mx - 1, my + 3); c.lineTo(mx + 4, my - 3); } else { c.moveTo(mx - 3.5, my - 3.5); c.lineTo(mx + 3.5, my + 3.5); c.moveTo(mx + 3.5, my - 3.5); c.lineTo(mx - 3.5, my + 3.5); } c.stroke(); }
           });
         });
-        k.later(2100, () => {
-          const g2 = $('#ghost', k.dom); g2.classList.add('broken'); sfx.block(); k.shake();
-          for (let i = 0; i < 26; i++) shards.push({ x: cx + rand(-60, 60), y: cy + rand(-20, 20), vx: rand(-320, 320), vy: rand(-420, -80), r: rand(4, 9), a: rand(0, 6), va: rand(-12, 12), life: rand(.7, 1.2) });
-          k.crit('CHẶN!', cx, cy - 10, '#0a9774');
-        });
-        k.later(2700, () => {
-          $('#ghost', k.dom).hidden = true; tween(anim, { fade: 0 }, 450);
-          const a = $('#a', k.dom); a.hidden = false;
-          k.stream(a, ['Kho chưa có số tháng 12. Em không đoán, chỉ trả lời từ file có thật.'], () => {
-            const m = $('#m', k.dom); m.hidden = false;
-            $$('.metric b', k.dom).forEach((b, i) => { const o = { v: 0 }; tween(o, { v: +b.dataset.to }, 800, { delay: 150 + i * 120, onUpdate: () => { b.textContent = Math.round(o.v) + b.dataset.suf; } }); });
-            k.later(1300, k.finish);
+        C.forEach((_, i) => k.later(500 + i * 700, () => {
+          scan = i; li('l', i).classList.add('scan'); li('r', i).classList.add('scan'); tween(row[i], { p: 1 }, 320);
+          k.later(380, () => {
+            const bad = i === 2; row[i].s = bad ? 2 : 1;
+            ['l', 'r'].forEach(sd => { const e = li(sd, i); e.classList.remove('scan'); e.classList.add(bad ? 'bad' : 'ok'); });
+            if (bad){ const A = k.rectOf($('#au', k.dom)), y = k.rectOf(li('l', i)).cy; k.crit('SAI GIÁ!', A.cx, y - 26, '#ff6a57'); k.shake(); sfx.block(); } else sfx.pop(i + 2);
           });
+        }));
+        k.later(500 + C.length * 700 + 200, () => {
+          scan = -1; const a = $('#a', k.dom); a.hidden = false;
+          k.stream(a, ['Phô mai que bị tính 41.000đ, hợp đồng ghi 39.000đ ', { cite: '1', src: 'pdf' }, { cite: '2', src: 'jpg' }, '. Dư 2.000đ × 60 hộp = 120.000đ. Ba dòng còn lại khớp.'], () => k.later(600, k.finish));
         });
       });
     }
@@ -1367,7 +1335,7 @@ function EFFECTS(){
 }
 
 /* ============================================================
-   Flow: title, levels, final, signup, info
+   Flow: title, levels, final, app button
    ============================================================ */
 function setLevel(n){
   $('#lvlNo').textContent = n; $('#lvlName').textContent = n === 1 ? 'Nạp kho' : 'Hỏi kho';
@@ -1400,55 +1368,20 @@ function replay(){
   $('#l1').hidden = false; act1.st.hintOn = true;
   banner('MÀN 1', 'Nạp kho'); track('replay');
 }
-function skipLevel1(){ if (game.level !== 1 || act1.st.done) return; act1.st.done = true; act1.st.hintOn = false; track('skip'); arena.show(); }
+function nextLevel(){ if (game.level !== 1 || act1.st.done || act1.st.count < 1) return; act1.st.done = true; act1.st.hintOn = false; $('#btnNext').disabled = true; track('next', { files: act1.st.count }); flash(); sfx.level(); arena.show(); }
 
-const signup = { segment: '', wtp: '', trigger: '' };
-function openSignup(trigger, q){
-  signup.trigger = trigger; $('#suErr').hidden = true;
-  if (q) $('#suQ').value = q;
-  $('#signup').hidden = false; track('signup_open', { trigger });
-  if (!matchMedia('(pointer: coarse)').matches) setTimeout(() => $('#suEmail').focus(), 60);
-}
-function hashCode(s){ let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
-$$('#signup .opts').forEach(g => g.addEventListener('click', e => {
-  const b = e.target.closest('.opt'); if (!b) return;
-  $$('.opt', g).forEach(x => x.setAttribute('aria-pressed', String(x === b))); signup[g.dataset.group] = b.dataset.v;
-}));
-$('#suForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const email = $('#suEmail').value.trim().toLowerCase(), q = $('#suQ').value.trim(), err = $('#suErr');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){ err.textContent = 'Email chưa đúng'; err.hidden = false; $('#suEmail').focus(); return; }
-  if (!signup.segment){ err.textContent = 'Chọn giúp một ô "Bạn làm gì?"'; err.hidden = false; return; }
-  err.hidden = true; $('#suBtn').disabled = true;
-  const entry = { email, segment: signup.segment, wtp: signup.wtp, question: q.slice(0, 200), trigger: signup.trigger, variant: 'game', score: game.score, stars: game.stars.length, sid: SESSION.sid, vid: SESSION.vid, referrer: SESSION.referrer, createdAt: new Date().toISOString() };
-  try { const l = store.get('hs_game_waitlist') || []; l.push(entry); store.set('hs_game_waitlist', l); } catch {}
-  post({ type: 'waitlist', ...entry, ...SESSION.utm });
-  track('signup_submit', { segment: signup.segment, wtp: signup.wtp, trigger: signup.trigger, hasQuestion: !!q });
-  $('#suPos').textContent = '#' + (128 + hashCode(email) % 300);
-  $('#suRef').value = location.origin + location.pathname + '?ref=' + hashCode(email).toString(36).slice(0, 6);
-  $('#suForm').hidden = true; $('#suDone').hidden = false; $('#suBtn').disabled = false;
-  addScore(300); sfx.star(); fxTop.confetti(90);
-});
-$('#suCopy').addEventListener('click', async () => { const i = $('#suRef'); try { await navigator.clipboard.writeText(i.value); toast('Đã chép link'); } catch { i.select(); toast('Chọn và chép link ở ô trên'); } track('ref_copy'); });
-$$('[data-close]').forEach(b => b.addEventListener('click', () => { b.closest('.overlay').hidden = true; }));
-$$('.overlay.top').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.hidden = true; }));
-addEventListener('keydown', e => { if (e.key === 'Escape') $$('.overlay.top').forEach(o => o.hidden = true); });
 
 function setSound(on){
   sfx.on = on;
   $('#btnSound').innerHTML = icon(on ? 'sound' : 'mute'); $('#btnSound').setAttribute('aria-label', on ? 'Tắt tiếng' : 'Bật tiếng');
-  $('#infoSound').innerHTML = `${icon(on ? 'sound' : 'mute')}<span>Âm thanh: ${on ? 'bật' : 'tắt'}</span>`;
 }
 $('#btnPlay').addEventListener('click', () => startPlay('button'));
-$('#skip').addEventListener('click', skipLevel1);
-$('#btnGift').addEventListener('click', () => openSignup('hud'));
-$('#btnInfo').addEventListener('click', () => { $('#info').hidden = false; track('info_open'); });
+$('#btnNext').addEventListener('click', nextLevel);
 $('#btnSound').addEventListener('click', () => setSound(!sfx.on));
-$('#infoSound').addEventListener('click', () => setSound(!sfx.on));
-$('#finalGift').addEventListener('click', () => openSignup('final'));
 $('#finalReplay').addEventListener('click', replay);
 $('#logo').addEventListener('click', e => e.preventDefault());
-['#finalTry', '#infoTry'].forEach(s => { const a = $(s); a.href = CONFIG.TRY_URL; a.addEventListener('click', () => track('try_file', { from: s.slice(1) })); });
+$$('.appbtn').forEach(a => { a.href = appLink(a.dataset.from); });
+GAME.addEventListener('click', e => { const a = e.target.closest('.appbtn'); if (a) track('app_open', { from: a.dataset.from || '', level: game.level, stars: game.stars.length, score: game.score }); });
 $$('.brandRef').forEach(el => el.textContent = CONFIG.BRAND);
 
 /* ============================================================
