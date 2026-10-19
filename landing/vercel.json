@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "sh build-standalone.sh",
+  "buildCommand": "sh build-standalone.sh && sh build-app.sh",
   "outputDirectory": "dist",
   "framework": null,
   "cleanUrls": true,
@@ -39,6 +39,12 @@
       "source": "/chat/",
       "destination": "/",
       "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/app/:path*",
+      "destination": "/app/index.html"
     }
   ]
 }

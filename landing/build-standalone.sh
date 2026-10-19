@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Đóng gói game (viết theo chuẩn artifact, không có <html>/<head>) thành trang tĩnh đầy đủ để tự host.
 # Dùng: APP_URL=https://app.ten-mien.vn sh landing/build-standalone.sh   -> landing/dist/index.html
-# APP_URL là địa chỉ web app KB Explorer; nút "Vào phần mềm" dẫn tới $APP_URL/signup. Bỏ trống = http://localhost:3000.
+# APP_URL: địa chỉ web app nếu app chạy ở nơi khác. Bỏ trống = /app trên cùng site (build-app.sh).
 set -e
 cd "$(dirname "$0")"
 mkdir -p dist
@@ -14,4 +14,4 @@ app=$(printf '%s' "${APP_URL:-}" | sed 's/[&|\\]/\\&/g')
   sed "s|%%APP_URL%%|$app|g" index.html
   printf '</body></html>'
 } > dist/index.html
-echo "dist/index.html: $(wc -c < dist/index.html) bytes, APP_URL=${APP_URL:-<trống, dùng http://localhost:3000>}"
+echo "dist/index.html: $(wc -c < dist/index.html) bytes, APP_URL=${APP_URL:-/app}"

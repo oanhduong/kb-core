@@ -9,7 +9,8 @@ import type {
 import { getLang, translate } from "@/i18n";
 import type { DataModel, DataModelDetail, Insights, ModelConnection, RuleSpec, RuleTest } from "./types";
 
-export const BASE = "/api";
+// VITE_API_BASE: địa chỉ API khi web chạy khác origin với backend (vd bản trên Vercel). Mặc định /api (nginx/Vite proxy).
+export const BASE = ((import.meta.env.VITE_API_BASE as string | undefined) || "/api").replace(/\/+$/, "");
 const TOKEN_KEY = "kbx.token";
 const WS_KEY = "kbx.workspace";
 

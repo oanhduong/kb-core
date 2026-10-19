@@ -11,25 +11,35 @@ Cả trang là một màn chơi toàn màn hình. Qua màn chơi, người xem t
 
 Câu gõ tự do được ghép với thẻ gần nghĩa nhất bằng từ khoá. Câu không khớp được mời hỏi thẳng trong phần mềm.
 
-Nút **Vào phần mềm** (góc trên, màn phá đảo, câu hỏi không khớp) dẫn tới `APP_URL/signup?utm_source=game&utm_content=<vị trí nút>`. Màn `/signup` của web app tạo tài khoản kèm workspace đầu tiên.
+Nút **Vào phần mềm** (góc trên, màn phá đảo, câu hỏi không khớp) mở web app KB Explorer tại `/app/` trên cùng site. Chưa đăng nhập thì app hiện màn đăng nhập, có link sang đăng ký (tạo tài khoản kèm workspace đầu tiên); đã đăng nhập thì vào thẳng workspace.
 
 Không dùng thư viện ngoài: thế giới 3D giả lập bằng Canvas 2D, âm thanh tổng hợp bằng WebAudio (chỉ bật sau khi bấm Chơi, có nút tắt trên máy tính). Font Baloo 2 và Nunito, đều có bộ chữ tiếng Việt. Tôn trọng `prefers-reduced-motion`.
 
 ## Cấu hình và triển khai
 
-| Thứ cần đặt | Ở đâu | Ý nghĩa |
-|---|---|---|
-| `APP_URL` | Vercel → Project → Settings → Environment Variables | Địa chỉ web app, ví dụ `https://app.ten-mien.vn`. Bỏ trống thì nút dẫn tới `http://localhost:3000` (app chạy bằng `make up`) |
-| `CONFIG.ENDPOINT` | đầu script trong `index.html` | URL Google Apps Script (`apps-script.gs`) để ghi sự kiện vào Google Sheet. Bỏ trống thì chỉ đẩy `dataLayer` và lưu `localStorage` |
-| `CONFIG.BRAND` | đầu script trong `index.html` | Tên hiển thị |
+Vercel (Root Directory là `landing`) build hai phần vào `dist/`:
 
-Vercel chọn Root Directory là `landing`; `vercel.json` build bằng `build-standalone.sh` (điền `APP_URL`, thêm doctype và meta) ra `dist/`. Link cũ `/wow` và `/chat` chuyển về `/`.
+| Đường dẫn | Build bởi | Là gì |
+|---|---|---|
+| `/` | `build-standalone.sh` | Game (file `index.html`, thêm doctype và meta) |
+| `/app/` | `build-app.sh` | Web app trong thư mục `web/`, build với `VITE_BASE=/app/`; mọi đường dẫn `/app/*` trả về app (vercel.json) |
+
+Link cũ `/wow` và `/chat` chuyển về `/`. Vercel cần bật **Include files outside the root directory** (mặc định đã bật) để `build-app.sh` đọc được thư mục `web/`.
+
+**Backend:** web app gọi API FastAPI. Backend cần Postgres, worker và model nên không chạy trên Vercel; dựng bằng `docker compose` trên một máy chủ (xem README gốc). Khi có backend:
+
+| Biến | Đặt ở đâu | Ý nghĩa |
+|---|---|---|
+| `API_URL` | Vercel → Settings → Environment Variables | Địa chỉ API, ví dụ `https://api.ten-mien.vn`. Bỏ trống thì app gọi `/api` cùng site (chưa có backend thì đăng nhập báo lỗi) |
+| `CORS_ORIGINS` | `.env` của backend | Thêm domain Vercel, ví dụ `https://kb-core-landing.vercel.app` |
+| `APP_URL` | Vercel (tuỳ chọn) | Chỉ đặt khi muốn nút dẫn sang app ở domain khác thay vì `/app` |
+| `CONFIG.ENDPOINT` | đầu script trong `index.html` | URL Google Apps Script (`apps-script.gs`) để ghi sự kiện vào Google Sheet |
+
+Đổi biến trên Vercel xong phải **Redeploy**.
 
 ```bash
-APP_URL=https://app.ten-mien.vn sh landing/build-standalone.sh   # -> landing/dist/index.html
+sh landing/build-standalone.sh && API_URL=https://api.ten-mien.vn sh landing/build-app.sh   # -> landing/dist
 ```
-
-Đổi `APP_URL` trên Vercel xong phải **Redeploy** để build lại.
 
 ## Sự kiện được đo
 

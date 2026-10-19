@@ -67,6 +67,9 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .ring .bar{stroke:var(--mint);stroke-linecap:round;stroke-dasharray:100.5;stroke-dashoffset:100.5;transition:stroke-dashoffset .5s cubic-bezier(.2,.8,.2,1)}
 .stars{display:inline-flex;gap:2px}
 .stars .ic{width:15px;height:15px;color:#d7e0ec}
+.starsTxt{display:none;align-items:center;gap:3px;font-family:var(--display);font-size:1rem}
+.starsTxt .ic{width:16px;height:16px;color:var(--yellow)}
+@media (max-width:340px){.coins{display:none}}
 .stars .ic.on{color:var(--yellow);filter:drop-shadow(0 0 4px rgba(255,196,46,.9));animation:starpop .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes starpop{from{transform:scale(2.2) rotate(-40deg)}}
 .coins{padding-left:8px}
@@ -76,13 +79,14 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 @keyframes bump{50%{transform:scale(1.35)}}
 .hbtn{width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.92);display:grid;place-items:center;color:var(--ink-2);box-shadow:0 3px 0 rgba(29,43,69,.08),0 10px 20px -12px rgba(29,43,69,.35)}
 .hbtn .ic{width:20px;height:20px}
-.hbtn.gift{width:auto;padding:0 16px 0 12px;display:inline-flex;gap:7px;text-decoration:none;background:var(--yellow);color:#4a3200;font-family:var(--display);font-weight:800;font-size:1rem;box-shadow:0 4px 0 var(--yellow-deep)}
+.hbtn.gift{width:auto;padding:0 16px 0 12px;display:inline-flex;gap:7px;text-decoration:none;white-space:nowrap;flex:none;background:var(--yellow);color:#4a3200;font-family:var(--display);font-weight:800;font-size:1rem;box-shadow:0 4px 0 var(--yellow-deep)}
 .hbtn.gift:active{transform:translateY(2px);box-shadow:0 2px 0 var(--yellow-deep)}
 .game[data-level="0"] .hud .pill{display:none}
 @media (max-width:640px){
   .logo b,.hide-sm{display:none!important}
-  .game:not([data-level="0"]) .hbtn.gift span{display:none}
-  .game:not([data-level="0"]) .hbtn.gift{width:40px;padding:0;justify-content:center}
+  .hbtn.gift{padding:0 12px 0 10px;gap:5px;font-size:.92rem}
+  .coins{padding:0 10px 0 6px;gap:5px}.coins svg{width:20px;height:20px}.coins b{font-size:1rem}
+  .stars{display:none}.starsTxt{display:inline-flex}
   .game:not([data-level="0"]) .logo{display:none}
   .hud{gap:6px}
   .pill{padding-right:10px;gap:6px}
@@ -398,7 +402,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
       <span class="badge" id="lvlNo">1</span>
       <span class="hide-sm" id="lvlName">Nạp kho</span>
       <span id="lvl1" style="display:inline-flex;align-items:center;gap:6px"><svg class="ring" viewBox="0 0 36 36"><circle class="trk" cx="18" cy="18" r="16"/><circle class="bar" id="ring" cx="18" cy="18" r="16"/></svg><span class="num" id="count">0/8</span></span>
-      <span class="stars" id="stars" hidden></span>
+      <span id="lvl2" hidden style="display:inline-flex;align-items:center"><span class="stars" id="stars"></span><span class="starsTxt"><svg class="ic"><use href="#i-star"/></svg><b id="starsN">0</b>/6</span></span>
     </span>
     <span class="sp"></span>
     <span class="pill coins" aria-label="Điểm"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffc42e" stroke="#e5a200" stroke-width="2"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#fff3c4" stroke-width="2"/></svg><b class="num" id="score">0</b></span>
@@ -460,10 +464,13 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 /* ============================================================
    CONFIG
    ============================================================ */
-// Địa chỉ web app (KB Explorer). build-standalone.sh điền từ biến môi trường APP_URL; chưa có thì dùng app chạy local.
+// Địa chỉ web app (KB Explorer). Mặc định /app trên cùng site (build-app.sh đặt app ở đó).
+// build-standalone.sh điền biến môi trường APP_URL nếu app chạy ở địa chỉ khác.
 const APP_URL_BUILD = '%%APP_URL%%';
-const CONFIG = { BRAND: 'Hỏi Số', ENDPOINT: '', APP_URL: (/^%%/.test(APP_URL_BUILD) || !APP_URL_BUILD ? 'http://localhost:3000' : APP_URL_BUILD).replace(/\/+$/, '') };
-const appLink = from => `${CONFIG.APP_URL}/signup?utm_source=game&utm_content=${encodeURIComponent(from || 'app')}`;
+const PREVIEW = location.protocol === 'file:' || /claude\.ai$|claudeusercontent|anthropic/.test(location.hostname);
+const CONFIG = { BRAND: 'Hỏi Số', ENDPOINT: '', APP_URL: (/^%%/.test(APP_URL_BUILD) || !APP_URL_BUILD ? (PREVIEW ? 'https://kb-core-landing.vercel.app/app' : '/app') : APP_URL_BUILD).replace(/\/+$/, '') };
+// Gốc app: chưa đăng nhập thì app tự mở màn đăng nhập (có link sang đăng ký), đã đăng nhập thì vào workspace.
+const appLink = from => `${CONFIG.APP_URL}/?utm_source=game&utm_content=${encodeURIComponent(from || 'app')}`;
 
 /* ============================================================
    Utilities
@@ -1054,7 +1061,7 @@ const arena = (() => {
   }
   function buildCards(){
     $('#cards').innerHTML = CARDS.map(c => `<button class="qcard" type="button" data-id="${c.id}" style="--c:${c.c};--s:${c.s}"><span class="ico">${icon(c.icon)}</span><b>${esc(c.q)}</b><small>${esc(c.tag)}</small><em>${icon('star', 'ic')}</em></button>`).join('');
-    $('#stars').innerHTML = CARDS.map(() => icon('star')).join('');
+    $('#stars').innerHTML = CARDS.map(() => icon('star')).join(''); $('#starsN').textContent = '0';
   }
   function flyCard(btn, cb){
     if (reduced){ cb(); return; }
@@ -1089,7 +1096,7 @@ const arena = (() => {
     if (!first){ sfx.pop(3); return; }
     done.add(card.id); game.stars.push(card.id);
     $(`.qcard[data-id="${card.id}"]`).classList.add('done');
-    const s = $$('#stars .ic')[done.size - 1]; s && s.classList.add('on');
+    const s = $$('#stars .ic')[done.size - 1]; s && s.classList.add('on'); $('#starsN').textContent = done.size;
     sfx.star(); addScore(250, stageCenter()); vibrate(20);
     track('star', { id: card.id, n: done.size });
     if (done.size === CARDS.length && !finishedFinal){ finishedFinal = true; later(2600, final); }
@@ -1339,7 +1346,7 @@ function EFFECTS(){
    ============================================================ */
 function setLevel(n){
   $('#lvlNo').textContent = n; $('#lvlName').textContent = n === 1 ? 'Nạp kho' : 'Hỏi kho';
-  $('#lvl1').hidden = n !== 1; $('#stars').hidden = n !== 2;
+  $('#lvl1').hidden = n !== 1; $('#lvl2').hidden = n !== 2;
   $('#lvlNo').style.background = n === 2 ? 'var(--blue)' : 'var(--violet)';
 }
 function startPlay(via){

@@ -20,7 +20,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <PrefsProvider>
         <QueryClientProvider client={qc}>
           <ToastProvider>
-            <BrowserRouter>
+            <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/+$/, "")}>
               <AuthProvider>
                 <LangRefetch />
                 <App />
