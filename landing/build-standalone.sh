@@ -9,7 +9,7 @@ desc="Chơi 1 phút: thả đống file vào kho, hỏi gì cũng ra số, mọi
 app=$(printf '%s' "${APP_URL:-}" | sed 's/[&|\\]/\\&/g')
 {
   printf '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
-  printf '<meta name="description" content="%s"><meta property="og:title" content="Hỏi Số"><meta property="og:description" content="%s"><meta name="theme-color" content="#9ed7ff">' "$desc" "$desc"
+  printf '<meta name="description" content="%s"><meta property="og:title" content="DataKho"><meta property="og:description" content="%s"><meta name="theme-color" content="#9ed7ff">' "$desc" "$desc"
   printf '<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%%}[hidden]{display:none!important}</style></head><body>'
   sed "s|%%APP_URL%%|$app|g" index.html
   printf '</body></html>'

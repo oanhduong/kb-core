@@ -1,4 +1,4 @@
-# Landing Hỏi Số: trang chủ là một màn game
+# Landing DataKho: trang chủ là một màn game
 
 Cả trang là một màn chơi toàn màn hình. Qua màn chơi, người xem thấy toàn bộ tính năng, rồi bấm **Vào phần mềm** để vào app thật (KB Explorer).
 

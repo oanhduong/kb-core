@@ -1,4 +1,4 @@
-<title>Hỏi Số</title>
+<title>DataKho</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -398,7 +398,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
   <canvas id="scene" aria-label="Sân chơi: kéo các file vào kho"></canvas>
 
   <header class="hud">
-    <a class="logo" href="#" id="logo"><i>Σ</i><b class="brandRef">Hỏi Số</b></a>
+    <a class="logo" href="#" id="logo"><i>Σ</i><b class="brandRef">DataKho</b></a>
     <span class="pill lvl" id="lvl">
       <span class="badge" id="lvlNo">1</span>
       <span class="hide-sm" id="lvlName">Nạp kho</span>
@@ -436,7 +436,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 
   <div class="title" id="title">
     <div class="box">
-      <h1 class="brandRef">Hỏi Số</h1>
+      <h1 class="brandRef">DataKho</h1>
       <p>Thả file vào. Hỏi gì cũng ra số.</p>
       <button class="btn btn-go btn-play" id="btnPlay" type="button"><svg class="ic"><use href="#i-play"/></svg>Chơi ngay</button>
     </div>
@@ -469,7 +469,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 // build-standalone.sh điền biến môi trường APP_URL nếu app chạy ở địa chỉ khác.
 const APP_URL_BUILD = '%%APP_URL%%';
 const PREVIEW = location.protocol === 'file:' || /claude\.ai$|claudeusercontent|anthropic/.test(location.hostname);
-const CONFIG = { BRAND: 'Hỏi Số', ENDPOINT: '', APP_URL: (/^%%/.test(APP_URL_BUILD) || !APP_URL_BUILD ? (PREVIEW ? 'https://kb-core-landing.vercel.app/app' : '/app') : APP_URL_BUILD).replace(/\/+$/, '') };
+const CONFIG = { BRAND: 'DataKho', ENDPOINT: '', APP_URL: (/^%%/.test(APP_URL_BUILD) || !APP_URL_BUILD ? (PREVIEW ? 'https://kb-core-landing.vercel.app/app' : '/app') : APP_URL_BUILD).replace(/\/+$/, '') };
 // Gốc app: chưa đăng nhập thì app tự mở màn đăng nhập (có link sang đăng ký), đã đăng nhập thì vào workspace.
 const appLink = from => `${CONFIG.APP_URL}/?utm_source=game&utm_content=${encodeURIComponent(from || 'app')}`;
 
